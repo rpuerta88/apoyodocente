@@ -166,7 +166,7 @@ async function guardarNuevaEscolaridad(evento) {
     } catch (e) {
         console.error(e);
     }
-}
+};
 
 async function cargarSelectoresCursos() {
     const selNomina = document.getElementById('select-curso');
@@ -187,7 +187,7 @@ async function cargarSelectoresCursos() {
         if(selEstad) selEstad.innerHTML = opciones;
 
         if(selEscolaridad && window.escolaridadActivaId) {
-            selEscolaridad.innerHTML = <option value="${window.escolaridadActivaId}">Escolaridad Vigente Activa</option>;
+            selEscolaridad.innerHTML = `<option value="${window.escolaridadActivaId}">Escolaridad Vigente Activa</option>`;
         }
     } catch (error) { console.error(error); }
 };
@@ -200,7 +200,7 @@ async function actualizarVistaEstudiantes() {
     contenedor.innerHTML = "";
     boton.style.display = "none";
     if (cursoId && escolaridadId) {
-        const sql = SELECT id_cedula, nombre, apellido FROM estudiantes WHERE id_cedula NOT IN (SELECT estudiantes_id FROM nomina WHERE cursoseccion_id = ? AND escolaridades_id = ?) ORDER BY apellido ASC;;
+        const sql = `SELECT id_cedula, nombre, apellido FROM estudiantes WHERE id_cedula NOT IN (SELECT estudiantes_id FROM nomina WHERE cursoseccion_id = ? AND escolaridades_id = ?) ORDER BY apellido ASC;`;
         const resultado = await db_real.query({ statement: sql, values: [parseInt(cursoId), parseInt(escolaridadId)] });
         const estudiantes = resultado.values || [];
         if (estudiantes.length === 0) {
@@ -224,7 +224,7 @@ async function procesarGuardadoNomina() {
     if (checkboxes.length === 0) return mostrarNotificacion("Seleccione alumnos.");
     try {
         await db_real.execute({ statement: "BEGIN TRANSACTION;" });
-        const sql = INSERT INTO nomina (estudiantes_id, cursoseccion_id, escolaridades_id, condicion_acadm) VALUES (?, ?, ?, 'Regular');;
+        const sql = `INSERT INTO nomina (estudiantes_id, cursoseccion_id, escolaridades_id, condicion_acadm) VALUES (?, ?, ?, 'Regular');`;
         for (const cb of checkboxes) {
             await db_real.execute({ statement: sql, values: [parseInt(cb.value), parseInt(cursoId), parseInt(escolaridadId)] });
         }
@@ -269,7 +269,7 @@ async function inyectarEstudiantesEnPantalla(estudiantes) {
         const item = document.createElement('div');
         item.className = "tarjeta-alumno-neuro";
         item.setAttribute('data-nomina-id', alumno.nomina_id);
-        let botonesHTML = criterios.map(crit => <button type="button" class="btn-criterio" data-puntos="${crit.puntos_aporte}" onclick="alternarCriterio(this, ${alumno.nomina_id})"> ${crit.nombre_criterio} (+${crit.puntos_aporte.toFixed(1)}) </button>).join('');
+        let botonesHTML = criterios.map(crit => `<button type="button" class="btn-criterio" data-puntos="${crit.puntos_aporte}" onclick="alternarCriterio(this, ${alumno.nomina_id})"> ${crit.nombre_criterio} (+${crit.puntos_aporte.toFixed(1)}) </button>`).join('');
         item.innerHTML = `${alumno.apellido}, ${alumno.nombre} CI: ${alumno.id_cedula} 12.0 Hitos Neurocognitivos Adicionales ${botonesHTML || 'No hay hitos configurados.'}`;
         contenedor.appendChild(item);
     });
@@ -279,7 +279,7 @@ async function inyectarEstudiantesEnPantalla(estudiantes) {
 function evaluarBaseDopaminergica(checkbox) {
     const tarjeta = checkbox.closest('.tarjeta-alumno-neuro');
     const nominaId = tarjeta.getAttribute('data-nomina-id');
-    const visualNota = document.getElementById(nota-visual-${nominaId});
+    const visualNota = document.getElementById(`nota-visual-${nominaId}`);
     const botones = tarjeta.querySelectorAll('.btn-criterio');
     if (!checkbox.checked) {
         visualNota.textContent = "0.0";
@@ -300,7 +300,7 @@ function alternarCriterio(boton, nominaId) {
     if(boton.disabled) return;
     boton.classList.toggle('activo');
     const tarjeta = boton.closest('.tarjeta-alumno-neuro');
-    const visualNota = document.getElementById(nota-visual-${nominaId});
+    const visualNota = document.getElementById(`nota-visual-${nominaId}`);
     let nota = 12.0;
     tarjeta.querySelectorAll('.btn-criterio.activo').forEach(act => {
         nota += parseFloat(act.getAttribute('data-puntos'));
@@ -314,11 +314,11 @@ async function guardarControlDiarioLote() {
     const filas = document.querySelectorAll('.tarjeta-alumno-neuro');
     try {
         await db_real.execute({ statement: "BEGIN TRANSACTION;" });
-        const sql = INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion) VALUES (?, ?, ?, ?, 'Formativa');;
+        const sql = `INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion) VALUES (?, ?, ?, ?, 'Formativa');`;
         for (const fila of filas) {
             const nominaId = parseInt(fila.getAttribute('data-nomina-id'));
             const presente = fila.querySelector('.check-asistencia').checked ? 'true' : 'false';
-            const nota = parseFloat(document.getElementById(nota-visual-${nominaId}).textContent);
+            const nota = parseFloat(document.getElementById(`nota-visual-${nominaId}`).textContent);
             await db_real.execute({ statement: sql, values: [nominaId, parseInt(sesionId), presente, nota] });
         }
         await db_real.execute({ statement: "COMMIT;" });
@@ -338,7 +338,7 @@ function manejadorBuscadorConDebounce(valorInput) {
         const cursoId = document.getElementById('diario-curso').value;
         if (!cursoId) return;
         const termino = `%${valorInput.trim().toUpperCase()}%`;
-        const sql = SELECT n.id AS nomina_id, e.id_cedula, e.apellido, e.nombre FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? AND (e.id_cedula LIKE ? OR e.apellido LIKE ? OR e.nombre LIKE ?) ORDER BY e.apellido ASC;;
+        const sql = `SELECT n.id AS nomina_id, e.id_cedula, e.apellido, e.nombre FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? AND (e.id_cedula LIKE ? OR e.apellido LIKE ? OR e.nombre LIKE ?) ORDER BY e.apellido ASC;`;
         const res = await db_real.query({ statement: sql, values: [parseInt(cursoId), parseInt(window.escolaridadActivaId), termino, termino, termino] });
         await inyectarEstudiantesEnPantalla(res.values || []);
     }, 250);
@@ -391,7 +391,7 @@ async function renderizarListadoCriterios() {
         div.className = "tarjeta-criterio";
         div.innerHTML = `<div class="info-crit"> <h4>${crit.nombre_criterio}</h4> <p style="margin:4px 0; font-size:12px; color:#546e7a;">${crit.descripcion || ''}</p> </div>  <div class="puntos-badge" style="background:#e8f5e9; padding:5px 8px; border-radius:6px; font-weight:bold; color:#2e7d32;"> +${crit.puntos_aporte.toFixed(1)} </div>  <div class="acciones-crit">  <button class="btn-icono btn-editar" id="edit-crit-${crit.id}" style="background:none;border:none;cursor:pointer;font-size:16px;">✏️</button>  <button class="btn-icono btn-eliminar" onclick="eliminarCriterio(${crit.id})" style="background:none;border:none;cursor:pointer;font-size:16px;">🗑️</button>  </div>`;
         contenedor.appendChild(div);
-        document.getElementById(edit-crit-${crit.id}).addEventListener('click', () => {
+        document.getElementById(`edit-crit-${crit.id}`).addEventListener('click', () => {
             abrirModalCriterio(crit.id, crit.nombre_criterio, crit.descripcion, crit.puntos_aporte);
         });
     });
@@ -424,7 +424,7 @@ async function cargarTableroAnalitico() {
     document.getElementById('metricas-rapidas').style.display = "flex";
     document.getElementById('txt-total-alumnos').textContent = general.total_alumnos;
     document.getElementById('txt-promedio-grupo').textContent = (general.promedio_notas || 0).toFixed(1);
-    document.getElementById('txt-asistencia-grupo').textContent = ${general.porcentaje_asistencia || 0}%;
+    document.getElementById('txt-asistencia-grupo').textContent = `${general.porcentaje_asistencia || 0}%`;
     const sqlAlerta = `SELECT e.apellido, e.nombre, ROUND(AVG(r.calificacion), 2) AS promedio FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula INNER JOIN registros r ON n.id = r.participantes_id WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? GROUP BY e.id_cedula HAVING promedio < 9.5;`;
     const resAlert = await db_real.query({ statement: sqlAlerta, values: [parseInt(cursoId), parseInt(window.escolaridadActivaId)] });
     const alertas = resAlert.values || [];
