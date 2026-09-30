@@ -1,8 +1,4 @@
----
-
-### 🎨 3. Diseño de Arquitectura Táctil Ergonómica (`styles.css`)
-Se añadieron variables semánticas, estilos para las nuevas tarjetas adaptativas de neurociencias, interruptores deslizantes estéticos y elementos interactivos móviles.
-
+#### Archivo 3: `styles.css`
 ```css
 @charset "utf-8";
 
@@ -25,7 +21,6 @@ body {
     color: #37474f;
 }
 
-/* Contenedores Base */
 .modulo-card {
     background: var(--color-tarjeta);
     padding: 20px;
@@ -58,7 +53,6 @@ select, input[type="text"], input[type="number"], textarea, input[type="date"] {
     background-color: #fafafa;
 }
 
-/* Botones Ergonómicos */
 .btn-primario {
     background-color: var(--color-primario);
     color: white;
@@ -72,7 +66,6 @@ select, input[type="text"], input[type="number"], textarea, input[type="date"] {
 }
 .btn-exito { background-color: var(--color-exito); }
 
-/* Planilla Neurocognitiva */
 .tarjeta-alumno-neuro {
     background: #ffffff;
     border: 1px solid #cfd8dc;
@@ -131,7 +124,6 @@ select, input[type="text"], input[type="number"], textarea, input[type="date"] {
     font-weight: bold;
 }
 
-/* Switch Deslizante */
 .switch-asistencia {
     position: relative;
     display: inline-block;
@@ -150,7 +142,6 @@ select, input[type="text"], input[type="number"], textarea, input[type="date"] {
 input:checked + .slider { background-color: var(--color-exito); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* Listado de Criterios (CRUD) */
 .lista-criterios { display: flex; flex-direction: column; gap: 10px; }
 .tarjeta-criterio {
     background: #f9f9f9;
@@ -161,7 +152,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     justify-content: space-between;
     align-items: center;
 }
-/* Tablero Estadístico */
+
 .contenedor-tarjetas-analiticas {
     display: flex;
     gap: 10px;
@@ -179,16 +170,15 @@ input:checked + .slider:before { transform: translateX(20px); }
 .tarjeta-metrica.morada { background: #6a1b9a; }
 .tarjeta-metrica h4 { margin: 0; font-size: 20px; }
 .tarjeta-metrica p { margin: 4px 0 0 0; font-size: 12px; }
-/* Gráficos de barra */
+
 .barra-contenedor { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; }
 .etiqueta { width: 90px; }
-.barra { height: 20px; color: white; text-align: right; padding-right: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; line-height: 20px;}
+.barra { height: 20px; color: white; text-align: right; padding-right: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; line-height: 20px; min-width: 20px;}
 .barra.azul { background: #1e88e5; }
 .barra.verde { background: #43a047; }
 .barra.amarilla { background: #fdd835; color: #333; }
 .barra.roja { background: #e53935; }
 
-/* Modales */
 .modal-oculto { display: none; }
 .modal-visible {
     display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -196,6 +186,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .modal-contenido { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; }
 .bloque-botones-modal { display: flex; gap: 10px; margin-top: 15px; }
-.btn-modal { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; }
-.btn-cancelar { background: #cfd8dc; }
-.btn-guardar { background: var(--color-exito);
+.btn-modal { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;}
+.btn-cancelar { background: #cfd8dc; color: #37474f;}
+.btn-guardar { background: var(--color-exito); color: white;}
