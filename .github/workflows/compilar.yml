@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar el repositorio usando la versión v4 actualizada
+    # 1. Clonar el repositorio usando la versión v4
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
