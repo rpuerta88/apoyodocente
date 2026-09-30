@@ -25,7 +25,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'  # Distribución estándar altamente compatible con Android Studio y Gradle
-        java-version: '17'
+        java-version: '21'
 
     # 4. Instalar las dependencias omitiendo los bloqueos estrictos de peer-dependencies de plugins móviles
     - name: Instalar Dependencias de Node
