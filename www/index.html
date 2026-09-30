@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apoyo Docente</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- MÓDULO A: ASIGNACIÓN DE NÓMINA MANUEL -->
+    <div class="modulo-card">
+        <h3>👥 Configuración de Nóminas</h3>
+        <div class="grupo-formulario">
+            <select id="select-curso"><option value="">Seleccione Curso...</option></select>
+            <select id="select-escolaridad"><option value="">Seleccione Escolaridad...</option></select>
+        </div>
+        <div id="contenedor-lista-estudiantes"></div>
+        <button id="btn-guardar-nomina" class="btn-primario" style="display:none;" onclick="procesarGuardadoNomina()">
+            Inscribir Estudiantes Seleccionados
+        </button>
+    </div>
+
+    <!-- MÓDULO B: CONTROL DIARIO DE AULA -->
+    <div id="modulo-control-diario" class="modulo-card">
+        <h3>📝 Control Diario de Aula</h3>
+        <div class="grupo-formulario">
+            <select id="diario-curso" onchange="cargarEstudiantesInscritos()"></select>
+            <select id="diario-sesion">
+                <option value="">Seleccione la sesión de clase...</option>
+            </select>
+        </div>
+        
+        <div class="bloque-buscador-aula">
+            <input type="text" id="txt-buscar-alumno" placeholder="🔍 Buscar por cédula, apellido o nombre..." oninput="manejadorBuscadorConDebounce(this.value)" autocomplete="off">
+        </div>
+        
+        <div id="tabla-asistencia-notas"></div>
+        
+        <button id="btn-guardar-diario" class="btn-primario btn-exito" style="display:none;" onclick="guardarControlDiarioLote()">
+            💾 Guardar Asistencias y Notas
+        </button>
+    </div>
+
+    <!-- MÓDULO C: CONFIGURACIÓN DE CRITERIOS NEUROBIOLÓGICOS -->
+    <div class="gestion-criterios-container modulo-card">
+        <h3>🧠 Criterios Neurocognitivos</h3>
+        <button class="btn-primario" onclick="abrirModalCriterio()">+ Añadir Nuevo Criterio</button>
+        <div id="lista-criterios-dinamica" class="lista-criterios"></div>
+    </div>
+
+    <!-- MÓDULO D: ESTADÍSTICAS AVANZADAS -->
+    <div class="modulo-estadisticas modulo-card">
+        <h3>📊 Rendimiento Académico e Indicadores</h3>
+        <div class="grupo-formulario">
+            <label>Seleccione la sección a evaluar:</label>
+            <select id="select-estadisticas-curso" onchange="cargarTableroAnalitico()"></select>
+        </div>
+
+        <div id="metricas-rapidas" class="contenedor-tarjetas-analiticas" style="display:none;">
+            <div class="tarjeta-metrica azul">
+                <h4 id="txt-total-alumnos">0</h4>
+                <p>Inscritos</p>
+            </div>
+            <div class="tarjeta-metrica verde">
+                <h4 id="txt-promedio-grupo">0.0</h4>
+                <p>Promedio General</p>
+            </div>
+            <div class="tarjeta-metrica morada">
+                <h4 id="txt-asistencia-grupo">0%</h4>
+                <p>Asistencia</p>
+            </div>
+        </div>
+
+        <div id="panel-grafico-frecuencias" class="bloque-reporte" style="display:none;">
+            <h4>🧠 Matriz de Frecuencia de Logros</h4>
+            <div id="barras-distribucion"></div>
+        </div>
+
+        <div id="panel-alertas" class="bloque-reporte" style="display:none;">
+            <h4 style="color: var(--color-peligro);">⚠️ Alerta Pedagógica (Promedio < 9.5)</h4>
+            <div id="lista-alertas-alumnos"></div>
+        </div>
+    </div>
+
+    <!-- ARCHIVO DE IMPORTACIÓN RECEPTOR -->
+    <div class="modulo-card">
+        <h3>📥 Importar Estudiantes JSON</h3>
+        <input type="file" id="input-estudiantes" accept=".json">
+    </div>
+
+    <!-- MODAL: REGISTRO/EDICIÓN CRITERIO -->
+    <div id="modal-crud-criterio" class="modal-oculto">
+        <div class="modal-contenido">
+            <h3 id="modal-titulo-accion">Nuevo Criterio</h3>
+            <form id="form-crud-criterio" onsubmit="guardarCriterioFormulario(event)">
+                <input type="hidden" id="criterio-id-edicion" value="">
+                <div class="grupo-formulario">
+                    <label>Nombre del Criterio:</label>
+                    <input type="text" id="crit-nombre" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Descripción Neuroeducativa:</label>
+                    <textarea id="crit-descripcion" rows="3"></textarea>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Puntos de Aporte (0.1 a 8.0):</label>
+                    <input type="number" id="crit-puntos" step="0.1" min="0.1" max="8.0" required>
+                </div>
+                <div class="bloque-botones-modal">
+                    <button type="button" class="btn-modal btn-cancelar" onclick="cerrarModalCriterio()">Cancelar</button>
+                    <button type="submit" class="btn-modal btn-guardar">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CONTROL DE ESCOLARIDAD VIGENTE -->
+    <div id="modal-escolaridad" class="modal-oculto">
+        <div class="modal-contenido">
+            <h3>📍 No hay Año Escolar Activo</h3>
+            <p>Registre la escolaridad vigente para continuar.</p>
+            <form id="form-escolaridad" onsubmit="guardarNuevaEscolaridad(event)">
+                <div class="grupo-formulario">
+                    <label>Año Escolar (Ej: 2026-2027):</label>
+                    <input type="text" id="esc-nombre" placeholder="YYYY-YYYY" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Docente:</label>
+                    <input type="text" id="esc-profesor" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Área de Formación:</label>
+                    <input type="text" id="esc-area" placeholder="Matemática" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Proyecto (PEIC):</label>
+                    <textarea id="esc-peic" required></textarea>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Fecha de Inicio:</label>
+                    <input type="date" id="esc-inicio" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Fecha de Cierre:</label>
+                    <input type="date" id="esc-cierre" required>
+                </div>
+                <button type="submit" class="btn-primario">Activar Escolaridad</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="register.js"></script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+---
+
+### 🎨 3. Diseño de Arquitectura Táctil Ergonómica (`styles.css`)
+Se añadieron variables semánticas, estilos para las nuevas tarjetas adaptativas de neurociencias, interruptores deslizantes estéticos y elementos interactivos móviles.
+
+```css
+@charset "utf-8";
+
+:root {
+    --color-primario: #0288d1;
+    --color-exito: #388e3c;
+    --color-peligro: #d32f2f;
+    --color-alerta: #fbc02d;
+    --color-fondo: #eceff1;
+    --color-tarjeta: #ffffff;
+    --fuente-base: system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--color-fondo);
+    font-family: var(--fuente-base);
+    margin: 0;
+    padding: 15px;
+    padding-bottom: 80px;
+    color: #37474f;
+}
+
+/* Contenedores Base */
+.modulo-card {
+    background: var(--color-tarjeta);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.modulo-card h3 {
+    margin-top: 0;
+    color: var(--color-primario);
+    border-bottom: 2px solid #b0bec5;
+    padding-bottom: 8px;
+}
+
+.grupo-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+select, input[type="text"], input[type="number"], textarea, input[type="date"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cfd8dc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+    background-color: #fafafa;
+}
+
+/* Botones Ergonómicos */
+.btn-primario {
+    background-color: var(--color-primario);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
+}
+.btn-exito { background-color: var(--color-exito); }
+
+/* Planilla Neurocognitiva */
+.tarjeta-alumno-neuro {
+    background: #ffffff;
+    border: 1px solid #cfd8dc;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.bloque-principal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.info-alumno { flex: 1; }
+
+.indicador-nota {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--color-exito);
+    background: #e8f5e9;
+    padding: 6px 12px;
+    border-radius: 8px;
+    min-width: 45px;
+    text-align: center;
+}
+
+.indicador-nota.ausente {
+    color: var(--color-peligro);
+    background: #ffebee;
+}
+
+.panel-criterios h5 { margin: 10px 0 5px 0; color: #546e7a; }
+
+.rejilla-criterios {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-criterio {
+    background: #f1f3f4;
+    border: 1px solid #dadce0;
+    padding: 10px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-criterio.activo {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+    color: #1a73e8;
+    font-weight: bold;
+}
+
+/* Switch Deslizante */
+.switch-asistencia {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+}
+.switch-asistencia input { display: none; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #b0bec5; border-radius: 34px; transition: .3s;
+}
+.slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+    background-color: white; border-radius: 50%; transition: .3s;
+}
+input:checked + .slider { background-color: var(--color-exito); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Listado de Criterios (CRUD) */
+.lista-criterios { display: flex; flex-direction: column; gap: 10px; }
+.tarjeta-criterio {
+    background: #f9f9f9;
+    border-left: 5px solid var(--color-exito);
+    padding: 12px;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+/* Tablero Estadístico */
+.contenedor-tarjetas-analiticas {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+.tarjeta-metrica {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    color: white;
+    text-align: center;
+}
+.tarjeta-metrica.azul { background: #1565c0; }
+.tarjeta-metrica.verde { background: #2e7d32; }
+.tarjeta-metrica.morada { background: #6a1b9a; }
+.tarjeta-metrica h4 { margin: 0; font-size: 20px; }
+.tarjeta-metrica p { margin: 4px 0 0 0; font-size: 12px; }
+/* Gráficos de barra */
+.barra-contenedor { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.etiqueta { width: 90px; }
+.barra { height: 20px; color: white; text-align: right; padding-right: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; line-height: 20px;}
+.barra.azul { background: #1e88e5; }
+.barra.verde { background: #43a047; }
+.barra.amarilla { background: #fdd835; color: #333; }
+.barra.roja { background: #e53935; }
+
+/* Modales */
+.modal-oculto { display: none; }
+.modal-visible {
+    display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 3000;
+}
+.modal-contenido { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; }
+.bloque-botones-modal { display: flex; gap: 10px; margin-top: 15px; }
+.btn-modal { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; }
+.btn-cancelar { background: #cfd8dc; }
+.btn-guardar { background: var(--color-exito);
