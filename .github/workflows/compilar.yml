@@ -2,7 +2,7 @@ name: Compilador Automatizado de APK - Apoyo Docente
 
 on:
   push:
-    branches: [ main ]  # Se dispara automáticamente al hacer "git push" a la rama main
+    branches: [ main ]
 
 jobs:
   build:
@@ -10,46 +10,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar el repositorio de GitHub en el servidor virtual
+    # 1. Clonar el repositorio usando la versión v4 actualizada
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
-    # 2. Configurar NodeJS v22 (Requisito estricto de Capacitor v6)
+    # 2. Configurar NodeJS v22 de forma estricta
     - name: Configurar Entorno NodeJS v22
       uses: actions/setup-node@v4
       with:
         node-version: 22
-        cache: 'npm'
 
-    # 3. Configurar Java JDK 17 (Requisito para compilar Gradle en Android moderno)
+    # 3. Configurar Java JDK 17 usando la acción moderna v4 con distribución estandarizada
     - name: Configurar Entorno Java JDK 17
       uses: actions/setup-java@v4
       with:
-        distribution: 'zulu'
+        distribution: 'temurin'  # Distribución estándar altamente compatible con Android Studio y Gradle
         java-version: '17'
 
-    # 4. Instalar las dependencias del proyecto (Capacitor y complementos)
+    # 4. Instalar las dependencias omitiendo los bloqueos estrictos de peer-dependencies de plugins móviles
     - name: Instalar Dependencias de Node
-      run: npm install
+      run: npm install --legacy-peer-deps
 
-    # 5. Sincronizar los archivos web (index.html, app.js, styles.css) con el entorno Android
+    # 5. Sincronizar los recursos web con Capacitor
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
 
-    # 6. Dar permisos de ejecución al script de compilación nativo (Gradle)
+    # 6. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 7. Compilar el APK en modo Depuración (Debug), ideal para instalar directo en tu teléfono
+    # 7. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       run: |
         cd android
         ./gradlew assembleDebug
 
-    # 8. Guardar el archivo APK resultante y ponerlo disponible para su descarga
+    # 8. Cargar el resultado final para que puedas descargarlo e instalarlo
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
         name: ApoyoDocente-APK-Prueba
         path: android/app/build/outputs/apk/debug/app-debug.apk
-        retention-days: 7  # El archivo estará disponible para descargar por 7 días
+        retention-days: 7
