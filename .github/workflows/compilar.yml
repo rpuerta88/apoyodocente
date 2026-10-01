@@ -27,12 +27,12 @@ jobs:
         node -v
         npm -v
 
-    # 4. Configurar Java JDK 17 (Garantiza máxima estabilidad con Gradle y Android)
-    - name: Configurar Entorno Java JDK 17
+    # 4. Configurar Java JDK 21 (Garantiza máxima estabilidad con Gradle y Android)
+    - name: Configurar Entorno Java JDK 21
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
-        java-version: '17'
+        distribution: 'zulu'
+        java-version: '21'
 
     # 5. Instalar las dependencias de Node
     - name: Instalar Dependencias de Node
