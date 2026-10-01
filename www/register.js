@@ -28,49 +28,100 @@ async function mostrarNotificacion(mensaje) {
 async function inicializarBaseDatos() {
     try {
         const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
-        const dbName = "apoyo_docente_app";
+        const dbName = "sitema_apoyo_docente";
 
         if (!SQLite) {
-            db_real = {
-                query: async function() { return { values: [] }; },
-                execute: async function() { return { changes: { lastId: 1 } }; }
-            };
-            console.warn("Entorno Web: Simulación activa.");
-            await crearTablasSiNoExisten();
-            return;
+            throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
         }
 
-        let consistencia = { result: false };
-        try { consistencia = await SQLite.checkConnectionsConsistency(); } catch (e) {}
-        let estaConectado = { result: false };
-        try { estaConectado = await SQLite.isConnection({ database: dbName }); } catch (e) {}
-        
-        if (!(consistencia.result && estaConectado.result)) {
-            if (estaConectado.result) {
-                try { await SQLite.closeConnection({ database: dbName }); } catch(e) {}
-            }
-            await SQLite.createConnection({ database: dbName, version: 1, encrypted: false, mode: "no-encryption", readOnly: false });
+        // 1. Verificación defensiva estricta de consistencia nativa
+        let consistencia;
+        try {
+            consistencia = await SQLite.checkConnectionsConsistency();
+        } catch (e) {
+            console.warn("Inconsistencia nativa detectada, procediendo a restaurar conexiones:", e);
+            consistencia = { result: false };
         }
+
+        // 2. Comprobar si la conexión ya está activa en la memoria nativa
+        let estaConectado;
+        try {
+            estaConectado = await SQLite.isConnection({ database: dbName });
+        } catch (e) {
+            estaConectado = { result: false };
+        }
+
+        // 3. Flujo inteligente de conexión basado en el estado real
+        if (consistencia.result && estaConectado.result) {
+            console.log("La conexión ya existía de forma consistente en memoria nativa.");
+        } else {
+            // Si existía una conexión muerta o corrupta en el pool nativo, la cerramos primero
+            if (estaConectado.result) {
+                try {
+                    await SQLite.closeConnection({ database: dbName });
+                } catch(e) {
+                    console.warn("No se pudo cerrar la conexión huérfana (operación segura):", e);
+                }
+            }
+            
+            // Creamos la conexión de forma limpia
+            await SQLite.createConnection({
+                database: dbName,
+                version: 1,
+                encrypted: false,
+                mode: "no-encryption",
+                readOnly: false
+            });
+        }
+
+        // 4. Abrir la base de datos ÚNICAMENTE si no se encuentra abierta ya
         let verificacionFinal = await SQLite.isDBOpen({ database: dbName });
         if (!verificacionFinal.result) {
             await SQLite.open({ database: dbName });
         }
+
+        console.log("¡Bienvenido al sistema de apoyo docente!");
+        
+        // Mapeo corregido y optimizado para Capacitor SQLite Nativo v6
         db_real = {
-            query: async function({ statement, values }) {
-                return await SQLite.query({ database: dbName, statement: statement, values: values || [] });
-            },
-            execute: async function({ statement, values }) {
-                if (values && values.length > 0) {
-                    return await SQLite.run({ database: dbName, statement: statement, values: values });
-                }
-                return await SQLite.execute({ database: dbName, statements: statement });
-            }
-        };
+    query: async function({ statement, values }) {
+        const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
+        return await SQLite.query({
+            database: dbName,
+            statement: statement,
+            values: values || []
+        });
+    },
+    execute: async function({ statement, values }) {
+        const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
+        
+        // Si tiene parámetros bindings (como los INSERTS/UPDATES), usamos obligatoriamente el método .run() nativo
+        if (values && values.length > 0) {
+            return await SQLite.run({
+                database: dbName,
+                statement: statement,
+                values: values
+            });
+        }
+        
+        // Para sentencias puras estructurales como CREATE TABLE
+        return await SQLite.execute({
+            database: dbName,
+            statements: statement
+        });
+    }
+};
+        
+       // Crear la estructura física interna de datos
         await crearTablasSiNoExisten();
-        mostrarNotificacion(`Bienvenido al Sistema de Apoyo Docente`);
+
     } catch (error) {
-        console.error(error);
-        throw error;
+        console.error("Error crítico en el SQLite de Android:", error);
+        const mensajeFinal = error.message || JSON.stringify(error);
+        if (typeof mostrarNotificacion === 'function') {
+            mostrarNotificacion(`Fallo nativo inicialización: ${mensajeFinal}`, "error");
+        }
+        throw error; // Propagar el error para frenar la inicialización de la interfaz
     }
 };
 
