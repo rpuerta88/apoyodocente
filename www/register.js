@@ -6,9 +6,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await inicializarBaseDatos();
         await controlarFlujoInicial();
-        await renderizarListadoCriterios();
+        //~ await renderizarListadoCriterios();
     } catch (e) {
         console.error("Fallo secuencial de arranque:", e);
+        alert("Revisa la secuencia de Inicio");
     }
 });
 
@@ -28,7 +29,7 @@ async function mostrarNotificacion(mensaje) {
 async function inicializarBaseDatos() {
     try {
         const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
-        const dbName = "sitema_apoyo_docente";
+        const dbName = "apoyo_docente_app";
 
         if (!SQLite) {
             throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
@@ -81,7 +82,7 @@ async function inicializarBaseDatos() {
         }
 
         console.log("¡Bienvenido al sistema de apoyo docente!");
-        
+        alert("¡Bienvenido al sistema de apoyo docente!");
         // Mapeo corregido y optimizado para Capacitor SQLite Nativo v6
         db_real = {
     query: async function({ statement, values }) {
@@ -114,6 +115,7 @@ async function inicializarBaseDatos() {
         
        // Crear la estructura física interna de datos
         await crearTablasSiNoExisten();
+        alert("Las tablas están lista para trabajar");
 
     } catch (error) {
         console.error("Error crítico en el SQLite de Android:", error);
@@ -146,33 +148,13 @@ async function crearTablasSiNoExisten() {
     }
 };
 
-document.getElementById('input-estudiantes').addEventListener('change', async function(evento) {
-    const archivo = evento.target.files[0];
-    if (!archivo) return;
-    const lector = new FileReader();
-    lector.onload = async function(e) {
-        try {
-            const listaEstudiantes = JSON.parse(e.target.result);
-            if (!Array.isArray(listaEstudiantes) || listaEstudiantes.length === 0) throw new Error("JSON Inválido.");
-            await insertarEstudiantesLote(listaEstudiantes);
-        } catch (error) {
-            mostrarNotificacion("Error: Estructura JSON no válida");
-        }
-    };
-    lector.readAsText(archivo);
-});
-
-async function insertarEstudiantesLote(estudiantes) {
-    try {
-        await db_real.execute({ statement: "BEGIN TRANSACTION;" });
-        const sql = `INSERT OR IGNORE INTO estudiantes (id_cedula, nombre, apellido, fecha_nacimiento, genero) VALUES (?, ?, ?, ?, ?);`;
-        for (const alumno of estudiantes) {
-            await db_real.execute({ statement: sql, values: [parseInt(alumno.id_cedula), alumno.nombre.toUpperCase().trim(), alumno.apellido.toUpperCase().trim(), alumno.fecha_nacimiento, alumno.genero.toUpperCase().trim()] });
-        }
-        await db_real.execute({ statement: "COMMIT;" });
-        mostrarNotificacion("Estudiantes importados.");
-    } catch (error) {
-        await db_real.execute({ statement: "ROLLBACK;" });
+async function controlarFlujoInicial() {
+    const escolaridadId = await verificarEscolaridadVigente();
+    if (escolaridadId) {
+        window.escolaridadActivaId = escolaridadId;
+        await cargarSelectoresCursos();
+    } else {
+        document.getElementById('modal-escolaridad').className = "modal-visible";
     }
 };
 
@@ -185,16 +167,6 @@ async function verificarEscolaridadVigente() {
         }
         return null;
     } catch (error) { return null; }
-}
-
-async function controlarFlujoInicial() {
-    const escolaridadId = await verificarEscolaridadVigente();
-    if (escolaridadId) {
-        window.escolaridadActivaId = escolaridadId;
-        await cargarSelectoresCursos();
-    } else {
-        document.getElementById('modal-escolaridad').className = "modal-visible";
-    }
 };
 
 async function guardarNuevaEscolaridad(evento) {
@@ -226,6 +198,36 @@ async function guardarNuevaEscolaridad(evento) {
             boton.disabled = false;
             boton.textContent = "Activar Escolaridad";
         }
+    }
+};
+
+document.getElementById('input-estudiantes').addEventListener('change', async function(evento) {
+    const archivo = evento.target.files[0];
+    if (!archivo) return;
+    const lector = new FileReader();
+    lector.onload = async function(e) {
+        try {
+            const listaEstudiantes = JSON.parse(e.target.result);
+            if (!Array.isArray(listaEstudiantes) || listaEstudiantes.length === 0) throw new Error("JSON Inválido.");
+            await insertarEstudiantesLote(listaEstudiantes);
+        } catch (error) {
+            mostrarNotificacion("Error: Estructura JSON no válida");
+        }
+    };
+    lector.readAsText(archivo);
+});
+
+async function insertarEstudiantesLote(estudiantes) {
+    try {
+        await db_real.execute({ statement: "BEGIN TRANSACTION;" });
+        const sql = `INSERT OR IGNORE INTO estudiantes (id_cedula, nombre, apellido, fecha_nacimiento, genero) VALUES (?, ?, ?, ?, ?);`;
+        for (const alumno of estudiantes) {
+            await db_real.execute({ statement: sql, values: [parseInt(alumno.id_cedula), alumno.nombre.toUpperCase().trim(), alumno.apellido.toUpperCase().trim(), alumno.fecha_nacimiento, alumno.genero.toUpperCase().trim()] });
+        }
+        await db_real.execute({ statement: "COMMIT;" });
+        mostrarNotificacion("Estudiantes importados.");
+    } catch (error) {
+        await db_real.execute({ statement: "ROLLBACK;" });
     }
 };
 
