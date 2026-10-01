@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         //~ await renderizarListadoCriterios();
     } catch (e) {
         console.error("Fallo secuencial de arranque:", e);
-        alert("Revisa la secuencia de Inicio");
+        mostrarNotificacion("Revisa la secuencia de Inicio");
     }
 });
 
@@ -149,6 +149,7 @@ async function crearTablasSiNoExisten() {
         mostrarNotificacion("Base de datos iniicada y creada satisfactoriamente")
     } catch (error) {
         console.error("Fallo crítico en inicialización de tablas SQL:", error);
+        mostrarNotificacion("Fallo critico en inicializacion de tablas SQL");
         throw error; // Re-lanzamos el error para que inicializarBaseDatos() pueda enterarse del fallo
     }
 }
