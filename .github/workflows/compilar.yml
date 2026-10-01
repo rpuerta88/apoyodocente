@@ -45,13 +45,16 @@ jobs:
     # 7. Sincronizar los recursos web reales con el entorno nativo de Android
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
-
+      
     # 8. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 9. Compilar el APK en modo Debug nativo
+    # 9. Compilar el APK en modo Debug nativo (Optimizado para estabilidad)
     - name: Compilar APK Nativo con Gradle
+      env:
+        JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }} # Fuerza a Gradle a usar el JDK 17 instalado arriba
+        GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" # Previene bloqueos por falta de memoria
       run: |
         cd android
         ./gradlew assembleDebug
