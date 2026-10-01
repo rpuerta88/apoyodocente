@@ -14,43 +14,49 @@ jobs:
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
-    # 2. Configurar NodeJS v22 de forma estricta
-    - name: Configurar Entorno NodeJS v22
+    # 2. Configurar NodeJS v22 (Requisito estricto de Capacitor CLI)
+    - name: Configurar Entorno NodeJS 22
       uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version: '22'
+        cache: 'npm' # Optimiza el tiempo de compilación guardando dependencias en caché
 
-    # 3. CORRECCIÓN: Configurar Java JDK 17 real para máxima estabilidad con Gradle y Android
-    - name: Configurar Entorno Java JDK 22
+    # 3. Verificar que la versión correcta quedó instalada
+    - name: Mostrar versiones Node/NPM
+      run: |
+        node -v
+        npm -v
+
+    # 4. Configurar Java JDK 17 (Garantiza máxima estabilidad con Gradle y Android)
+    - name: Configurar Entorno Java JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '22' # Cambiado a 17 para evitar errores silenciosos de bytecode nativo
+        java-version: '17'
 
-    # 4. Instalar las dependencias
+    # 5. Instalar las dependencias de Node
     - name: Instalar Dependencias de Node
       run: npm install --legacy-peer-deps
 
-    # 5. AGREGADO: Compilar los recursos Web (Asegúrate de que este script exista en tu package.json)
-    # Si usas JS vanilla sin empaquetador y tu carpeta de salida ya existe, puedes omitir este paso.
+    # 6. Compilar los recursos Web (Si el script build existe en tu package.json)
     - name: Compilar Proyecto Web (Generar carpetas dist/www)
       run: npm run build --if-present
 
-    # 6. Sincronizar los recursos web reales y actualizados con Capacitor
+    # 7. Sincronizar los recursos web reales con el entorno nativo de Android
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
 
-    # 7. Otorgar permisos de ejecución al script nativo de Gradle
+    # 8. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 8. Compilar el APK en modo Debug nativo
+    # 9. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       run: |
         cd android
         ./gradlew assembleDebug
 
-    # 9. Cargar el resultado final para que puedas descargarlo e instalarlo
+    # 10. Cargar el resultado final para su descarga directa
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
