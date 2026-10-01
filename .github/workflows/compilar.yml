@@ -20,32 +20,37 @@ jobs:
       with:
         node-version: 22
 
-    # 3. Configurar Java JDK 17 usando la acción moderna v4 con distribución estandarizada
+    # 3. CORRECCIÓN: Configurar Java JDK 17 real para máxima estabilidad con Gradle y Android
     - name: Configurar Entorno Java JDK 17
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'  # Distribución estándar altamente compatible con Android Studio y Gradle
-        java-version: '21'
+        distribution: 'temurin'
+        java-version: '17' # Cambiado a 17 para evitar errores silenciosos de bytecode nativo
 
-    # 4. Instalar las dependencias omitiendo los bloqueos estrictos de peer-dependencies de plugins móviles
+    # 4. Instalar las dependencias
     - name: Instalar Dependencias de Node
       run: npm install --legacy-peer-deps
 
-    # 5. Sincronizar los recursos web con Capacitor
+    # 5. AGREGADO: Compilar los recursos Web (Asegúrate de que este script exista en tu package.json)
+    # Si usas JS vanilla sin empaquetador y tu carpeta de salida ya existe, puedes omitir este paso.
+    - name: Compilar Proyecto Web (Generar carpetas dist/www)
+      run: npm run build --if-present
+
+    # 6. Sincronizar los recursos web reales y actualizados con Capacitor
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
 
-    # 6. Otorgar permisos de ejecución al script nativo de Gradle
+    # 7. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 7. Compilar el APK en modo Debug nativo
+    # 8. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       run: |
         cd android
         ./gradlew assembleDebug
 
-    # 8. Cargar el resultado final para que puedas descargarlo e instalarlo
+    # 9. Cargar el resultado final para que puedas descargarlo e instalarlo
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
