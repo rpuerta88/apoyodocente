@@ -35,7 +35,7 @@ async function inicializarBaseDatos() {
             throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
         }
 
-        // 1. Verificación defensiva estricta de consistencia nativa
+        // Verificación defensiva de consistencia nativa
         let consistencia;
         try {
             consistencia = await SQLite.checkConnectionsConsistency();
@@ -44,7 +44,7 @@ async function inicializarBaseDatos() {
             consistencia = { result: false };
         }
 
-        // 2. Comprobar si la conexión ya está activa en la memoria nativa
+        // Comprobar si la conexión ya está activa en la memoria nativa
         let estaConectado;
         try {
             estaConectado = await SQLite.isConnection({ database: dbName });
@@ -52,11 +52,10 @@ async function inicializarBaseDatos() {
             estaConectado = { result: false };
         }
 
-        // 3. Flujo inteligente de conexión basado en el estado real
+        // Flujo inteligente de conexión basado en el estado real
         if (consistencia.result && estaConectado.result) {
             console.log("La conexión ya existía de forma consistente en memoria nativa.");
         } else {
-            // Si existía una conexión muerta o corrupta en el pool nativo, la cerramos primero
             if (estaConectado.result) {
                 try {
                     await SQLite.closeConnection({ database: dbName });
@@ -75,47 +74,44 @@ async function inicializarBaseDatos() {
             });
         }
 
-        // 4. Abrir la base de datos ÚNICAMENTE si no se encuentra abierta ya
+        // Abrir la base de datos ÚNICAMENTE si no se encuentra abierta ya
         let verificacionFinal = await SQLite.isDBOpen({ database: dbName });
         if (!verificacionFinal.result) {
             await SQLite.open({ database: dbName });
         }
 
         console.log("¡Bienvenido al sistema de apoyo docente!");
-        alert("¡Bienvenido al sistema de apoyo docente!");
-        // Mapeo corregido y optimizado para Capacitor SQLite Nativo v6
+        
+        // CORRECCIÓN: Asignación limpia usando la constante SQLite ya validada arriba
         db_real = {
-    query: async function({ statement, values }) {
-        const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
-        return await SQLite.query({
-            database: dbName,
-            statement: statement,
-            values: values || []
-        });
-    },
-    execute: async function({ statement, values }) {
-        const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
+            query: async function({ statement, values }) {
+                return await SQLite.query({
+                    database: dbName,
+                    statement: statement,
+                    values: values || []
+                });
+            },
+            execute: async function({ statement, values }) {
+                // Si tiene parámetros bindings, usamos .run() nativo
+                if (values && values.length > 0) {
+                    return await SQLite.run({
+                        database: dbName,
+                        statement: statement,
+                        values: values
+                    });
+                }
+                
+                // CORRECCIÓN: Aseguramos que 'statements' reciba el string correcto (o un array)
+                return await SQLite.execute({
+                    database: dbName,
+                    statements: statement 
+                });
+            }
+        };
         
-        // Si tiene parámetros bindings (como los INSERTS/UPDATES), usamos obligatoriamente el método .run() nativo
-        if (values && values.length > 0) {
-            return await SQLite.run({
-                database: dbName,
-                statement: statement,
-                values: values
-            });
-        }
-        
-        // Para sentencias puras estructurales como CREATE TABLE
-        return await SQLite.execute({
-            database: dbName,
-            statements: statement
-        });
-    }
-};
-        
-       // Crear la estructura física interna de datos
+        // Crear la estructura física interna de datos
         await crearTablasSiNoExisten();
-        alert("Las tablas están lista para trabajar");
+        console.log("Las tablas están listas para trabajar");
 
     } catch (error) {
         console.error("Error crítico en el SQLite de Android:", error);
@@ -123,30 +119,41 @@ async function inicializarBaseDatos() {
         if (typeof mostrarNotificacion === 'function') {
             mostrarNotificacion(`Fallo nativo inicialización: ${mensajeFinal}`, "error");
         }
-        throw error; // Propagar el error para frenar la inicialización de la interfaz
+        throw error; 
     }
-};
+}
 
 async function crearTablasSiNoExisten() {
     try {
-        await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'false' CHECK(asistencia IN ('false', 'true')), calificacion REAL DEFAULT 12 CHECK(calificacion >= 0 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE);` });
-        await db_real.execute({ statement: `CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8));` });
-        
-        // Datos iniciales de prueba estructurados
+        // 1. Unificamos la estructura física en una sola llamada masiva (Mucho más rápido en Android)
+        const estructuraTablas = `PRAGMA foreign_keys = ON; CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL); CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE); CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL); CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL); CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'false' CHECK(asistencia IN ('false', 'true')), calificacion REAL DEFAULT 12 CHECK(calificacion >= 0 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE); CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8);`;
+
+        // Ejecutamos toda la estructura de golpe
+        await db_real.execute({ statement: estructuraTablas });
+
+        // 2. Verificación defensiva de datos iniciales
         const checkCursos = await db_real.query({ statement: "SELECT COUNT(*) as total FROM cursos;" });
-        if(!checkCursos.values || checkCursos.values[0].total === 0) {
-            await db_real.execute({ statement: "INSERT INTO cursos (cursoseccion) VALUES ('1ER AÑO A'), ('2DO AÑO B');" });
+        
+        // Validación segura: evita caídas si la respuesta nativa muta
+        if (checkCursos && checkCursos.values && checkCursos.values.length > 0) {
+            const totalCursos = checkCursos.values[0].total || checkCursos.values[0]["COUNT(*)"] || 0;
+            
+            if (totalCursos === 0) {
+                // Insertamos los datos semilla
+                await db_real.execute({ 
+                    statement: "INSERT INTO cursos (cursoseccion) VALUES ('1ER AÑO A'), ('2DO AÑO B');" 
+                });
+                console.log("Datos semilla de 'cursos' insertados con éxito.");
+            }
         }
+        mostrarNotificacion("Base de datos iniicada y creada satisfactoriamente")
     } catch (error) {
-        console.error("Fallo inicialización de tablas", error);
+        console.error("Fallo crítico en inicialización de tablas SQL:", error);
+        throw error; // Re-lanzamos el error para que inicializarBaseDatos() pueda enterarse del fallo
     }
-};
+}
+
+
 
 async function controlarFlujoInicial() {
     const escolaridadId = await verificarEscolaridadVigente();
