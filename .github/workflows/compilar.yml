@@ -14,11 +14,11 @@ jobs:
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
-    # 2. Configurar NodeJS v22 de forma estricta
-    - name: Configurar Entorno NodeJS v22
+    # 2. Configurar NodeJS v20 de forma estricta
+    - name: Configurar Entorno NodeJS v20
       uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version: 21
 
     # 3. CORRECCIÓN: Configurar Java JDK 17 real para máxima estabilidad con Gradle y Android
     - name: Configurar Entorno Java JDK 22
