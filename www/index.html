@@ -120,7 +120,7 @@
         <div class="modal-contenido">
             <h3>📍 No hay Año Escolar Activo</h3>
             <p>Registre la escolaridad vigente para continuar.</p>
-            <form id="form-escolaridad" onsubmit="guardarNuevaEscolaridad(event)">
+            <form id="form-escolaridad">
                 <div class="grupo-formulario">
                     <label>Año Escolar (Ej: 2026-2027):</label>
                     <input type="text" id="esc-nombre" placeholder="YYYY-YYYY" required>
@@ -145,7 +145,7 @@
                     <label>Fecha de Cierre:</label>
                     <input type="date" id="esc-cierre" required>
                 </div>
-                <button type="submit" class="btn-primario">Activar Escolaridad</button>
+                <button type="submit" id = 'btn-activar-escolaridad' class="btn-primario">Activar Escolaridad</button>
             </form>
         </div>
     </div>

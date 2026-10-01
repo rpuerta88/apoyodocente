@@ -23,7 +23,7 @@ async function mostrarNotificacion(mensaje) {
     } catch (e) {
         console.log("Notificación falló, fallback:", mensaje);
     }
-}
+};
 
 async function inicializarBaseDatos() {
     try {
@@ -72,7 +72,7 @@ async function inicializarBaseDatos() {
         console.error(error);
         throw error;
     }
-}
+};
 
 async function crearTablasSiNoExisten() {
     try {
@@ -93,7 +93,7 @@ async function crearTablasSiNoExisten() {
     } catch (error) {
         console.error("Fallo inicialización de tablas", error);
     }
-}
+};
 
 document.getElementById('input-estudiantes').addEventListener('change', async function(evento) {
     const archivo = evento.target.files[0];
@@ -123,7 +123,7 @@ async function insertarEstudiantesLote(estudiantes) {
     } catch (error) {
         await db_real.execute({ statement: "ROLLBACK;" });
     }
-}
+};
 
 async function verificarEscolaridadVigente() {
     try {
@@ -144,10 +144,15 @@ async function controlarFlujoInicial() {
     } else {
         document.getElementById('modal-escolaridad').className = "modal-visible";
     }
-}
+};
 
 async function guardarNuevaEscolaridad(evento) {
     evento.preventDefault();
+    const boton = document.getElementById('btn-activar-escolaridad');
+    if (boton) {
+        boton.disabled = true;
+        boton.textContent = "Procesando...";
+    }
     const datos = [
         document.getElementById('esc-nombre').value.trim(), 
         document.getElementById('esc-profesor').value.toUpperCase().trim(), 
@@ -165,6 +170,11 @@ async function guardarNuevaEscolaridad(evento) {
         mostrarNotificacion("Escolaridad creada con éxito.");
     } catch (e) {
         console.error(e);
+        mostrarNotificacion("Error al registrar el año escolar.");
+        if (boton) {
+            boton.disabled = false;
+            boton.textContent = "Activar Escolaridad";
+        }
     }
 };
 
@@ -216,6 +226,8 @@ async function actualizarVistaEstudiantes() {
 
 document.getElementById('select-curso').addEventListener('change', actualizarVistaEstudiantes);
 document.getElementById('select-escolaridad').addEventListener('change', actualizarVistaEstudiantes);
+// Colocar junto a los otros addEventListener existentes en tu código:
+document.getElementById('form-escolaridad').addEventListener('submit', guardarNuevaEscolaridad);
 
 async function procesarGuardadoNomina() {
     const cursoId = document.getElementById('select-curso').value;
