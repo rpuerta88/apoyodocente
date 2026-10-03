@@ -22,6 +22,37 @@
     </div>
 
     <!-- MÓDULO B: CONTROL DIARIO DE AULA -->
+    
+    <!-- Reemplazo del selector de sesiones en tu index.html -->
+<div class="grupo-formulario">
+    <select id="diario-curso" onchange="cargarEstudiantesInscritos()"></select>
+    
+    <!-- Contenedor flex para alinear el selector y el botón del temario -->
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <select id="diario-sesion">
+            <option value="">Seleccione Tema de Clase...</option>
+        </select>
+        <button type="button" class="btn-secundario" onclick="AppUI.abrirModalTemario()">+ Nuevo Tema</button>
+    </div>
+</div>
+
+<!-- Al final del HTML, junto a los otros modales, agrega el contenedor del Temario -->
+<div id="modal-temario" class="modal-oculto">
+    <div class="modal-contenido">
+        <h3>Registrar Contenido / Sesión Diaria</h3>
+        <form id="form-temario">
+            <label for="txt-nuevo-tema">Contenido Programático Matemático:</label>
+            <input type="text" id="txt-nuevo-tema" placeholder="Ej: Función Cuadrática o Ecuaciones" required>
+            
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar">Iniciar Sesión</button>
+                <button type="button" class="btn-cancelar" onclick="AppUI.cerrarModalTemario()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+    
+    
     <div id="modulo-control-diario" class="modulo-card">
         <h3>📝 Control Diario de Aula</h3>
         <div class="grupo-formulario">
@@ -149,7 +180,25 @@
             </form>
         </div>
     </div>
+<!-- Botón rápido al lado de tu selector de cursos -->
+<button type="button" onclick="AppCursos.abrirModal()">+ Añadir Curso</button>
 
+<!-- Ventana emergente (Modal) para el registro de cursos -->
+<div id="modal-curso" class="modal-oculto">
+    <div class="modal-contenido">
+        <h3>Registrar Nuevo Curso / Sección</h3>
+        <form id="form-curso">
+            <label for="txt-nuevo-curso">Nombre del Curso y Sección:</label>
+            <!-- Ej: 3ER AÑO C -->
+            <input type="text" id="txt-nuevo-curso" placeholder="Ej: 3ER AÑO C" required> 
+            
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar">Guardar Curso</button>
+                <button type="button" class="btn-cancelar" onclick="AppCursos.cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
     <!-- Enlace corregido al script principal -->
     <script src="register.js"></script>
 </body>
