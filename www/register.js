@@ -471,7 +471,7 @@ const AppUI = {
                         htmlAcumulado += `
                           <div class="criterio-fila">
                               <label>${crit.nombre_criterio} (Max: ${crit.puntos_aporte}pts)</label>
-                              <select class="selector-valoracion" onchange="AppUI.guardarNotaInSitu(${registroid}, ${crit.id}, this.value)">
+                              <select class="selector-valoracion" onchange="AppUI.guardarNotaInSitu(${registroId}, ${crit.id}, this.value)">
                                   <option value="0">Sin valorar</option>
                                       ${opcionesHTML}
                               </select>
