@@ -275,7 +275,7 @@ const AppUI = {
             ];
         selectores.forEach(select => {
             if (!select) return;
-            select.innerHTML = 'Seleccione Curso...';
+            select.innerHTML = `<option value="">Seleccione Curso...</option>`;
             if (resultado?.values?.length > 0) {
                 resultado.values.forEach(curso => {
                 const option = document.createElement('option');
@@ -370,7 +370,10 @@ const AppUI = {
         }
     },
         // (Añadir dentro de AppUI)
-    renderizarMallaEstudiantes: async function() {
+
+
+
+        renderizarMallaEstudiantes: async function() {
         const contenedor = document.getElementById('contenedor-estudiantes-dinamico');
         const cursoId = document.getElementById('diario-curso').value;
         const sesionId = document.getElementById('diario-sesion').value;
@@ -401,7 +404,7 @@ const AppUI = {
             }
 
             // Extraer criterios de evaluación activos para el aula
-            const criterios = await db_real.query({ statement: `SELECT id, nombre_criterio, puntos_aporte FROM criterios_evaluacion;`});
+            const criterios = await db_real.query({ statement: `SELECT id, nombre_criterio, puntos_aporte FROM criterios_evaluacion;` });
 
             let htmlAcumulado = "";
 
@@ -446,14 +449,15 @@ const AppUI = {
                         const sqlVal = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
                         const resVal = await db_real.query({ statement: sqlVal, values: [registroId, crit.id] });
                         const vActual = resVal?.values?.length > 0 ? resVal.values[0].valoracion : 0;
+                        
                         htmlAcumulado += `
                             <div class="criterio-fila">
                                 <label>${crit.nombre_criterio} (Max: ${crit.puntos_aporte}pts)</label>
                                 <select class="selector-valoracion" onchange="AppUI.guardarNotaInSitu(${registroId}, ${crit.id}, this.value)">
                                     <option value="0">Sin valorar</option>
-                                    ${Array.from({length: crit.puntos_aporte}, (_, i) => i + 1).map(num => 
-                                        <option value="\${num}" vActual === num ? 'selected' : ''>${num} Pts</option>
-                                    ).join('')}
+                                    ${Array.from({length: crit.puntos_aporte}, (_, i) => i + 1).map(num => `
+                                        <option value="\${num}" vActual === num ? 'selected' : ''>{num} Pts</option>
+                                    `).join('')}
                                 </select>
                             </div>
                         `;
@@ -470,6 +474,7 @@ const AppUI = {
             contenedor.innerHTML = '<div class="estado-vacio"><p>Error al cargar el panel interactivo.</p></div>';
         }
     },
+
 
     actualizarAsistenciaInSitu: async function(registroId, estaPresente) {
         const valor = estaPresente ? "true" : "false";
