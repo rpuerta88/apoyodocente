@@ -3,203 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apoyo Docente - NeuroEducativo</title>
+    <title>SAAD - Apoyo Docente Neuroeducativo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- MÓDULO A: ASIGNACIÓN DE NÓMINA MANUEL -->
-    <div class="modulo-card">
-        <h3>👥 Configuración de Nóminas</h3>
-        <div class="grupo-formulario">
-            <select id="select-curso"><option value="">Seleccione Curso...</option></select>
-            <select id="select-escolaridad"><option value="">Seleccione Escolaridad...</option></select>
+    <!-- CABECERA PRINCIPAL -->
+    <header class="app-header">
+        <h1>SAAD <span>NeuroAula</span></h1>
+        <div class="estado-barra">
+            <span id="indicador-conexion" class="badge">SQLite OK</span>
         </div>
-        <div id="contenedor-lista-estudiantes"></div>
-        <button id="btn-guardar-nomina" class="btn-primario" style="display:none;" onclick="procesarGuardadoNomina()">
-            Inscribir Estudiantes Seleccionados
-        </button>
-    </div>
+    </header>
 
-    <!-- MÓDULO B: CONTROL DIARIO DE AULA -->
-    
-    <!-- Reemplazo del selector de sesiones en tu index.html -->
-<div class="grupo-formulario">
-    <select id="diario-curso" onchange="cargarEstudiantesInscritos()"></select>
-    
-    <!-- Contenedor flex para alinear el selector y el botón del temario -->
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <select id="diario-sesion">
-            <option value="">Seleccione Tema de Clase...</option>
-        </select>
-        <button type="button" class="btn-secundario" onclick="AppUI.abrirModalTemario()">+ Nuevo Tema</button>
-    </div>
-</div>
-
-<!-- Al final del HTML, junto a los otros modales, agrega el contenedor del Temario -->
-<div id="modal-temario" class="modal-oculto">
-    <div class="modal-contenido">
-        <h3>Registrar Contenido / Sesión Diaria</h3>
-        <form id="form-temario">
-            <label for="txt-nuevo-tema">Contenido Programático Matemático:</label>
-            <input type="text" id="txt-nuevo-tema" placeholder="Ej: Función Cuadrática o Ecuaciones" required>
+    <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
+    <main class="contenedor-principal">
+        
+        <!-- Controles de Contexto de Aula -->
+        <section class="tarjeta seccion-filtros">
+            <h2>Gestión de Aula Diario</h2>
+            <div class="grupo-control">
+                <label for="diario-curso">Curso y Sección</label>
+                <select id="diario-curso" class="control-input">
+                    <option value="">Seleccione Curso...</option>
+                </select>
+            </div>
             
-            <div class="modal-botones">
-                <button type="submit" class="btn-guardar">Iniciar Sesión</button>
-                <button type="button" class="btn-cancelar" onclick="AppUI.cerrarModalTemario()">Cancelar</button>
-            </div>
-        </form>
-    </div>
-</div>
-    
-    
-    <div id="modulo-control-diario" class="modulo-card">
-        <h3>📝 Control Diario de Aula</h3>
-        <div class="grupo-formulario">
-            <select id="diario-curso" onchange="cargarEstudiantesInscritos()"></select>
-            <select id="diario-sesion">
-                <option value="1">Sesión de Clase Única Activa (Prueba)</option>
-            </select>
-        </div>
-        
-        <div class="bloque-buscador-aula">
-            <input type="text" id="txt-buscar-alumno" placeholder="🔍 Buscar por cédula, apellido o nombre..." oninput="manejadorBuscadorConDebounce(this.value)" autocomplete="off">
-        </div>
-        
-        <div id="tabla-asistencia-notas"></div>
-        
-        <button id="btn-guardar-diario" class="btn-primario btn-exito" style="display:none;" onclick="guardarControlDiarioLote()">
-            💾 Guardar Asistencias y Notas
-        </button>
-    </div>
-
-    <!-- MÓDULO C: CONFIGURACIÓN DE CRITERIOS NEUROBIOLÓGICOS -->
-    <div class="gestion-criterios-container modulo-card">
-        <h3>🧠 Criterios Neurocognitivos</h3>
-        <button class="btn-primario" onclick="abrirModalCriterio()">+ Añadir Nuevo Criterio</button>
-        <div id="lista-criterios-dinamica" class="lista-criterios"></div>
-    </div>
-
-    <!-- MÓDULO D: ESTADÍSTICAS AVANZADAS -->
-    <div class="modulo-estadisticas modulo-card">
-        <h3>📊 Rendimiento Académico e Indicadores</h3>
-        <div class="grupo-formulario">
-            <label>Seleccione la sección a evaluar:</label>
-            <select id="select-estadisticas-curso" onchange="cargarTableroAnalitico()"></select>
-        </div>
-
-        <div id="metricas-rapidas" class="contenedor-tarjetas-analiticas" style="display:none;">
-            <div class="tarjeta-metrica azul">
-                <h4 id="txt-total-alumnos">0</h4>
-                <p>Inscritos</p>
-            </div>
-            <div class="tarjeta-metrica verde">
-                <h4 id="txt-promedio-grupo">0.0</h4>
-                <p>Promedio General</p>
-            </div>
-            <div class="tarjeta-metrica morada">
-                <h4 id="txt-asistencia-grupo">0%</h4>
-                <p>Asistencia</p>
-            </div>
-        </div>
-
-        <div id="panel-grafico-frecuencias" class="bloque-reporte" style="display:none;">
-            <h4>🧠 Matriz de Frecuencia de Logros</h4>
-            <div id="barras-distribucion"></div>
-        </div>
-
-        <div id="panel-alertas" class="bloque-reporte" style="display:none;">
-            <h4 style="color: var(--color-peligro);">⚠️ Alerta Pedagógica (Promedio &lt; 9.5)</h4>
-            <div id="lista-alertas-alumnos"></div>
-        </div>
-    </div>
-
-    <!-- ARCHIVO DE IMPORTACIÓN RECEPTOR -->
-    <div class="modulo-card">
-        <h3>📥 Importar Estudiantes JSON</h3>
-        <input type="file" id="input-estudiantes" accept=".json">
-    </div>
-
-    <!-- MODAL: REGISTRO/EDICIÓN CRITERIO -->
-    <div id="modal-crud-criterio" class="modal-oculto">
-        <div class="modal-contenido">
-            <h3 id="modal-titulo-accion">Nuevo Criterio</h3>
-            <form id="form-crud-criterio" onsubmit="guardarCriterioFormulario(event)">
-                <input type="hidden" id="criterio-id-edicion" value="">
-                <div class="grupo-formulario">
-                    <label>Nombre del Criterio:</label>
-                    <input type="text" id="crit-nombre" required>
+            <div class="grupo-control">
+                <label for="diario-sesion">Sesión / Clase de Hoy</label>
+                <div class="linea-accion">
+                    <select id="diario-sesion" class="control-input">
+                        <option value="">Seleccione Tema de Clase...</option>
+                    </select>
+                    <button class="btn btn-icono" onclick="AppUI.abrirModalTemario()" title="Agregar Nueva Sesión">+</button>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Descripción Neuroeducativa:</label>
-                    <textarea id="crit-descripcion" rows="3"></textarea>
-                </div>
-                <div class="grupo-formulario">
-                    <label>Puntos de Aporte (0.1 a 8.0):</label>
-                    <input type="number" id="crit-puntos" step="0.1" min="0.1" max="8.0" required>
-                </div>
-                <div class="bloque-botones-modal">
-                    <button type="button" class="btn-modal btn-cancelar" onclick="cerrarModalCriterio()">Cancelar</button>
-                    <button type="submit" class="btn-modal btn-guardar">Guardar</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
+        </section>
 
-    <!-- MODAL: CONTROL DE ESCOLARIDAD VIGENTE -->
+            
+
+
+        <!-- Interfaz Dinámica de Registro en Vivo -->
+        <section class="tarjeta seccion-aula">
+            
+            <div class="cabecera-seccion">
+                <h2>Listado de Estudiantes</h2>
+                <div class="linea-accion">
+                    <button class="btn btn-secundario" onclick="AppCursos.abrirModal()">+ Curso</button>
+                    <button id="btn-abrir-estudiante" class="btn btn-secundario" onclick="AppEstudiantes.abrirModal()" disabled>+ Alumno</button>
+                </div>
+            </div>
+            
+            <!-- CONTENEDOR EN CALIENTE: Aquí el JavaScript inyectará las tarjetas de evaluación -->
+            <div id="contenedor-estudiantes-dinamico" class="malla-estudiantes">
+                <div class="estado-vacio">
+                    <p>Seleccione un curso y una sesión para cargar los registros de evaluación en caliente.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: REGISTRO DE ESCOLARIDAD OBLIGATORIA (Arranque Defensivo) -->
+    <!-- ========================================================================= -->
     <div id="modal-escolaridad" class="modal-oculto">
         <div class="modal-contenido">
-            <h3>📍 No hay Año Escolar Activo</h3>
-            <p>Registre la escolaridad vigente para continuar.</p>
+            <h3>Activar Nuevo Año Escolar</h3>
+            <p class="alerta-texto">No se detectó un período activo para la fecha de hoy.</p>
             <form id="form-escolaridad">
-                <div class="grupo-formulario">
-                    <label>Año Escolar (Ej: 2026-2027):</label>
-                    <input type="text" id="esc-nombre" placeholder="YYYY-YYYY" required>
+                <div class="grupo-control">
+                    <label>Año Escolar</label>
+                    <input type="text" id="esc-nombre" placeholder="Ej: 2026-2027" class="control-input" required>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Docente:</label>
-                    <input type="text" id="esc-profesor" required>
+                <div class="grupo-control">
+                    <label>Profesor</label>
+                    <input type="text" id="esc-profesor" placeholder="NOMBRE COMPLETO" class="control-input" required>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Área de Formación:</label>
-                    <input type="text" id="esc-area" placeholder="Matemática" required>
+                <div class="grupo-control">
+                    <label>Área de Formación</label>
+                    <input type="text" id="esc-area" placeholder="Ej: Matemática" class="control-input" required>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Proyecto (PEIC):</label>
-                    <textarea id="esc-peic" required></textarea>
+                <div class="grupo-control">
+                    <label>P.E.I.C.</label>
+                    <input type="text" id="esc-peic" placeholder="Proyecto Institucional" class="control-input" required>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Fecha de Inicio:</label>
-                    <input type="date" id="esc-inicio" required>
+                <div class="grupo-control-doble">
+                    <div class="grupo-control">
+                        <label>Fecha Inicio</label>
+                        <input type="date" id="esc-inicio" class="control-input" required>
+                    </div>
+                    <div class="grupo-control">
+                        <label>Fecha Cierre</label>
+                        <input type="date" id="esc-cierre" class="control-input" required>
+                    </div>
                 </div>
-                <div class="grupo-formulario">
-                    <label>Fecha de Cierre:</label>
-                    <input type="date" id="esc-cierre" required>
-                </div>
-                <button type="submit" id = 'btn-activar-escolaridad' class="btn-primario">Activar Escolaridad</button>
+                <button type="submit" id="btn-activar-escolaridad" class="btn btn-bloque">Activar Escolaridad</button>
             </form>
         </div>
     </div>
-<!-- Botón rápido al lado de tu selector de cursos -->
-<button type="button" onclick="AppCursos.abrirModal()">+ Añadir Curso</button>
 
-<!-- Ventana emergente (Modal) para el registro de cursos -->
-<div id="modal-curso" class="modal-oculto">
-    <div class="modal-contenido">
-        <h3>Registrar Nuevo Curso / Sección</h3>
-        <form id="form-curso">
-            <label for="txt-nuevo-curso">Nombre del Curso y Sección:</label>
-            <!-- Ej: 3ER AÑO C -->
-            <input type="text" id="txt-nuevo-curso" placeholder="Ej: 3ER AÑO C" required> 
-            
-            <div class="modal-botones">
-                <button type="submit" class="btn-guardar">Guardar Curso</button>
-                <button type="button" class="btn-cancelar" onclick="AppCursos.cerrarModal()">Cancelar</button>
-            </div>
-        </form>
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: REGISTRO DE NUEVA SESIÓN / CLASE (Con Propósito) -->
+    <!-- ========================================================================= -->
+    <div id="modal-temario" class="modal-oculto">
+        <div class="modal-contenido">
+            <h3>Agendar Sesión de Clase</h3>
+            <form id="form-temario">
+                <div class="grupo-control">
+                    <label for="select-temario-id">Propósito Pedagógico (Temario)</label>
+                    <select id="select-temario-id" class="control-input" required>
+                        <option value="">Seleccione Propósito/Tema...</option>
+                    </select>
+                </div>
+                <div class="grupo-control">
+                    <label for="txt-nuevo-tema">Nombre de la Sesión Práctica</label>
+                    <input type="text" id="txt-nuevo-tema" placeholder="Ej: CONOCIENDO LOS OPERADORES LOGICOS" class="control-input" required>
+                </div>
+                <div class="modal-acciones">
+                    <button type="button" class="btn btn-cancelar" onclick="AppUI.cerrarModalTemario()">Cancelar</button>
+                    <button type="submit" class="btn">Guardar Sesión</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-    <!-- Enlace corregido al script principal -->
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: REGISTRO RÁPIDO DE CURSOS -->
+    <!-- ========================================================================= -->
+    <div id="modal-curso" class="modal-oculto">
+        <div class="modal-contenido">
+            <h3>Agregar Curso o Sección</h3>
+            <form id="form-curso">
+                <div class="grupo-control">
+                    <label for="txt-nuevo-curso">Identificador del Curso</label>
+                    <input type="text" id="txt-nuevo-curso" placeholder="Ej: 5TO AÑO A" class="control-input" required>
+                </div>
+                <div class="modal-acciones">
+                    <button type="button" class="btn btn-cancelar" onclick="AppCursos.cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn">Registrar Curso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: REGISTRO DE NUEVO ESTUDIANTE Y ADMISIÓN A NÓMINA -->
+    <!-- ========================================================================= -->
+    <div id="modal-estudiante" class="modal-oculto">
+        <div class="modal-contenido">
+            <h3>Matricular Estudiante</h3>
+            <p class="alerta-texto">El alumno será ingresado al sistema y asignado al curso actual.</p>
+            <form id="form-estudiante">
+                <div class="grupo-control">
+                    <label for="est-cedula">Cédula de Identidad (ID Único)</label>
+                    <input type="number" id="est-cedula" placeholder="Ej: 33183525" class="control-input" required>
+                </div>
+                <div class="grupo-control">
+                    <label for="est-nombre">Nombres</label>
+                    <input type="text" id="est-nombre" placeholder="Ej: ROSNELVIS MARIA" class="control-input" required>
+                </div>
+                <div class="grupo-control">
+                    <label for="est-apellido">Apellidos</label>
+                    <input type="text" id="est-apellido" placeholder="Ej: GONZALEZ GONZALEZ" class="control-input" required>
+                </div>
+                <div class="grupo-control-doble">
+                    <div class="grupo-control">
+                        <label for="est-nacimiento">F. Nacimiento</label>
+                        <input type="date" id="est-nacimiento" class="control-input">
+                    </div>
+                    <div class="grupo-control">
+                        <label for="est-genero">Género</label>
+                        <select id="est-genero" class="control-input" required>
+                            <option value="F">Femenino</option>
+                            <option value="M">Masculino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-acciones">
+                    <button type="button" class="btn btn-cancelar" onclick="AppEstudiantes.cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn">Matricular</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CARGA DE ENTORNO NATIVO Y SCRIPT DE CONTROL -->
+    <!--<script src="cordova.js"></script> -->
     <script src="register.js"></script>
 </body>
 </html>
+
