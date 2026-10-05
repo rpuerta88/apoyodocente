@@ -159,12 +159,13 @@ const AppEscolaridad = {
         return;
         }
         try {
-        const resultado = await db_real.execute({ statement: sql, values: datos });
-        window.escolaridadActivaId = resultado.changes?.lastId || 1;
-        const modal = document.getElementById('modal-escolaridad');
-        if (modal) modal.className = "modal-oculto";
-        await AppUI.cargarSelectoresCursos();
-        mostrarNotificacion(`Año escolar guardado con éxito.`);
+            const sql = `INSERT INTO escolaridades (escolaridad, profesor, area, peic, fecha_inicio, fecha_cierre) VALUES (?, ?, ?, ?, ?, ?);`;
+            const resultado = await db_real.execute({ statement: sql, values: datos });
+            window.escolaridadActivaId = resultado.changes?.lastId || 1;
+            const modal = document.getElementById('modal-escolaridad');
+            if (modal) modal.className = "modal-oculto";
+            await AppUI.cargarSelectoresCursos();
+            mostrarNotificacion(`Año escolar guardado con éxito.`);
         } catch (error) {
             console.error("Error al registrar escolaridad:", error);
             mostrarNotificacion(`Fallo de persistencia en escolaridad.`);
@@ -445,15 +446,14 @@ const AppUI = {
                         const sqlVal = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
                         const resVal = await db_real.query({ statement: sqlVal, values: [registroId, crit.id] });
                         const vActual = resVal?.values?.length > 0 ? resVal.values[0].valoracion : 0;
-
                         htmlAcumulado += `
                             <div class="criterio-fila">
                                 <label>${crit.nombre_criterio} (Max: ${crit.puntos_aporte}pts)</label>
                                 <select class="selector-valoracion" onchange="AppUI.guardarNotaInSitu(${registroId}, ${crit.id}, this.value)">
                                     <option value="0">Sin valorar</option>
-                                    ${Array.from({length: crit.puntos_aporte}, (_, i) => i + 1).map(num => `
-                                        <option value="\${num}" vActual === num ? 'selected' : ''>{num} Pts</option>
-                                    `).join('')}
+                                    ${Array.from({length: crit.puntos_aporte}, (_, i) => i + 1).map(num => 
+                                        <option value="\${num}" vActual === num ? 'selected' : ''>${num} Pts</option>
+                                    ).join('')}
                                 </select>
                             </div>
                         `;
