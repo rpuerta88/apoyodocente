@@ -6,7 +6,6 @@ window.lapsoActivoId = null; // Necesario para amarrar las sesiones al momento e
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await AppDB.inicializar();
-        // Control defensivo de flujo inicial
         await AppEscolaridad.controlarFlujoInicial(); 
     } catch (e) {
         mostrarNotificacion(`Fallo en la carga inicial: ${e.message}`);
@@ -77,10 +76,11 @@ const AppDB = {
             };
 
             // Forzar activación de claves foráneas y validar tablas
-            await db_real.execute({ statement: "PRAGMA foreign_keys = ON;" });
+            await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
             await this.crearTablas();
 
         } catch (error) {
+            mostrarNotificacion(`revisa la lógica de inicialización`)
             console.error("Error crítico en inicialización de base de datos:", error);
             throw error;
         }
@@ -90,30 +90,7 @@ const AppDB = {
         try {
             // Estructura DDL real extraída fielmente de tu schemaSAAD.sql
             const ddl = `
-                PRAGMA foreign_keys = ON;
-                CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL);
-                CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE);
-                CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS lapso (id INTEGER PRIMARY KEY AUTOINCREMENT, momento TEXT NOT NULL, proyecto_aprendizaje TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL, lapsoescolar_id INTEGER, FOREIGN KEY (lapsoescolar_id) REFERENCES escolaridades(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_lapso_escolaridad_fk ON lapso (lapsoescolar_id);
-                CREATE TABLE IF NOT EXISTS catedra (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_central TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS temario (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_generador TEXT NOT NULL, catedra_id INTEGER, FOREIGN KEY (catedra_id) REFERENCES catedra(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_temario_catedra_fk ON temario (catedra_id);
-                CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL, temario_id INTEGER, lapso_id INTEGER, FOREIGN KEY (temario_id) REFERENCES temario(id) ON DELETE CASCADE, FOREIGN KEY (lapso_id) REFERENCES lapso(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_sesiones_temario_fk ON sesiones (temario_id);
-                CREATE INDEX IF NOT EXISTS idx_sesiones_lapso_fk ON sesiones (lapso_id);
-                CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_nomina_estudiantes_fk ON nomina (estudiantes_id);
-                CREATE INDEX IF NOT EXISTS idx_nomina_cursoseccion_fk ON nomina (cursoseccion_id);
-                CREATE INDEX IF NOT EXISTS idx_nomina_escolaridades_fk ON nomina (escolaridades_id);
-                CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'true' CHECK(asistencia IN ('false', 'true')), calificacion REAL CHECK(calificacion >= 1 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), instrumento TEXT NOT NULL, FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_registros_participantes_fk ON registros (participantes_id);
-                CREATE INDEX IF NOT EXISTS idx_registros_sesion_fk ON registros (sesion_id);
-                CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8));
-                CREATE TABLE IF NOT EXISTS calificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, registro_id INTEGER NOT NULL, criterio_id INTEGER NOT NULL, valoracion INTEGER, UNIQUE (registro_id, criterio_id), FOREIGN KEY (registro_id) REFERENCES registros(id) ON DELETE CASCADE, FOREIGN KEY (criterio_id) REFERENCES criterios_evaluacion(id) ON DELETE CASCADE);
-                CREATE INDEX IF NOT EXISTS idx_calificacion_registro_fk ON calificacion (registro_id);
-                CREATE INDEX IF NOT EXISTS idx_calificacion_criterio_fk ON calificacion (criterio_id);
-            `;
+                CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL); CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE); CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL); CREATE TABLE IF NOT EXISTS lapso (id INTEGER PRIMARY KEY AUTOINCREMENT, momento TEXT NOT NULL, proyecto_aprendizaje TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL, lapsoescolar_id INTEGER, FOREIGN KEY (lapsoescolar_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_lapso_escolaridad_fk ON lapso (lapsoescolar_id); CREATE TABLE IF NOT EXISTS catedra (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_central TEXT NOT NULL); CREATE TABLE IF NOT EXISTS temario (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_generador TEXT NOT NULL, catedra_id INTEGER, FOREIGN KEY (catedra_id) REFERENCES catedra(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_temario_catedra_fk ON temario (catedra_id); CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL, temario_id INTEGER, lapso_id INTEGER, FOREIGN KEY (temario_id) REFERENCES temario(id) ON DELETE CASCADE, FOREIGN KEY (lapso_id) REFERENCES lapso(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_sesiones_temario_fk ON sesiones (temario_id); CREATE INDEX IF NOT EXISTS idx_sesiones_lapso_fk ON sesiones (lapso_id); CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_nomina_estudiantes_fk ON nomina (estudiantes_id); CREATE INDEX IF NOT EXISTS idx_nomina_cursoseccion_fk ON nomina (cursoseccion_id); CREATE INDEX IF NOT EXISTS idx_nomina_escolaridades_fk ON nomina (escolaridades_id); CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'true' CHECK(asistencia IN ('false', 'true')), calificacion REAL CHECK(calificacion >= 1 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), instrumento TEXT NOT NULL, FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_registros_participantes_fk ON registros (participantes_id); CREATE INDEX IF NOT EXISTS idx_registros_sesion_fk ON registros (sesion_id); CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8)); CREATE TABLE IF NOT EXISTS calificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, registro_id INTEGER NOT NULL, criterio_id INTEGER NOT NULL, valoracion INTEGER, UNIQUE (registro_id, criterio_id), FOREIGN KEY (registro_id) REFERENCES registros(id) ON DELETE CASCADE, FOREIGN KEY (criterio_id) REFERENCES criterios_evaluacion(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_calificacion_registro_fk ON calificacion (registro_id); CREATE INDEX IF NOT EXISTS idx_calificacion_criterio_fk ON calificacion (criterio_id);`;
             await db_real.execute({ statement: ddl });
             mostrarNotificacion(`Estructura de la base de datos lista`);
         } catch (error) {
@@ -177,7 +154,7 @@ const AppEscolaridad = {
             document.getElementById('esc-cierre').value
         ];
         if (datos.includes("")) {
-            mostrarNotificacion("Por favor rellene todos los campos.");
+            mostrarNotificacion(`Por favor rellene todos los campos.`);
         if (boton) { boton.disabled = false; boton.textContent = "Activar Escolaridad"; }
         return;
         }
@@ -187,10 +164,10 @@ const AppEscolaridad = {
         const modal = document.getElementById('modal-escolaridad');
         if (modal) modal.className = "modal-oculto";
         await AppUI.cargarSelectoresCursos();
-        mostrarNotificacion("Año escolar guardado con éxito.");
+        mostrarNotificacion(`Año escolar guardado con éxito.`);
         } catch (error) {
             console.error("Error al registrar escolaridad:", error);
-            mostrarNotificacion("Fallo de persistencia en escolaridad.");
+            mostrarNotificacion(`Fallo de persistencia en escolaridad.`);
         if (boton) { boton.disabled = false; boton.textContent = "Activar Escolaridad"; }
         }
     }
@@ -210,7 +187,7 @@ const AppCursos = {
         const inputCurso = document.getElementById('txt-nuevo-curso');
         const cursoTexto = inputCurso.value.trim().toUpperCase();
         if (cursoTexto === "") {
-            mostrarNotificacion("El nombre del curso no puede estar vacío.");
+            mostrarNotificacion(`El nombre del curso no puede estar vacío.`);
         return;
         }
         const sql = `INSERT INTO cursos (cursoseccion) VALUES (?);`;
@@ -221,9 +198,9 @@ const AppCursos = {
         await AppUI.cargarSelectoresCursos();
         } catch (error) {
             if (error.message?.includes("UNIQUE constraint failed")) {
-                mostrarNotificacion("Error: Ese curso o sección ya existe.");
+                mostrarNotificacion(`Error: Ese curso o sección ya existe.`);
             } else {
-                mostrarNotificacion("No se pudo guardar el curso.");
+                mostrarNotificacion(`No se pudo guardar el curso.`);
             }
         }
     }
@@ -362,7 +339,7 @@ const AppUI = {
         const valores = [tituloSesion, parseInt(temarioId), window.lapsoActivoId];
         try {
             await db_real.execute({ statement: sql, values: valores });
-            mostrarNotificacion(`Sesión de clase "${tituloSesion}" agendada. `);
+            mostrarNotificacion(`Sesión de clase "${tituloSesion}" agendada.`);
             this.cerrarModalTemario();
             await this.cargarSelectoresTemarios();
         } catch (error) {
@@ -414,13 +391,7 @@ const AppUI = {
 
         try {
             // Extraer la nómina real inscrita en el curso
-            const sqlNomina = `
-                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido 
-                FROM nomina n 
-                INNER JOIN estudiantes e ON e.id_cedula = n.estudiantes_id 
-                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
-                ORDER BY e.apellido ASC, e.nombre ASC;
-            `;
+            const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido FROM nomina n INNER JOIN estudiantes e ON e.id_cedula = n.estudiantes_id WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
             const alumnos = await db_real.query({ statement: sqlNomina, values: [parseInt(cursoId), window.escolaridadActivaId] });
 
             if (!alumnos?.values || alumnos.values.length === 0) {
@@ -429,7 +400,7 @@ const AppUI = {
             }
 
             // Extraer criterios de evaluación activos para el aula
-            const criterios = await db_real.query({ statement: "SELECT id, nombre_criterio, puntos_aporte FROM criterios_evaluacion;" });
+            const criterios = await db_real.query({ statement: `SELECT id, nombre_criterio, puntos_aporte FROM criterios_evaluacion;`});
 
             let htmlAcumulado = "";
 
