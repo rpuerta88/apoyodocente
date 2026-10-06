@@ -280,11 +280,11 @@ const AppUI = {
         if (!db_real) return;
         const sql = `SELECT * FROM cursos ORDER BY cursoseccion ASC;`;
         const resultado = await db_real.query({ statement: sql });
-        const selectores = [
-            document.getElementById('select-curso'),
-            document.getElementById('diario-curso'),
-            document.getElementById('select-estadisticas-curso')
-            ];
+        //~ const selectores = [
+            //~ document.getElementById('select-curso'),
+            //~ document.getElementById('diario-curso'),
+            //~ document.getElementById('select-estadisticas-curso')
+            //~ ];
         selectores.forEach(select => {
             if (!select) return;
             select.innerHTML = `<option value="">Seleccione Curso...</option>`;
@@ -531,10 +531,10 @@ window.AppCursos = AppCursos;
 window.AppUI = AppUI;
 window.AppEscolaridad = AppEscolaridad;
 // Adjuntar los Listeners de manera segura previniendo colisiones de carga
-const adjuntarEvento = (idElemento, evento, funcion) => {
-const el = document.getElementById(idElemento);
-if (el) el.addEventListener(evento, funcion);
-};
+//~ const adjuntarEvento = ('idElemento', evento, funcion) => {
+//~ const el = document.getElementById('idElemento');
+//~ if (el) el.addEventListener(evento, funcion);
+//~ };
 adjuntarEvento('form-escolaridad', 'submit', (e) => AppEscolaridad.guardar(e));
 adjuntarEvento('form-curso', 'submit', (e) => AppCursos.guardar(e));
 adjuntarEvento('form-temario', 'submit', (e) => AppUI.guardarTemario(e));
