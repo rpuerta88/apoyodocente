@@ -531,10 +531,10 @@ window.AppCursos = AppCursos;
 window.AppUI = AppUI;
 window.AppEscolaridad = AppEscolaridad;
 // Adjuntar los Listeners de manera segura previniendo colisiones de carga
-//~ const adjuntarEvento = ('idElemento', evento, funcion) => {
-//~ const el = document.getElementById('idElemento');
-//~ if (el) el.addEventListener(evento, funcion);
-//~ };
+const adjuntarEvento = (idElemento, evento, funcion) => {
+const el = document.getElementById(idElemento);
+if (el) el.addEventListener(evento, funcion);
+};
 adjuntarEvento('form-escolaridad', 'submit', (e) => AppEscolaridad.guardar(e));
 adjuntarEvento('form-curso', 'submit', (e) => AppCursos.guardar(e));
 adjuntarEvento('form-temario', 'submit', (e) => AppUI.guardarTemario(e));
