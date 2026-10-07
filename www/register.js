@@ -50,7 +50,8 @@ const AppDB = {
 
     inicializar: async function() {
         try {
-            const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
+            const SQLite = window.Capacitor?.plugins?.CapacitorSQLite;
+            //~ const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
                 alert(`error en plugin`)
                 throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
