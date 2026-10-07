@@ -42,15 +42,20 @@ jobs:
     - name: Compilar Proyecto Web (Generar carpetas dist/www)
       run: npm run build --if-present
 
-    # 7. Sincronizar los recursos web reales con el entorno nativo de Android
+    # 7. CORRECCIÓN CRÍTICA: Forzar el enlace nativo de plugins en Gradle
+    # 'cap update' inyecta los plugins de node_modules en las dependencias de Gradle de Android
+    - name: Actualizar e Inyectar Plugins Nativos
+      run: npx cap update android
+
+    # 8. Sincronizar los recursos web reales con el entorno nativo de Android
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
       
-    # 8. Otorgar permisos de ejecución al script nativo de Gradle
+    # 9. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-     # 9. Compilar el APK en modo Debug nativo (Optimizado para estabilidad)
+     # 10. Compilar el APK en modo Debug nativo (Optimizado para estabilidad)
     - name: Compilar APK Nativo con Gradle
       env:
         GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" # Previene bloqueos por falta de memoria
@@ -58,7 +63,7 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    # 10. Cargar el resultado final para su descarga directa
+    # 11. Cargar el resultado final para su descarga directa
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
