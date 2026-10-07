@@ -53,7 +53,6 @@ const AppDB = {
             const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
             //~ const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
-                alert(`error en plugin`)
                 throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
             }
 
@@ -83,15 +82,15 @@ const AppDB = {
             }
 
             // Puertos de abstracción limpios para consultas y ejecuciones
-            db_real = {
+            const db_real = {
                 query: async function({ statement, values }) {
-                    return await SQLite.query({ database: AppDB.dbName, statement, values: values || [] });
+                    return await SQLite.query({ database: this.dbName, statement, values: values || [] });
                 },
                 execute: async function({ statement, values }) {
                     if (values && values.length > 0) {
-                        return await SQLite.run({ database: AppDB.dbName, statement, values });
+                        return await SQLite.run({ database: this.dbName, statement, values });
                     }
-                    return await SQLite.execute({ database: AppDB.dbName, statements: statement });
+                    return await SQLite.execute({ database: this.dbName, statements: statement });
                 }
             };
 
