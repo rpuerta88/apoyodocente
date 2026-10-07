@@ -47,6 +47,7 @@ const AppDB = {
         try {
             const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
+                mostrarNotificacion(`linea 50`)
                 throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
             }
 
@@ -54,6 +55,7 @@ const AppDB = {
             try {
                 await SQLite.checkConnectionsConsistency();
             } catch (e) {
+                mostrarNotificacion(`ver linea 58`)
                 console.warn("Restaurando consistencia nativa de conexiones...", e);
             }
 
@@ -67,11 +69,13 @@ const AppDB = {
                     mode: "no-encryption",
                     readOnly: false
                 });
+                await mostrarNotificacion(`linea 72`);
             }
 
             let verificacionFinal = await SQLite.isDBOpen({ database: this.dbName });
             if (!verificacionFinal.result) {
                 await SQLite.open({ database: this.dbName });
+                await mostrarNotificacion(`linea 78`);
             }
 
             // Puertos de abstracción limpios para consultas y ejecuciones
