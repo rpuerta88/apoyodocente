@@ -280,11 +280,9 @@ const AppUI = {
         if (!db_real) return;
         const sql = `SELECT * FROM cursos ORDER BY cursoseccion ASC;`;
         const resultado = await db_real.query({ statement: sql });
-        //~ const selectores = [
-            //~ document.getElementById('select-curso'),
-            //~ document.getElementById('diario-curso'),
-            //~ document.getElementById('select-estadisticas-curso')
-            //~ ];
+        const selectores = [
+            document.getElementById('diario-curso')
+            ];
         selectores.forEach(select => {
             if (!select) return;
             select.innerHTML = `<option value="">Seleccione Curso...</option>`;
