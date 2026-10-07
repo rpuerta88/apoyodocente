@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar el repositorio usando la versión v4
+    # 1. Clonar el código fuente limpio
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
@@ -19,46 +19,46 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22'
-        cache: 'npm' # Optimiza el tiempo de compilación guardando dependencias en caché
+        cache: 'npm'
 
-    # 3. Verificar que la versión correcta quedó instalada
+    # 3. Mostrar versiones de control
     - name: Mostrar versiones Node/NPM
       run: |
         node -v
         npm -v
 
-    # 4. Configurar Java JDK 21 (Garantiza máxima estabilidad con Gradle y Android)
+    # 4. Configurar Java JDK 21
     - name: Configurar Entorno Java JDK 21
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '21'
 
-    # 5. Instalar las dependencias de Node
+    # 5. Instalar dependencias de Node (incluyendo los plugins de SQLite)
     - name: Instalar Dependencias de Node
       run: npm install --legacy-peer-deps
 
-    # 6. Compilar los recursos Web (Si el script build existe en tu package.json)
-    - name: Compilar Proyecto Web (Generar carpetas dist/www)
+    # 6. Compilar recursos web (Generar carpetas dist o www)
+    - name: Compilar Proyecto Web
       run: npm run build --if-present
 
-    # 7. CORRECCIÓN CRÍTICA: Forzar el enlace nativo de plugins en Gradle
-    # 'cap update' inyecta los plugins de node_modules en las dependencias de Gradle de Android
-    - name: Actualizar e Inyectar Plugins Nativos
-      run: npx cap update android
+    # 7. GENERACIÓN LIMPIA: Crear la estructura nativa de Android desde cero
+    # Esto inyecta automáticamente todos los plugins de JavaScript en código Java nativo
+    - name: Crear Plataforma Nativa Android
+      run: npx cap add android
 
-    # 8. Sincronizar los recursos web reales con el entorno nativo de Android
+    # 8. Sincronizar recursos finales
     - name: Sincronizar Recursos Web con Capacitor
       run: npx cap sync android
       
-    # 9. Otorgar permisos de ejecución al script nativo de Gradle
+    # 9. Otorgar permisos de ejecución al script nativo de Gradle generado
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-     # 10. Compilar el APK en modo Debug nativo (Optimizado para estabilidad)
+    # 10. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       env:
-        GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" # Previene bloqueos por falta de memoria
+        GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"
       run: |
         cd android
         ./gradlew assembleDebug
@@ -70,3 +70,4 @@ jobs:
         name: ApoyoDocente-APK-Prueba
         path: android/app/build/outputs/apk/debug/app-debug.apk
         retention-days: 7
+
