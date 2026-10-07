@@ -18,7 +18,7 @@ window.lapsoActivoId = null; // Necesario para amarrar las sesiones al momento e
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await AppDB.inicializar();
-        await AppEscolaridad.controlarFlujoInicial(); 
+        //~ await AppEscolaridad.controlarFlujoInicial(); 
     } catch (e) {
         mostrarNotificacion(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -40,6 +40,7 @@ async function mostrarNotificacion(mensaje) {
 }
 
 // 2. MÓDULO DE BASE DE DATOS (Conexión y Estructura)
+
 const AppDB = {
     dbName: "apoyo_docente_app",
 
@@ -47,7 +48,7 @@ const AppDB = {
         try {
             const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
-                mostrarNotificacion(`linea 50`)
+                mostrarNotificacion(`error en plugin`)
                 throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
             }
 
@@ -55,7 +56,7 @@ const AppDB = {
             try {
                 await SQLite.checkConnectionsConsistency();
             } catch (e) {
-                mostrarNotificacion(`ver linea 58`)
+                mostrarNotificacion(`Error en Consistency`);
                 console.warn("Restaurando consistencia nativa de conexiones...", e);
             }
 
@@ -69,13 +70,11 @@ const AppDB = {
                     mode: "no-encryption",
                     readOnly: false
                 });
-                await mostrarNotificacion(`linea 72`);
             }
 
             let verificacionFinal = await SQLite.isDBOpen({ database: this.dbName });
             if (!verificacionFinal.result) {
                 await SQLite.open({ database: this.dbName });
-                await mostrarNotificacion(`linea 78`);
             }
 
             // Puertos de abstracción limpios para consultas y ejecuciones
@@ -96,7 +95,7 @@ const AppDB = {
             await this.crearTablas();
 
         } catch (error) {
-            mostrarNotificacion(`revisa la lógica de inicialización`)
+            mostrarNotificacion(`revisar la lógica de inicialización`);
             console.error("Error crítico en inicialización de base de datos:", error);
             throw error;
         }
@@ -105,19 +104,19 @@ const AppDB = {
     crearTablas: async function() {
         try {
             // Estructura DDL real extraída fielmente de tu schemaSAAD.sql
-            const ddl = `
-                CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL); CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE); CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL); CREATE TABLE IF NOT EXISTS lapso (id INTEGER PRIMARY KEY AUTOINCREMENT, momento TEXT NOT NULL, proyecto_aprendizaje TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL, lapsoescolar_id INTEGER, FOREIGN KEY (lapsoescolar_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_lapso_escolaridad_fk ON lapso (lapsoescolar_id); CREATE TABLE IF NOT EXISTS catedra (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_central TEXT NOT NULL); CREATE TABLE IF NOT EXISTS temario (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_generador TEXT NOT NULL, catedra_id INTEGER, FOREIGN KEY (catedra_id) REFERENCES catedra(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_temario_catedra_fk ON temario (catedra_id); CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL, temario_id INTEGER, lapso_id INTEGER, FOREIGN KEY (temario_id) REFERENCES temario(id) ON DELETE CASCADE, FOREIGN KEY (lapso_id) REFERENCES lapso(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_sesiones_temario_fk ON sesiones (temario_id); CREATE INDEX IF NOT EXISTS idx_sesiones_lapso_fk ON sesiones (lapso_id); CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_nomina_estudiantes_fk ON nomina (estudiantes_id); CREATE INDEX IF NOT EXISTS idx_nomina_cursoseccion_fk ON nomina (cursoseccion_id); CREATE INDEX IF NOT EXISTS idx_nomina_escolaridades_fk ON nomina (escolaridades_id); CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'true' CHECK(asistencia IN ('false', 'true')), calificacion REAL CHECK(calificacion >= 1 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), instrumento TEXT NOT NULL, FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_registros_participantes_fk ON registros (participantes_id); CREATE INDEX IF NOT EXISTS idx_registros_sesion_fk ON registros (sesion_id); CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8)); CREATE TABLE IF NOT EXISTS calificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, registro_id INTEGER NOT NULL, criterio_id INTEGER NOT NULL, valoracion INTEGER, UNIQUE (registro_id, criterio_id), FOREIGN KEY (registro_id) REFERENCES registros(id) ON DELETE CASCADE, FOREIGN KEY (criterio_id) REFERENCES criterios_evaluacion(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_calificacion_registro_fk ON calificacion (registro_id); CREATE INDEX IF NOT EXISTS idx_calificacion_criterio_fk ON calificacion (criterio_id);`;
+            const ddl = `CREATE TABLE IF NOT EXISTS estudiantes (id_cedula INTEGER PRIMARY KEY, nombre TEXT NOT NULL, apellido TEXT NOT NULL, fecha_nacimiento TEXT, genero TEXT CHECK(genero IN ('M', 'F')) NOT NULL); CREATE TABLE IF NOT EXISTS cursos (id INTEGER PRIMARY KEY AUTOINCREMENT, cursoseccion TEXT NOT NULL UNIQUE); CREATE TABLE IF NOT EXISTS escolaridades (id INTEGER PRIMARY KEY AUTOINCREMENT, escolaridad TEXT NOT NULL, profesor TEXT NOT NULL, area TEXT NOT NULL, peic TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL); CREATE TABLE IF NOT EXISTS lapso (id INTEGER PRIMARY KEY AUTOINCREMENT, momento TEXT NOT NULL, proyecto_aprendizaje TEXT NOT NULL, fecha_inicio TEXT NOT NULL, fecha_cierre TEXT NOT NULL, lapsoescolar_id INTEGER, FOREIGN KEY (lapsoescolar_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_lapso_escolaridad_fk ON lapso (lapsoescolar_id); CREATE TABLE IF NOT EXISTS catedra (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_central TEXT NOT NULL); CREATE TABLE IF NOT EXISTS temario (id INTEGER PRIMARY KEY AUTOINCREMENT, tema_generador TEXT NOT NULL, catedra_id INTEGER, FOREIGN KEY (catedra_id) REFERENCES catedra(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_temario_catedra_fk ON temario (catedra_id); CREATE TABLE IF NOT EXISTS sesiones (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT CURRENT_TIMESTAMP, nombre TEXT NOT NULL, temario_id INTEGER, lapso_id INTEGER, FOREIGN KEY (temario_id) REFERENCES temario(id) ON DELETE CASCADE, FOREIGN KEY (lapso_id) REFERENCES lapso(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_sesiones_temario_fk ON sesiones (temario_id); CREATE INDEX IF NOT EXISTS idx_sesiones_lapso_fk ON sesiones (lapso_id); CREATE TABLE IF NOT EXISTS nomina (id INTEGER PRIMARY KEY AUTOINCREMENT, estudiantes_id INTEGER, cursoseccion_id INTEGER, escolaridades_id INTEGER, condicion_acadm TEXT CHECK(condicion_acadm IN ('Regular', 'Repitiente')) DEFAULT 'Regular' NOT NULL, UNIQUE (estudiantes_id, cursoseccion_id, escolaridades_id), FOREIGN KEY (estudiantes_id) REFERENCES estudiantes(id_cedula) ON DELETE CASCADE, FOREIGN KEY (cursoseccion_id) REFERENCES cursos(id) ON DELETE CASCADE, FOREIGN KEY (escolaridades_id) REFERENCES escolaridades(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_nomina_estudiantes_fk ON nomina (estudiantes_id); CREATE INDEX IF NOT EXISTS idx_nomina_cursoseccion_fk ON nomina (cursoseccion_id); CREATE INDEX IF NOT EXISTS idx_nomina_escolaridades_fk ON nomina (escolaridades_id); CREATE TABLE IF NOT EXISTS registros (id INTEGER PRIMARY KEY AUTOINCREMENT, participantes_id INTEGER NOT NULL, sesion_id INTEGER NOT NULL, asistencia TEXT DEFAULT 'true' CHECK(asistencia IN ('false', 'true')), calificacion REAL CHECK(calificacion >= 1 AND calificacion <= 20), tipo_evaluacion TEXT CHECK(tipo_evaluacion IN ('Sumativa', 'Formativa')), instrumento TEXT NOT NULL, FOREIGN KEY (participantes_id) REFERENCES nomina(id) ON DELETE CASCADE, FOREIGN KEY (sesion_id) REFERENCES sesiones(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_registros_participantes_fk ON registros (participantes_id); CREATE INDEX IF NOT EXISTS idx_registros_sesion_fk ON registros (sesion_id); CREATE TABLE IF NOT EXISTS criterios_evaluacion (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_criterio TEXT NOT NULL, descripcion TEXT, puntos_aporte REAL NOT NULL CHECK(puntos_aporte > 0 AND puntos_aporte <= 8)); CREATE TABLE IF NOT EXISTS calificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, registro_id INTEGER NOT NULL, criterio_id INTEGER NOT NULL, valoracion INTEGER, UNIQUE (registro_id, criterio_id), FOREIGN KEY (registro_id) REFERENCES registros(id) ON DELETE CASCADE, FOREIGN KEY (criterio_id) REFERENCES criterios_evaluacion(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_calificacion_registro_fk ON calificacion (registro_id); CREATE INDEX IF NOT EXISTS idx_calificacion_criterio_fk ON calificacion (criterio_id);`;
             await db_real.execute({ statement: ddl });
             mostrarNotificacion(`Estructura de la base de datos lista`);
         } catch (error) {
             console.error("Fallo al inicializar las tablas:", error);
-            mostrarNotificacion(`Falla al construir base de datos`)
+            mostrarNotificacion(`Falla al construir base de datos`);
             throw error;
         }
     }
 };
 
 // 3. MÓDULO DE GESTIÓN DE ESCOLARIDAD Y LAPSOS
+/*
 const AppEscolaridad = {
     verificarEstadoActivo: async function() {
         try {
@@ -189,6 +188,7 @@ const AppEscolaridad = {
         }
     }
 };
+
 // 4. MÓDULO DE GESTIÓN DE CURSOS
 const AppCursos = {
     abrirModal: function() {
@@ -222,6 +222,7 @@ const AppCursos = {
         }
     }
 };
+
 // 4B. MÓDULO DE GESTIÓN DE ESTUDIANTES Y MATRÍCULA
 const AppEstudiantes = {
     abrirModal: function() {
@@ -527,16 +528,19 @@ const AppUI = {
     }
 
 };
+
 // 6. ENLACES Y LISTENERS DE EVENTOS (MAPEADO DINÁMICO DE INTERFAZ)
 // Exposición limpia de los controladores al objeto Window (para tus onclick HTML)
 window.AppCursos = AppCursos;
 window.AppUI = AppUI;
 window.AppEscolaridad = AppEscolaridad;
+
 // Adjuntar los Listeners de manera segura previniendo colisiones de carga
 const adjuntarEvento = (idElemento, evento, funcion) => {
 const el = document.getElementById(idElemento);
 if (el) el.addEventListener(evento, funcion);
 };
+
 adjuntarEvento('form-escolaridad', 'submit', (e) => AppEscolaridad.guardar(e));
 adjuntarEvento('form-curso', 'submit', (e) => AppCursos.guardar(e));
 adjuntarEvento('form-temario', 'submit', (e) => AppUI.guardarTemario(e));
@@ -554,3 +558,4 @@ if (selectSesionDiario) {
     selectSesionDiario.addEventListener('change', () => AppUI.renderizarMallaEstudiantes());
 }
 
+*/
