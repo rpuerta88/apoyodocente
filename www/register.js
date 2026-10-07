@@ -50,6 +50,7 @@ const AppDB = {
 
     inicializar: async function() {
         try {
+            const { Capacitor } = window;
             const SQLite = window.Capacitor?.plugins?.CapacitorSQLite;
             //~ const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
