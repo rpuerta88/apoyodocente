@@ -13,13 +13,13 @@ window.onerror = function(mensaje, fuente, linea, columna, error) {
 };
 
 // 1. VARIABLES GLOBALES Y ORQUESTRACIÓN DEL INICIO
+const SQLitePlugin = Capacitor.Plugins.CapacitorSQLite;
 let db_real = null;
 //~ window.escolaridadActivaId = null;
 //~ window.lapsoActivoId = null; // Necesario para amarrar las sesiones al momento escolar real
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await alert(`llegué a la linea22`);
         await AppDB.inicializar();
         //~ await AppEscolaridad.controlarFlujoInicial(); 
     } catch (e) {
@@ -50,8 +50,7 @@ const AppDB = {
 
     inicializar: async function() {
         try {
-            const { Capacitor } = window;
-            const SQLite = window.Capacitor?.plugins?.CapacitorSQLite;
+            const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
             //~ const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
                 alert(`error en plugin`)
