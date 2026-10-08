@@ -13,7 +13,6 @@ window.onerror = function(mensaje, fuente, linea, columna, error) {
 };
 
 // 1. VARIABLES GLOBALES Y ORQUESTRACIÓN DEL INICIO
-const SQLitePlugin = Capacitor.Plugins.CapacitorSQLite;
 let db_real = null;
 //~ window.escolaridadActivaId = null;
 //~ window.lapsoActivoId = null; // Necesario para amarrar las sesiones al momento escolar real
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Función auxiliar global para alertas nativas en Android
-/*
+
 async function mostrarNotificacion(mensaje) {
     try {
         const { Toast } = Capacitor.Plugins;
@@ -42,7 +41,7 @@ async function mostrarNotificacion(mensaje) {
         console.error("Error al mostrar notificación:", e);
     }
 }
-*/
+
 // 2. MÓDULO DE BASE DE DATOS (Conexión y Estructura)
 
 const AppDB = {
@@ -51,22 +50,38 @@ const AppDB = {
     inicializar: async function() {
         try {
             const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
-            //~ const SQLite = window.Capacitor?.Plugins?.CapacitorSQLite;
             if (!SQLite) {
                 throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
             }
 
-            // Consistencia nativa de conexiones
+            // 1. Consistencia nativa de conexiones
+            let consistencia;
             try {
-                await SQLite.checkConnectionsConsistency();
+                consistencia = await SQLite.checkConnectionsConsistency();
             } catch (e) {
-                alert(`Error en Consistency`);
-                console.warn("Restaurando consistencia nativa de conexiones...", e);
+                console.warn("Inconsistencia nativa detectada, procediendo a restaurar conexiones:", e);
+                consistencia = { result: false };
             }
-
-            let estaConectado = await SQLite.isConnection({ database: this.dbName });
-
-            if (!estaConectado.result) {
+            // 2. Comprobar si la conexión ya está activa en la memoria nativa
+            let estaConectado;
+            try {
+                estaConectado = await SQLite.isConnection({ database: dbName });
+            } catch (e) {
+                estaConectado = { result: false };
+            }
+            // 3. Flujo inteligente de conexión basado en el estado real
+                if (consistencia.result && estaConectado.result) {
+                    console.log("La conexión ya existía de forma consistente en memoria nativa.");
+                } else {
+                // Si existía una conexión muerta o corrupta en el pool nativo, la cerramos primero
+                    if (estaConectado.result) {
+                        try {
+                            await SQLite.closeConnection({ database: this.dbName });
+                        } catch(e) {
+                            console.warn("No se pudo cerrar la conexión huérfana (operación segura):", e);
+                        }
+                    }
+                // Creamos la conexión de forma limpia
                 await SQLite.createConnection({
                     database: this.dbName,
                     version: 1,
@@ -74,15 +89,19 @@ const AppDB = {
                     mode: "no-encryption",
                     readOnly: false
                 });
+                let verificacionFinal = await SQLite.isDBOpen({ database: this.dbName });
+                    if (!verificacionFinal.result) {
+                        await SQLite.open({ database: this.dbName });
+                    }
+                }
+            } catch (error) {
+            alert(`revisar la lógica de inicialización`);
+            console.error("Error crítico en inicialización de base de datos:", error);
+            throw error;
             }
-
-            let verificacionFinal = await SQLite.isDBOpen({ database: this.dbName });
-            if (!verificacionFinal.result) {
-                await SQLite.open({ database: this.dbName });
-            }
-
+            mostrarNotificacion(`Base de Datos ${this.bdName} conectada exitosamente`);
             // Puertos de abstracción limpios para consultas y ejecuciones
-            const db_real = {
+            db_real = {
                 query: async function({ statement, values }) {
                     return await SQLite.query({ database: this.dbName, statement, values: values || [] });
                 },
@@ -93,15 +112,9 @@ const AppDB = {
                     return await SQLite.execute({ database: this.dbName, statements: statement });
                 }
             };
-
             // Forzar activación de claves foráneas y validar tablas
             await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
             await this.crearTablas();
-
-        } catch (error) {
-            alert(`revisar la lógica de inicialización`);
-            console.error("Error crítico en inicialización de base de datos:", error);
-            throw error;
         }
     },
 
