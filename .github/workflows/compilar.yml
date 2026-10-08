@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar el código fuente limpio
+    # 1. Clonar el código fuente limpio (incluyendo tu nueva carpeta android)
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
-    # 2. Configurar NodeJS v22 (Requisito estricto de Capacitor CLI)
-    - name: Configurar Entorno NodeJS 22
+    # 2. Configurar NodeJS v24 (Actualizado a tu versión actual)
+    - name: Configurar Entorno NodeJS 24
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '24'
         cache: 'npm'
 
     # 3. Mostrar versiones de control
@@ -34,28 +34,22 @@ jobs:
         distribution: 'zulu'
         java-version: '21'
 
-    # 5. Instalar dependencias de Node (incluyendo los plugins de SQLite)
+    # 5. Instalar dependencias de Node
     - name: Instalar Dependencias de Node
       run: npm install --legacy-peer-deps
 
-    # 6. Compilar recursos web (Generar carpetas dist o www)
-    - name: Compilar Proyecto Web
-      run: npm run build --if-present
-
-    # 7. GENERACIÓN LIMPIA: Crear la estructura nativa de Android desde cero
-    # Esto inyecta automáticamente todos los plugins de JavaScript en código Java nativo
-    - name: Crear Plataforma Nativa Android
-      run: npx cap add android
-
-    # 8. Sincronizar recursos finales
+    # 6. Sincronizar recursos y plugins de Capacitor
+    # Al tener ya la carpeta 'android' en el repositorio, solo copiamos la carpeta www y sincronizamos plugins
     - name: Sincronizar Recursos Web con Capacitor
-      run: npx cap sync android
+      run: |
+        npx cap copy android
+        npx cap sync android
       
-    # 9. Otorgar permisos de ejecución al script nativo de Gradle generado
+    # 7. Otorgar permisos de ejecución al script nativo de Gradle
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 10. Compilar el APK en modo Debug nativo
+    # 8. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       env:
         GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"
@@ -63,11 +57,10 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    # 11. Cargar el resultado final para su descarga directa
+    # 9. Cargar el resultado final para su descarga directa
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
         name: ApoyoDocente-APK-Prueba
         path: android/app/build/outputs/apk/debug/app-debug.apk
         retention-days: 7
-
