@@ -38,6 +38,7 @@ async function mostrarNotificacion(mensaje) {
             console.log("Fallback (Navegador):", mensaje);
         }
     } catch (e) {
+        alert(`${e}`);
         console.error("Error al mostrar notificación:", e);
     }
 }
@@ -59,16 +60,16 @@ const AppDB = {
             } catch (e) {
                 console.warn("Inconsistencia nativa detectada, procediendo a restaurar conexiones:", e);
                 consistencia = { result: false };
-                mostrarNotificacion(`no tuvo consistencia`)
+                mostrarNotificacion(`no tuvo consistencia nativa`)
             }
                     // 2. Comprobar si la conexión ya está activa en la memoria nativa
             let estaConectado;
-            try {
-                estaConectado = await SQLite.isConnection({ database: this.dbName });
-            } catch (e) {
-                estaConectado = { result: false };
-                mostrarNotificacion(`no está conectada`)
-            }
+                try {
+                    estaConectado = await SQLite.isConnection({ database: this.dbName });
+                } catch (e) {
+                    estaConectado = { result: false };
+                    mostrarNotificacion(`no está conectada`)
+                }
             // 3. Flujo inteligente de conexión basado en el estado real
             if (consistencia.result && estaConectado.result) {
             console.log("La conexión ya existía de forma consistente en memoria nativa.");
@@ -110,6 +111,7 @@ const AppDB = {
                     return await SQLite.execute({ database: this.dbName, statements: statement });
                 }
             };
+            mostrarNotificacion(`Inicialización exitosa`)
             // Forzar activación de claves foráneas y validar tablas
             await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
             await this.crearTablas();
