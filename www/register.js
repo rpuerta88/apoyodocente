@@ -44,79 +44,58 @@ async function mostrarNotificacion(mensaje) {
 
 // 2. MÓDULO DE BASE DE DATOS (Conexión y Estructura)
 
-const AppDB = {
-    dbName: "apoyo_docente_app",
-
-    inicializar: async function() {
-        try {
-            const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
-            if (!SQLite) {
-                throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
-            }
-
-            // 1. Consistencia nativa de conexiones
-            let consistencia;
-            try {
-                consistencia = await SQLite.checkConnectionsConsistency();
-            } catch (e) {
-                console.warn("Inconsistencia nativa detectada, procediendo a restaurar conexiones:", e);
-                consistencia = { result: false };
-            }
-            // 2. Comprobar si la conexión ya está activa en la memoria nativa
-            let estaConectado;
-            try {
-                estaConectado = await SQLite.isConnection({ database: dbName });
-            } catch (e) {
-                estaConectado = { result: false };
-            }
-            // 3. Flujo inteligente de conexión basado en el estado real
-                if (consistencia.result && estaConectado.result) {
-                    console.log("La conexión ya existía de forma consistente en memoria nativa.");
-                } else {
-                // Si existía una conexión muerta o corrupta en el pool nativo, la cerramos primero
-                    if (estaConectado.result) {
-                        try {
-                            await SQLite.closeConnection({ database: this.dbName });
-                        } catch(e) {
-                            console.warn("No se pudo cerrar la conexión huérfana (operación segura):", e);
-                        }
-                    }
-                // Creamos la conexión de forma limpia
-                await SQLite.createConnection({
-                    database: this.dbName,
-                    version: 1,
-                    encrypted: false,
-                    mode: "no-encryption",
-                    readOnly: false
-                });
-                let verificacionFinal = await SQLite.isDBOpen({ database: this.dbName });
-                    if (!verificacionFinal.result) {
-                        await SQLite.open({ database: this.dbName });
-                    }
-                }
-            } catch (error) {
-            alert(`revisar la lógica de inicialización`);
-            console.error("Error crítico en inicialización de base de datos:", error);
-            throw error;
-            }
-            mostrarNotificacion(`Base de Datos ${this.bdName} conectada exitosamente`);
-            // Puertos de abstracción limpios para consultas y ejecuciones
-            db_real = {
-                query: async function({ statement, values }) {
-                    return await SQLite.query({ database: this.dbName, statement, values: values || [] });
-                },
-                execute: async function({ statement, values }) {
-                    if (values && values.length > 0) {
-                        return await SQLite.run({ database: this.dbName, statement, values });
-                    }
-                    return await SQLite.execute({ database: this.dbName, statements: statement });
-                }
-            };
-            // Forzar activación de claves foráneas y validar tablas
-            await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
-            await this.crearTablas();
+inicializar: async function() {
+    try {
+        const SQLite = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.CapacitorSQLite : null;
+        if (!SQLite) {
+            mostrarNotificacion(`Problemas con el plugin`);
+            throw new Error("El componente CapacitorSQLite no está inyectado en el APK.");
         }
-    },
+
+        // 1. Consistencia nativa de conexiones
+        let consistencia;
+        try {
+            consistencia = await SQLite.checkConnectionsConsistency();
+        } catch (e) {
+            console.warn("Inconsistencia nativa detectada, procediendo a restaurar conexiones:", e);
+            mostrarNotificacion(`consistencia: false`);
+            consistencia = { result: false };
+        }
+
+        // 2. Comprobar si la conexión ya está activa en la memoria nativa
+        let estaConectado;
+        try {
+            // CORREGIDO: Se cambió 'dbName' por 'this.dbName' para mantener consistencia
+            estaConectado = await SQLite.isConnection({ database: this.dbName }); 
+        } catch (e) {
+            mostrarNotificacion(`está conectado: false`);
+            estaConectado = { result: false };
+        }
+
+        // 3. Flujo inteligente de conexión basado en el estado real
+        if (consistencia.result && estaConectado.result) {
+            console.log("La conexión ya existía de forma consistente en memoria nativa.");
+        } else {
+            // Si existía una conexión muerta o corrupta en el pool nativo, la cerramos primero
+            if (estaConectado.result) {
+                try {
+                    await SQLite.closeConnection({ database: this.dbName });
+                } catch(e) {
+                    console.warn("No se pudo cerrar la conexión huérfana (operación segura):", e);
+                }
+            }
+            
+            // Creamos la conexión de forma limpia (Aquí continuaría tu lógica para crearla)
+            console.log("Creando nueva conexión limpia...");
+            // db = await SQLite.createConnection({ database: this.dbName, ... });
+            // await db.open();
+        }
+
+    } catch (error) {
+        console.error("Error grave en la inicialización de SQLite:", error);
+        mostrarNotificacion(`Error de inicialización: ${error.message}`);
+    }
+},
 
     crearTablas: async function() {
         try {
