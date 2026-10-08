@@ -99,24 +99,23 @@ const AppDB = {
             alert(`revisar la lógica de inicialización`);
             console.error("Error crítico en inicialización de base de datos:", error);
             throw error;
+            }
             // Puertos de abstracción limpios para consultas y ejecuciones
-            db_real = {
-                query: async function({ statement, values }) {
-                    return await SQLite.query({ database: this.dbName, statement, values: values || [] });
-                },
-                execute: async function({ statement, values }) {
-                    if (values && values.length > 0) {
-                        return await SQLite.run({ database: this.dbName, statement, values });
-                    }
-                    return await SQLite.execute({ database: this.dbName, statements: statement });
+        db_real = {
+            query: async function({ statement, values }) {
+                return await SQLite.query({ database: this.dbName, statement, values: values || [] });
+            },
+            execute: async function({ statement, values }) {
+                if (values && values.length > 0) {
+                    return await SQLite.run({ database: this.dbName, statement, values });
                 }
-            };
-            mostrarNotificacion(`Inicialización exitosa`)
-            // Forzar activación de claves foráneas y validar tablas
-            await db_real.execute({ statement: `PRAGMA foreign_keys = ON;` });
-            await this.crearTablas();
-
-        }
+                return await SQLite.execute({ database: this.dbName, statements: statement });
+            }
+        };
+        mostrarNotificacion(`Inicialización exitosa`)
+        // Forzar activación de claves foráneas y validar tablas
+        await db_real.execute({ statement: "PRAGMA foreign_keys = ON;" });
+        await this.crearTablas();
     },
 
     crearTablas: async function() {
