@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar el código fuente limpio (incluyendo tu nueva carpeta android)
+    # 1. Clonar el código fuente limpio (solo tus archivos web www y configuraciones)
     - name: Clonar Codigo Fuente
       uses: actions/checkout@v4
 
-    # 2. Configurar NodeJS v24 (Actualizado a tu versión actual)
+    # 2. Configurar NodeJS v24
     - name: Configurar Entorno NodeJS 24
       uses: actions/setup-node@v4
       with:
@@ -38,18 +38,19 @@ jobs:
     - name: Instalar Dependencias de Node
       run: npm install --legacy-peer-deps
 
-    # 6. Sincronizar recursos y plugins de Capacitor
-    # Al tener ya la carpeta 'android' en el repositorio, solo copiamos la carpeta www y sincronizamos plugins
+    # 6. GENERACIÓN LIMPIA: Crear la estructura nativa de Android en el servidor
+    - name: Crear Plataforma Nativa Android
+      run: npx cap add android
+
+    # 7. Sincronizar recursos web con Capacitor
     - name: Sincronizar Recursos Web con Capacitor
-      run: |
-        npx cap copy android
-        npx cap sync android
+      run: npx cap sync android
       
-    # 7. Otorgar permisos de ejecución al script nativo de Gradle
+    # 8. Otorgar permisos de ejecución al script nativo de Gradle generado en la nube
     - name: Otorgar Permisos de Ejecucion a Gradle
       run: chmod +x android/gradlew
 
-    # 8. Compilar el APK en modo Debug nativo
+    # 9. Compilar el APK en modo Debug nativo
     - name: Compilar APK Nativo con Gradle
       env:
         GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"
@@ -57,7 +58,7 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    # 9. Cargar el resultado final para su descarga directa
+    # 10. Cargar el resultado final para su descarga directa
     - name: Cargar APK como Artefacto Descargable
       uses: actions/upload-artifact@v4
       with:
