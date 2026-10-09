@@ -79,4 +79,171 @@
     border-color: var(--color-primario);
     background-color: #fff;
 }
+/* ==========================================================================
+   ESTILOS GENERALES Y MODAL (MÓDULO ADMINISTRATIVO)
+   ========================================================================== */
 
+/* Fondo oscurecido que cubre toda la pantalla del móvil */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo translúcido oscuro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que se dibuje por encima de todo */
+    padding: 16px;
+    box-sizing: border-box;
+    backdrop-filter: blur(4px); /* Suave desenfoque de fondo en Android moderno */
+}
+
+/* Contenedor del formulario (La tarjeta blanca) */
+.modal-content {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 480px; /* Tamaño máximo óptimo para phablets o tablets */
+    max-height: 90vh; /* Evita que se salga en pantallas pequeñas */
+    overflow-y: auto; /* Permite scroll interno si el teclado virtual emerge */
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    animation: entradaModal 0.3s ease-out;
+}
+
+/* Animación sutil de escala para la aparición en el dispositivo */
+@keyframes entradaModal {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Títulos y textos de alerta */
+.modal-content h2 {
+    margin-top: 0;
+    color: #1a237e; /* Azul oscuro corporativo / académico */
+    font-size: 1.4rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+.alerta-texto {
+    background-color: #fff3e0;
+    color: #e65100;
+    padding: 10px 14px;
+    border-left: 4px solid #ff9800;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   DISEÑO LIMPIO DE CAMPOS DE FORMULARIO
+   ========================================================================== */
+
+/* Bloques de agrupación */
+.campo-grupo {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.campo-grupo label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #424242;
+    margin-bottom: 6px;
+}
+
+/* Inputs adaptados para pulsación táctil (Mobile-friendly) */
+.campo-grupo input[type="text"],
+.campo-grupo input[type="date"] {
+    width: 100%;
+    height: 48px; /* Altura ideal recomendada por Android para interacción táctil */
+    padding: 0 14px;
+    font-size: 1rem;
+    border: 1.5px solid #bdbdbd;
+    border-radius: 6px;
+    background-color: #fafafa;
+    color: #212121;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* Estados de foco al escribir */
+.campo-grupo input:focus {
+    outline: none;
+    border-color: #1a237e;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+/* Distribución en dos columnas para las fechas (Lado a lado) */
+.dos-columnas {
+    display: flex;
+    gap: 12px;
+}
+
+.dos-columnas .campo-grupo {
+    flex: 1; /* Distribuye el espacio equitativamente */
+}
+
+/* ==========================================================================
+   BOTONES DE ACCIÓN NATIVOS
+   ========================================================================== */
+
+.modal-botones {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Estilo base para botones */
+.modal-botones button, 
+.btn-editar-adm {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-guardar {
+    background-color: #2e7d32; /* Verde éxito */
+    color: #ffffff;
+    flex: 1; /* Ocupa el espacio principal en móviles */
+}
+
+.btn-guardar:active {
+    background-color: #1b5e20;
+}
+
+.btn-cancelar {
+    background-color: #e0e0e0;
+    color: #424242;
+}
+
+.btn-cancelar:active {
+    background-color: #bdbdbd;
+}
+
+/* Botón administrativo flotante/fijo en la interfaz principal */
+.btn-editar-adm {
+    background-color: #37474f; /* Gris azulado industrial */
+    color: #ffffff;
+    margin: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.btn-editar-adm:active {
+    background-color: #263238;
+}

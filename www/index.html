@@ -42,6 +42,60 @@
                 </div>
             </div>
         </section>
+<!-- FORMULARIOS MODALES -->
+<!-- Modal Emergente para Configuración Administrativa de Escolaridad -->
+<div id="modalEscolaridad" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2 id="modalTitulo">Configuración de Escolaridad</h2>
+        <p id="modalMensaje" class="alerta-texto" style="display: none;">
+            ⚠️ No se detectó ninguna escolaridad vigente para la fecha actual. Por favor, configure el período.
+        </p>
+        
+        <form id="formEscolaridad">
+            <!-- Campo oculto para cuando estemos editando -->
+            <input type="hidden" id="escolaridad_id" value="">
+
+            <div class="campo-grupo">
+                <label for="esc_nombre">Año Escolar / Escolaridad:</label>
+                <input type="text" id="esc_nombre" placeholder="Ej: 2026-2027" required>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="esc_profesor">Nombre del Profesor:</label>
+                <input type="text" id="esc_profesor" placeholder="Nombre y Apellido" required>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="esc_area">Área de Formación:</label>
+                <input type="text" id="esc_area" placeholder="Ej: Matemáticas, GHC" required>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="esc_peic">Nombre del PEIC:</label>
+                <input type="text" id="esc_peic" placeholder="Proyecto Educativo Integral Comunitario" required>
+            </div>
+
+            <div class="dos-columnas">
+                <div class="campo-grupo">
+                    <label for="esc_inicio">Fecha de Inicio:</label>
+                    <input type="date" id="esc_inicio" required>
+                </div>
+                <div class="campo-grupo">
+                    <label for="esc_cierre">Fecha de Cierre:</label>
+                    <input type="date" id="esc_cierre" required>
+                </div>
+            </div>
+
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar">Guardar Configuración</button>
+                <button type="button" id="btnCerrarModal" class="btn-cancelar" style="display: none;" onclick="AppEscolaridad.cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Botón flotante o administrativo en tu interfaz para editar cuando se requiera -->
+<button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
     <script src="register.js"></script>
 </body>
 </html>

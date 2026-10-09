@@ -13,10 +13,14 @@ window.onerror = function (mensaje, fuente, linea, columna, error) {
 
 // 1. VARIABLES GLOBALES Y ORQUESTACIÓN DEL INICIO
 let db_real = null;
+// Variable global para inyectar automáticamente como FK en los siguientes registros
+window.escolaridadActivaId = null;
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await AppDB.inicializar();
+        await AppEscolaridad.controlar();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -162,3 +166,144 @@ const AppDB = {
         }
     }
 };
+
+/* GESTION DE ESCOLARIDAD, PLANES DE CATEDRA, NOMINAS Y CURSOS */
+
+const AppEscolaridad = {
+    
+    // 1. CONTROL DE ACTUALIDAD: Valida las fechas del sistema contra SQLite
+    controlarFlujoInicial: async function() {
+        try {
+            const hoyISO = new Date().toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+            
+            // Consultamos si existe alguna escolaridad cuyo rango cubra el día de hoy
+            const query = `
+                SELECT id FROM escolaridades 
+                WHERE ? >= fecha_inicio AND ? <= fecha_cierre 
+                LIMIT 1;
+            `;
+            
+            const resultado = await db_real.query({
+                statement: query,
+                values: [hoyISO, hoyISO]
+            });
+
+            if (resultado.values && resultado.values.length > 0) {
+                // ¡Excelente! Hay una escolaridad vigente
+                window.escolaridadActivaId = resultado.values[0].id;
+                console.log(`Escolaridad activa detectada e inyectada globalmente. ID: ${window.escolaridadActivaId}`);
+                mostrarNotificacion("Escolaridad vigente cargada automáticamente");
+            } else {
+                // No hay períodos vigentes para el día de hoy (o la tabla está vacía)
+                window.escolaridadActivaId = null;
+                this.abrirModalObligatorio();
+            }
+
+            // Escuchar el envío del formulario una sola vez
+            document.getElementById('formEscolaridad').onsubmit = async (e) => {
+                e.preventDefault();
+                await this.guardar();
+            };
+
+        } catch (error) {
+            console.error("Error al controlar el flujo de escolaridad:", error);
+        }
+    },
+
+    // 2. DISPARADORES VISUALES DEL MODAL
+    abrirModalObligatorio: function() {
+        document.getElementById('modalTitulo').innerText = "Configuración Obligatoria";
+        document.getElementById('modalMensaje').style.display = "block";
+        document.getElementById('btnCerrarModal').style.display = "none"; // No puede cerrarlo sin guardar
+        document.getElementById('modalEscolaridad').style.display = "flex";
+    },
+
+    abrirParaEditar: async function() {
+        // Si no hay ID activo, buscamos el último registro creado como fallback
+        let idParaEditar = window.escolaridadActivaId;
+        
+        if (!idParaEditar) {
+            const res = await db_real.query({ statement: "SELECT id FROM escolaridades ORDER BY id DESC LIMIT 1;" });
+            if (res.values && res.values.length > 0) {
+                idParaEditar = res.values[0].id;
+            }
+        }
+
+        if (!idParaEditar) {
+            this.abrirModalObligatorio();
+            return;
+        }
+
+        try {
+            // Buscamos los datos actuales para rellenar los inputs del formulario
+            const resData = await db_real.query({
+                statement: "SELECT * FROM escolaridades WHERE id = ?;",
+                values: [idParaEditar]
+            });
+
+            if (resData.values && resData.values.length > 0) {
+                const esc = resData.values[0];
+                document.getElementById('escolaridad_id').value = esc.id;
+                document.getElementById('esc_nombre').value = esc.escolaridad;
+                document.getElementById('esc_profesor').value = esc.profesor;
+                document.getElementById('esc_area').value = esc.area;
+                document.getElementById('esc_peic').value = esc.peic;
+                document.getElementById('esc_inicio').value = esc.fecha_inicio;
+                document.getElementById('esc_cierre').value = esc.fecha_cierre;
+
+                document.getElementById('modalTitulo').innerText = "Editar Escolaridad";
+                document.getElementById('modalMensaje').style.display = "none";
+                document.getElementById('btnCerrarModal').style.display = "inline-block"; // Permite cancelar la edición
+                document.getElementById('modalEscolaridad').style.display = "flex";
+            }
+        } catch (error) {
+            console.error("Error al cargar datos para edición:", error);
+        }
+    },
+
+    cerrarModal: function() {
+        document.getElementById('formEscolaridad').reset();
+        document.getElementById('escolaridad_id').value = "";
+        document.getElementById('modalEscolaridad').style.display = "none";
+    },
+
+    // 3. PROCESAMIENTO DE OPERACIONES (INSERT / UPDATE) EN SQLITE
+    guardar: async function() {
+        try {
+            const id = document.getElementById('escolaridad_id').value;
+            const escolaridad = document.getElementById('esc_nombre').value;
+            const profesor = document.getElementById('esc_profesor').value;
+            const area = document.getElementById('esc_area').value;
+            const peic = document.getElementById('esc_peic').value;
+            const inicio = document.getElementById('esc_inicio').value;
+            const cierre = document.getElementById('esc_cierre').value;
+
+            if (id) {
+                // Operación: ACTUALIZAR REGISTRO EXISTENTE (UPDATE)
+                const sqlUpdate = `UPDATE escolaridades SET escolaridad = ?, profesor = ?, area = ?, peic = ?, fecha_inicio = ?, fecha_cierre = ? WHERE id = ?;`;
+                await db_real.execute({
+                    statement: sqlUpdate,
+                    values: [escolaridad, profesor, area, peic, inicio, cierre, parseInt(id)]
+                });
+                mostrarNotificacion("Escolaridad actualizada con éxito");
+            } else {
+                // Operación: CREAR NUEVO REGISTRO (INSERT)
+                const sqlInsert = `INSERT INTO escolaridades (escolaridad, profesor, area, peic, fecha_inicio, fecha_cierre) VALUES (?, ?, ?, ?, ?, ?);`;
+                await db_real.execute({
+                    statement: sqlInsert,
+                    values: [escolaridad, profesor, area, peic, inicio, cierre]
+                });
+                mostrarNotificacion("Nueva escolaridad registrada con éxito");
+            }
+
+            this.cerrarModal();
+            // Re-evaluamos el estado de la App para actualizar las variables globales de FK en caliente
+            await this.controlarFlujoInicial();
+
+        } catch (error) {
+            console.error("Error al guardar la escolaridad en SQLite:", error);
+            alert("Error crítico al procesar la base de datos.");
+        }
+    }
+};
+
