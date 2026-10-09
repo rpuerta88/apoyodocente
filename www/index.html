@@ -42,6 +42,31 @@
                 </div>
             </div>
         </section>
+<!-- PENDIENTE HACER EL CONTENEDOR O SECCION DESTINADA A LA ADMINISTRACIÓN DEL SISTEMA -->
+<!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
+<div id="seccionCursos" class="panel-administrativo">
+    <h3>🏛️ Registro de Cursos y Secciones</h3>
+    
+    <!-- Formulario de Registro Rápido -->
+    <form id="formCursos" class="formulario-lineal">
+        <div class="campo-grupo no-margin">
+            <label for="curso_seccion">Curso y Sección:</label>
+            <input type="text" id="curso_seccion" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn-agregar-curso">➕ Añadir</button>
+    </form>
+
+    <!-- Lista Dinámica Interactiva -->
+    <div class="contenedor-lista-cursos">
+        <h4>Cursos Registrados</h4>
+        <ul id="listaCursosActivos" class="lista-interactiva">
+            <!-- Se puebla dinámicamente desde SQLite -->
+            <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
+        </ul>
+    </div>
+</div>
+
+
 <!-- FORMULARIOS MODALES -->
 <!-- Modal Emergente para Configuración Administrativa de Escolaridad -->
 <div id="modalEscolaridad" class="modal-overlay" style="display: none;">

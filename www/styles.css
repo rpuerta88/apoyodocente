@@ -247,3 +247,102 @@
 .btn-editar-adm:active {
     background-color: #263238;
 }
+
+/* Panel de Contención */
+.panel-administrativo {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.panel-administrativo h3 {
+    margin-top: 0;
+    color: #1a237e;
+    font-size: 1.2rem;
+}
+
+/* Formulario en línea */
+.formulario-lineal {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.no-margin {
+    margin-bottom: 0 !important;
+    flex: 1; /* Ocupa el ancho restante */
+}
+
+.btn-agregar-curso {
+    background-color: #1a237e;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    height: 48px;
+    padding: 0 16px;
+    font-weight: bold;
+    font-size: 1rem;
+}
+.btn-agregar-curso:active {
+    background-color: #0d1252;
+}
+
+/* Lista interactiva de cursos */
+.contenedor-lista-cursos h4 {
+    margin: 12px 0 6px 0;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.lista-interactiva {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+/* Ítems de la lista optimizados para dedos (Pulsación segura) */
+.item-curso {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 1rem;
+    color: #212121;
+}
+
+.item-curso:last-child {
+    border-bottom: none;
+}
+
+.lista-vacia {
+    padding: 16px;
+    text-align: center;
+    color: #757575;
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+/* Botón táctil para eliminar */
+.btn-eliminar-item {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.btn-eliminar-item:active {
+    background: #ffcdd2;
+}

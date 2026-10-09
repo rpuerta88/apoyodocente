@@ -20,7 +20,8 @@ window.escolaridadActivaId = null;
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await AppDB.inicializar();
-        await AppEscolaridad.controlar();
+        await AppEscolaridad.controlarFlujoInicial();
+        await AppCursos.inicializar();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -307,3 +308,107 @@ const AppEscolaridad = {
     }
 };
 
+const AppCursos = {
+    
+    inicializar: async function() {
+        // Escuchar el evento de envío del formulario
+        const form = document.getElementById('formCursos');
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                await this.registrarCurso();
+            };
+        }
+        // Renderizar la lista de cursos existentes
+        await this.cargarListaCursos();
+    },
+
+    // 1. LEER CURSOS DESDE SQLITE Y RENDERIZAR INTERFAZ
+    cargarListaCursos: async function() {
+        const listaUL = document.getElementById('listaCursosActivos');
+        if (!listaUL) return;
+
+        try {
+            // Consulta limpia a la tabla de cursos
+            const resultado = await db_real.query({
+                statement: "SELECT * FROM cursos ORDER BY cursoseccion ASC;"
+            });
+
+            listaUL.innerHTML = ""; // Limpiamos la lista visual
+
+            if (!resultado.values || resultado.values.length === 0) {
+                listaUL.innerHTML = `<li class="lista-vacia">No hay cursos registrados en el sistema.</li>`;
+                return;
+            }
+
+            // Mapeamos los registros a elementos de lista interactivos
+            resultado.values.forEach(curso => {
+                const li = document.createElement('li');
+                li.className = 'item-curso';
+                li.innerHTML = `
+                    <span class="curso-texto">▪️ ${curso.cursoseccion}</span>
+                    <button type="button" class="btn-eliminar-item" onclick="AppCursos.eliminarCurso(${curso.id}, '${curso.cursoseccion}')" aria-label="Eliminar curso">
+                        🗑️
+                    </button>
+                `;
+                listaUL.appendChild(li);
+            });
+
+        } catch (error) {
+            console.error("Error al cargar la lista de cursos desde SQLite:", error);
+        }
+    },
+
+    // 2. INSERTAR NUEVO CURSO (Con validación de duplicados nativa)
+    registrarCurso: async function() {
+        const inputCurso = document.getElementById('curso_seccion');
+        // Normalizamos a mayúsculas para mantener consistencia en la BD
+        const valorCurso = inputCurso.value.trim().toUpperCase(); 
+
+        if (!valorCurso) return;
+
+        try {
+            const sqlInsert = "INSERT INTO cursos (cursoseccion) VALUES (?);";
+            await db_real.execute({
+                statement: sqlInsert,
+                values: [valorCurso]
+            });
+
+            mostrarNotificacion(`Curso "${valorCurso}" agregado`);
+            inputCurso.value = ""; // Limpiar campo
+            await this.cargarListaCursos(); // Refrescar lista en pantalla
+
+        } catch (error) {
+            // Captura el error UNIQUE de SQLite si intentan meter el mismo curso
+            if (error.message && error.message.includes("UNIQUE")) {
+                alert(`El curso "${valorCurso}" ya se encuentra registrado.`);
+            } else {
+                console.error("Error al registrar curso:", error);
+                alert("No se pudo guardar el curso.");
+            }
+        }
+    },
+
+    // 3. ELIMINAR CURSO (Control interactivo con confirmación)
+    eliminarCurso: async function(id, nombreCurso) {
+        // Cuadro de diálogo nativo del dispositivo
+        const confirmar = confirm(`¿Está seguro de eliminar "${nombreCurso}"?\n⚠️ Esto removerá las nóminas, asistencias y notas asociadas a esta sección.`);
+        
+        if (!confirmar) return;
+
+        try {
+            const sqlDelete = "DELETE FROM cursos WHERE id = ?;";
+            await db_real.execute({
+                statement: sqlDelete,
+                values: [parseInt(id)]
+            });
+
+            mostrarNotificacion(`Curso "${nombreCurso}" eliminado`);
+            await this.cargarListaCursos(); // Refrescar lista
+
+        } catch (error) {
+            console.error("Error al eliminar curso:", error);
+            alert("Error al intentar eliminar el registro.");
+        }
+    }
+};
