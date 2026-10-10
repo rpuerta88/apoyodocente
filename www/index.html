@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <!-- CABECERA PRINCIPAL -->
     <header class="app-header">
         <h1>SAAD <span>NeuroAula</span></h1>
@@ -15,35 +14,27 @@
             <span class="badge">SQLite OK</span>
         </div>
     </header>
+<!-- -->
+<!-- BARRA DE NAVEGACIÓN TÁCTIL (TABS) -->
+<nav class="barra-navegacion">
+    <button type="button" id="tab-admin" class="nav-link activo" onclick="AppNavegacion.cambiarPantalla('admin')">
+        <span class="nav-icono">⚙️</span>
+        <span class="nav-texto">Administración</span>
+    </button>
+    <button type="button" id="tab-docente" class="nav-link" onclick="AppNavegacion.cambiarPantalla('docente')">
+        <span class="nav-icono">📝</span>
+        <span class="nav-texto">Práctica Diaria</span>
+    </button>
+</nav>
 
-    <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
-    <main class="contenedor-principal">
-        
-        <!-- Controles de Contexto de Aula -->
-        <section class="tarjeta seccion-filtros">
-            <h2>Gestión de Aula Diario</h2>
-            <div class="grupo-control">
-                <label>Curso y Sección</label>
-                <select class="control-input">
-                    <option>5TO AÑO A</option>
-                    <option>5TO AÑO B</option>
-                    <option>5TO AÑO C</option>
-                </select>
-            </div>
-            
-            <div class="grupo-control">
-                <label>Sesión / Clase de Hoy</label>
-                <div class="linea-accion">
-                    <select class="control-input">
-                        <option>Polinomios</option>
-                        <option>Cónicas</option>
-                        <option>derivadas</option>
-                    </select>
-                </div>
-            </div>
-        </section>
-<!-- PENDIENTE HACER EL CONTENEDOR O SECCION DESTINADA A LA ADMINISTRACIÓN DEL SISTEMA -->
+<!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
+<main class="contenedor-pantallas">
+
+    <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
+    <section id="pantalla-admin" class="pantalla-vista">
+        <!-- -->
 <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
+<!-- ***REVISAR SANGRÍAS*** -->
 <div id="seccionCursos" class="panel-administrativo">
     <h3>🏛️ Registro de Cursos y Secciones</h3>
     
@@ -56,7 +47,12 @@
         <button type="submit" class="btn-agregar-curso">➕ Añadir</button>
     </form>
 
+</div>
+        <!-- Aquí va todo lo que ya hemos hecho: El botón de Escolaridad y el Registro de Cursos -->
+        <div id="seccionCursos" class="panel-administrativo">
+            <!-- -->
     <!-- Lista Dinámica Interactiva -->
+<!-- ***REVISAR SANGRÍAS*** -->
     <div class="contenedor-lista-cursos">
         <h4>Cursos Registrados</h4>
         <ul id="listaCursosActivos" class="lista-interactiva">
@@ -64,9 +60,128 @@
             <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
         </ul>
     </div>
+
+            <!-- -->
+            <!-- (Tu formulario y lista de cursos actual se quedan aquí adentro) -->
+        </div>
+<!-- -->
+<!-- MÓDULO DE REGISTRO DE ESTUDIANTES -->
+<div class="panel-administrativo">
+    <h3>👥 Registro y Matrícula de Estudiantes</h3>
+    <p class="instruccion-texto">Cargue la lista de alumnos masivamente o registre un estudiante de forma individual.</p>
+    
+    <div class="dos-columnas-botones">
+        <!-- Opción 1: Entrada de Archivo CSV oculto con botón estilizado -->
+        <label class="btn-accion btn-csv">
+            📁 Importar Matrícula (.CSV)
+            <input type="file" id="archivoCSV" accept=".csv" onchange="AppEstudiantes.importarCSV(this)" style="display: none;">
+        </label>
+        
+        <!-- Opción 2: Botón Manual -->
+        <button type="button" class="btn-accion btn-manual" onclick="AppEstudiantes.abrirModalManual()">
+            👤 Registro Manual
+        </button>
+    </div>
+</div>
+<!-- -->
+<!-- MÓDULO DE CONFIGURACIÓN DE NÓMINAS -->
+<div class="panel-administrativo">
+    <h3>📋 Asignación y Elaboración de Nóminas</h3>
+    <p class="instruccion-texto">Vincule a los alumnos matriculados con sus respectivas secciones para el año escolar activo.</p>
+    
+    <!-- Selectores base para saber a qué curso se le va a asignar la nómina -->
+    <div class="campo-grupo">
+        <label for="nom_select_curso">Seleccione el Curso / Sección Destino:</label>
+        <select id="nom_select_curso" required>
+            <!-- Se poblará dinámicamente desde SQLite con los cursos existentes -->
+            <option value="" disabled selected>Cargando cursos disponibles...</option>
+        </select>
+    </div>
+
+    <div class="dos-columnas-botones">
+        <!-- Opción 1: Carga Masiva a Nómina vía CSV -->
+        <label class="btn-accion btn-csv-nomina">
+            📁 Cargar Nómina Masiva (.CSV)
+            <input type="file" id="archivoCSVNomina" accept=".csv" onchange="AppNominas.importarCSVNomina(this)" style="display: none;">
+        </label>
+        
+        <!-- Opción 2: Registro Individual -->
+        <button type="button" class="btn-accion btn-manual-nomina" onclick="AppNominas.abrirModalIndividual()">
+            👤 Asignación Individual
+        </button>
+    </div>
 </div>
 
+<!-- -->
+<!-- -->
+<!-- BOTÓN DISPARADOR (Agrégalo dentro de tu pantalla-admin en el index.html) -->
+<div class="panel-administrativo">
+    <h3>📐 Planificación Pedagógica</h3>
+    <p style="font-size: 0.9rem; color: #555;">Defina los contenidos programáticos antes de iniciar las clases.</p>
+    <button type="button" class="btn-planificar" onclick="AppPlanificacion.abrirModal()">➕ Planificar Nuevo Tema</button>
+</div>
+<!-- Botón flotante o administrativo en tu interfaz para editar cuando se requiera -->
+<button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
+        <!-- -->
+        <!-- -->
+<!-- BOTÓN DISPARADOR (Agrégalo en tu panel administrativo dentro de pantalla-admin) -->
+<div class="panel-administrativo">
+    <h3>📆 Períodos y Lapsos</h3>
+    <p style="font-size: 0.9rem; color: #555;">Establezca los lapsos académicos activos para la evaluación continua.</p>
+    <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
+</div>
 
+        <!-- -->
+    </section>
+
+    <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) -->
+<!-- -->
+    <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
+    <main class="contenedor-principal">
+<!-- SECCIÓN 2: PRÁCTICA DOCENTE (Operación diaria en el aula) -->
+<section id="pantalla-docente" class="pantalla-vista" style="display: none;">
+    <div class="panel-docente">
+        <h3>📝 Control de Sesión Diaria</h3>
+        <p class="subtitulo-docente">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
+        
+        <!-- Estado de la sesión actual -->
+        <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
+            ⚪ No hay ninguna sesión activa para el día de hoy.
+        </div>
+<!-- -->
+<!-- BOTÓN DISPARADOR (Agrégalo en tu panel-docente, dentro de la zonaOperacionesAula del index.html) -->
+<!-- Como se requiere para la evaluación diaria, es ideal colocarlo en la pestaña de Práctica Diaria -->
+<div class="bloque-criterio-aula" style="margin-top: 14px;">
+    <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
+        🎯 Configurar Criterio de Evaluación para Hoy
+    </button>
+</div>
+<!-- -->
+
+        <!-- Botón de apertura rápida -->
+        <div class="contenedor-acciones-aula">
+            <button type="button" id="btnAbrirSesion" class="btn-aula btn-apertura" onclick="AppClasesDiarias.abrirSesionHoy()">
+                🚀 Abrir Sesión de Hoy
+            </button>
+        </div>
+        
+        <!-- Contenedor oculto que se activará cuando la sesión esté abierta -->
+        <div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
+            <div class="divisor-titulos">📋 Panel de Trabajo del Aula</div>
+            <!-- Aquí se inyectarán más adelante los pases de asistencia y notas -->
+        </div>
+    </div>
+</section>
+<!-- -->
+
+<!-- -->
+    </section>
+
+</main>
+
+
+<!-- -->
+<!-- -->
 <!-- FORMULARIOS MODALES -->
 <!-- Modal Emergente para Configuración Administrativa de Escolaridad -->
 <div id="modalEscolaridad" class="modal-overlay" style="display: none;">
@@ -118,9 +233,180 @@
         </form>
     </div>
 </div>
+<!-- Modal Emergente para Planificación de Contenidos -->
+<div id="modalPlanificacion" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>📐 Planificación de Contenidos</h2>
+        <p class="instruccion-texto">Registre el núcleo temático que se desarrollará en las próximas sesiones.</p>
+        <!-- -->
+        <form id="formPlanificacion">
+<!-- ***ARREGLAR SANGRIAS*** -->
+    <!-- 1. SELECCIÓN O CREACIÓN DEL TEMA CENTRAL -->
+    <div class="campo-grupo">
+        <label for="plan_select_catedra">Tema Central (Cátedra):</label>
+        <select id="plan_select_catedra" onchange="AppPlanificacion.evaluarSeleccionCatedra()" required>
+            <!-- Se poblará dinámicamente desde SQLite -->
+            <option value="" disabled selected>Seleccione un tema central...</option>
+            <option value="NUEVO">➕ [ Registrar Nuevo Tema Central ]</option>
+        </select>
+    </div>
 
-<!-- Botón flotante o administrativo en tu interfaz para editar cuando se requiera -->
-<button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
+    <!-- Campo de texto oculto por defecto, solo se muestra si elige "NUEVO" -->
+    <div class="campo-grupo" id="grupo_nuevo_tema_central" style="display: none;">
+        <label for="plan_tema_central">Nombre del Nuevo Tema Central:</label>
+        <input type="text" id="plan_tema_central" placeholder="Ej: Unidad I: Mecánica Clásica" autocomplete="off">
+    </div>
+
+    <!-- 2. REGISTRO DEL SUBTEMA (SIEMPRE VISIBLE) -->
+    <div class="campo-grupo">
+        <label for="plan_tema_generador">Tema Generador (Subtema / Temario):</label>
+        <input type="text" id="plan_tema_generador" placeholder="Ej: Las leyes de Newton" required autocomplete="off">
+    </div>
+
+    <div class="modal-botones">
+        <button type="submit" class="btn-guardar-plan">💾 Registrar Contenido</button>
+        <button type="button" class="btn-cancelar" onclick="AppPlanificacion.cerrarModal()">Cancelar</button>
+    </div>
+</form>
+        <!-- -->
+    </div>
+</div>
+<!-- Modal Emergente para Registro Manual de Estudiantes -->
+<div id="modalEstudianteManual" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>👤 Registro de Estudiante</h2>
+        <p class="instruccion-texto">Ingrese los datos de identificación oficial del alumno.</p>
+        
+        <form id="formEstudianteManual">
+            <div class="campo-grupo">
+                <label for="est_cedula">Cédula de Identidad (Sólo números):</label>
+                <input type="number" id="est_cedula" placeholder="Ej: 31222444" required>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="est_nombre">Nombres:</label>
+                <input type="text" id="est_nombre" placeholder="Ej: Juan Carlos" required autocomplete="off">
+            </div>
+
+            <div class="campo-grupo">
+                <label for="est_apellido">Apellidos:</label>
+                <input type="text" id="est_apellido" placeholder="Ej: Pérez Rodríguez" required autocomplete="off">
+            </div>
+
+            <div class="dos-columnas">
+                <div class="campo-grupo">
+                    <label for="est_nacimiento">Fecha de Nacimiento:</label>
+                    <input type="date" id="est_nacimiento" required>
+                </div>
+                <div class="campo-grupo">
+                    <label for="est_genero">Género / Sexo:</label>
+                    <select id="est_genero" required>
+                        <option value="" disabled selected>Seleccione...</option>
+                        <option value="M">Masculino (M)</option>
+                        <option value="F">Femenino (F)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar-estudiante">💾 Guardar Alumno</button>
+                <button type="button" class="btn-cancelar" onclick="AppEstudiantes.cerrarModalManual()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal Emergente para Registro de Lapsos/Momentos -->
+<div id="modalLapso" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>📆 Configuración de Lapso / Momento</h2>
+        <p class="instruccion-texto">Defina el momento académico actual y el título del proyecto de aprendizaje.</p>
+        
+        <form id="formLapso">
+            <div class="campo-grupo">
+                <label for="lap_momento">Identificador del Lapso:</label>
+                <select id="lap_momento" required>
+                    <option value="" disabled selected>Seleccione el momento...</option>
+                    <option value="I LAPSO">I Lapso / Primer Momento</option>
+                    <option value="II LAPSO">II Lapso / Segundo Momento</option>
+                    <option value="III LAPSO">III Lapso / Tercer Momento</option>
+                </select>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="lap_proyecto">Proyecto de Aprendizaje (P.A.):</label>
+                <input type="text" id="lap_proyecto" placeholder="Ej: Conociendo las ciencias naturales" required autocomplete="off">
+            </div>
+
+            <div class="dos-columnas">
+                <div class="campo-grupo">
+                    <label for="lap_inicio">Fecha de Inicio:</label>
+                    <input type="date" id="lap_inicio" required>
+                </div>
+                <div class="campo-grupo">
+                    <label for="lap_cierre">Fecha de Cierre:</label>
+                    <input type="date" id="lap_cierre" required>
+                </div>
+            </div>
+
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar-lapso">💾 Activar Lapso</button>
+                <button type="button" class="btn-cancelar" onclick="AppLapsos.cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal Emergente para Asignación Individual de Estudiante a Nómina -->
+<div id="modalNominaIndividual" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>👤 Asignación Individual a Nómina</h2>
+        <p class="instruccion-texto">Ingrese la cédula del alumno para asociarlo al curso seleccionado.</p>
+        
+        <form id="formNominaIndividual">
+            <div class="campo-grupo">
+                <label for="nom_cedula_alumno">Cédula del Estudiante:</label>
+                <input type="number" id="nom_cedula_alumno" placeholder="Ej: 32111222" required>
+            </div>
+
+            <div class="campo-grupo">
+                <label for="nom_condicion">Condición Académica:</label>
+                <select id="nom_condicion" required>
+                    <option value="Regular" selected>Regular</option>
+                    <option value="Repitiente">Repitiente</option>
+                </select>
+            </div>
+
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar-nomina">💾 Registrar en Nómina</button>
+                <button type="button" class="btn-cancelar" onclick="AppNominas.cerrarModalIndividual()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal Emergente para Configuración de Criterios de Evaluación -->
+<div id="modalCriterio" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>🎯 Criterio de Evaluación</h2>
+        <p class="instruccion-texto">Defina el indicador, rasgos o instrumento y los puntos máximos asignados a esta actividad.</p>
+        
+        <form id="formCriterio">
+            <div class="campo-grupo">
+                <label for="crit_nombre">Nombre del Criterio / Actividad:</label>
+                <input type="text" id="crit_nombre" placeholder="Ej: Defensa de Cartelera, Examen Escrito" required autocomplete="off">
+            </div>
+
+            <div class="campo-grupo">
+                <label for="crit_descripcion">Descripción o Indicadores (Opcional):</label>
+                <input type="text" id="crit_descripcion" placeholder="Ej: Dominio de grupo, coherencia y material visual" autocomplete="off">
+            </div>
+
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar-criterio">💾 Guardar Criterio</button>
+                <button type="button" class="btn-cancelar" onclick="AppCriterios.cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
     <script src="register.js"></script>
 </body>
 </html>
