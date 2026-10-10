@@ -13,16 +13,12 @@ window.onerror = function (mensaje, fuente, linea, columna, error) {
 
 // 1. VARIABLES GLOBALES Y ORQUESTACIÓN DEL INICIO
 let db_real = null;
-// Variable global para inyectar automáticamente como FK en los siguientes registros
 window.escolaridadActivaId = null;
-// Variable global que quedará disponible para inyectarse como FK en la tabla 'sesiones'
 window.temarioActivoId = null;
-// Variable global que quedará disponible para inyectarse como FK en la tabla 'sesiones'
 window.lapsoActivoId = null;
-// Variable global que guardará el ID de la sesión vigente para los registros de asistencia y notas
 window.sesionActivaId = null;
-// Variable global que guardará el ID del criterio vigente para el registro de calificaciones
 window.criterioActivoId = null;
+//~ AppAulaOperaciones.inicializarSelectoresAula()
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -368,6 +364,7 @@ const AppCursos = {
         }
         // Renderizar la lista de cursos existentes
         await this.cargarListaCursos();
+        await AppNominas.inicializar();
     },
 
     // 1. LEER CURSOS DESDE SQLITE Y RENDERIZAR INTERFAZ
@@ -570,10 +567,7 @@ const AppPlanificacion = {
 };
 
 const AppEstudiantes = {
-
-    // ==========================================
     // OPCIÓN 1: PROCESAMIENTO MASIVO DESDE CSV
-    // ==========================================
     importarCSV: function(inputElement) {
         const archivo = inputElement.files[0];
         if (!archivo) return;
@@ -638,10 +632,7 @@ const AppEstudiantes = {
 
         lector.readAsText(archivo, "UTF-8");
     },
-
-    // ==========================================
     // OPCIÓN 2: ENTRADA MANUAL POR FORMULARIO
-    // ==========================================
     abrirModalManual: function() {
         document.getElementById('formEstudianteManual').reset();
         document.getElementById('modalEstudianteManual').style.display = 'flex';
@@ -789,13 +780,9 @@ const AppNominas = {
         const res = await db_real.query({ statement: query, values: [parseInt(cedula)] });
         return (res.values && res.values.length > 0);
     },
-
-    // ==========================================
     // OPCIÓN 1: CARGA MASIVA DE NÓMINA (CSV)
-    // ==========================================
     importarCSVNomina: function(inputElement) {
         const cursoID = document.getElementById('nom_select_curso').value;
-        
         // Validaciones previas obligatorias de llaves foráneas
         if (!window.escolaridadActivaId) {
             alert("⚠️ Operación rechazada: No hay una escolaridad vigente activa.");
@@ -807,40 +794,31 @@ const AppNominas = {
             inputElement.value = "";
             return;
         }
-
         const archivo = inputElement.files[0];
         if (!archivo) return;
-
         const lector = new FileReader();
         lector.onload = async (evento) => {
             const lineas = evento.target.result.split(/\r\)?\n/);
             let insertados = 0;
             let omitidosNoEncontrados = [];
             let omitidosDuplicados = 0;
-
             mostrarNotificacion("Validando e importando nómina...");
-
             for (let i = 0; i < lineas.length; i++) {
                 const linea = lineas[i].trim();
                 if (!linea || linea.toLowerCase().includes("cedula")) continue;
-
                 const delimitador = linea.includes(";") ? ";" : ",";
                 const columnas = linea.split(delimitador);
-                
                 // Formato esperado en el CSV de nómina: cedula,condicion (ej: 31000222,Regular)
                 if (columnas.length >= 1) {
                     const cedula = parseInt(columnas[0].trim());
                     const condicion = (columnas[1] && columnas[1].trim()) ? columnas[1].trim() : "Regular";
-
                     if (isNaN(cedula)) continue;
-
                     // VALIDACIÓN SOLICITADA: Revisar si el alumno existe en la App
                     const existe = await this.verificarEstudianteExiste(cedula);
                     if (!existe) {
                         omitidosNoEncontrados.push(cedula);
                         continue;
                     }
-
                     try {
                         // El UNIQUE compuesto en el Schema evita que un alumno se inscriba dos veces en el mismo curso/año
                         const sql = `
@@ -861,7 +839,6 @@ const AppNominas = {
                     }
                 }
             }
-
             // Alerta de resumen detallada con las cédulas no encontradas
             let mensajeResultado = `Resumen de asignación masiva:\n✅ ${insertados} Alumnos agregados a la nómina del curso.\n`;
             if (omitidosDuplicados > 0) mensajeResultado += `⚠️ ${omitidosDuplicados} Ya pertenecían a esta nómina.\n`;
@@ -874,10 +851,7 @@ const AppNominas = {
 
         lector.readAsText(archivo, "UTF-8");
     },
-
-    // ==========================================
     // OPCIÓN 2: ASIGNACIÓN INDIVIDUAL (MANUAL)
-    // ==========================================
     abrirModalIndividual: function() {
         const cursoID = document.getElementById('nom_select_curso').value;
         if (!window.escolaridadActivaId) {
@@ -888,10 +862,8 @@ const AppNominas = {
             alert("⚠️ Por favor, seleccione el Curso Destino en el selector antes de realizar una asignación individual.");
             return;
         }
-
         document.getElementById('formNominaIndividual').reset();
         document.getElementById('modalNominaIndividual').style.display = 'flex';
-
         document.getElementById('formNominaIndividual').onsubmit = async (e) => {
             e.preventDefault();
             await this.guardarIndividual();
@@ -1013,6 +985,8 @@ const AppClasesDiarias = {
 
         if (zonaTrabajo) {
             zonaTrabajo.style.display = "block";
+            AppAulaOperaciones.inicializarSelectoresAula();
+            AppAulaOperaciones.cargarHistorialSesionesCombo(); // <-- INYECTAR ESTA LÍNEA AQUÍ
         }
     }
 };
@@ -1075,3 +1049,622 @@ const AppCriterios = {
         }
     }
 };
+
+// ====== MÓDULO NEUROEDUCATIVO DE OPERACIONES EN AULA ======
+const AppAulaOperaciones = {
+    criteriosSeleccionadosIds: [],
+
+    inicializarSelectoresAula: async function() {
+        const select = document.getElementById('aula_select_curso');
+        if (!select) return;
+        try {
+            const resultado = await db_real.query({
+                statement: "SELECT * FROM cursos ORDER BY cursoseccion ASC;"
+            });
+            select.innerHTML = '<option value="" disabled selected>Seleccione el curso a trabajar...</option>';
+            if (resultado.values && resultado.values.length > 0) {
+                resultado.values.forEach(curso => {
+                    const opt = document.createElement('option');
+                    opt.value = curso.id;
+                    opt.textContent = curso.cursoseccion;
+                    select.appendChild(opt);
+                });
+            }
+            // Ejecutar la carga de criterios configurados en el sistema
+            await this.cargarCriteriosDisponiblesASeleccion();
+        } catch (e) {
+            console.error("Error al arrancar el panel de aula:", e);
+        }
+    },
+
+    // Recupera todos los criterios creados por el docente para que elija cuáles evaluar hoy
+    cargarCriteriosDisponiblesASeleccion: async function() {
+        const contenedor = document.getElementById('contenedorCheckboxesCriterios');
+        if (!contenedor) return;
+        try {
+            const res = await db_real.query({ statement: "SELECT * FROM criterios_evaluacion ORDER BY id ASC;" });
+            contenedor.innerHTML = "";
+            
+            if (!res.values || res.values.length === 0) {
+                contenedor.innerHTML = `<p class="alerta-texto" style="margin:0;">⚠️ No hay criterios creados en Administración. Use el botón "Configurar Criterio" primero.</p>`;
+                return;
+            }
+
+            res.values.forEach(crit => {
+                const label = document.createElement('label');
+                label.className = 'item-check-criterio';
+                label.innerHTML = `
+                    <input type="checkbox" value="${crit.id}" onchange="AppAulaOperaciones.actualizarMatrizCriteriosActivos()">
+                    <span><b>${crit.nombre_criterio}</b> <small>(${crit.descripcion || ''})</small></span>
+                `;
+                contenedor.appendChild(label);
+            });
+        } catch (err) {
+            console.error("Error al mapear criterios evaluativos:", err);
+        }
+    },
+
+    // Escucha qué checkboxes de la sesión se marcaron para reconfigurar la tabla en caliente
+    actualizarMatrizCriteriosActivos: function() {
+        const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]:checked');
+        this.criteriosSeleccionadosIds = Array.from(checkboxes).map(chk => parseInt(chk.value));
+        // Re-renderizar estudiantes para adaptar las columnas visuales sin perder datos
+        this.recalcularNotasEnPantalla();
+    },
+
+    cargarEstudiantesAsistencia: async function() {
+        const cursoID = document.getElementById('aula_select_curso').value;
+        const tablaBody = document.getElementById('listaEstudiantesAula');
+        if (!tablaBody || !cursoID) return;
+
+        try {
+            const sql = `
+                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido
+                FROM nomina n
+                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
+                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
+                ORDER BY e.apellido ASC, e.nombre ASC;
+            `;
+            const resultado = await db_real.query({
+                statement: sql,
+                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+            });
+
+            tablaBody.innerHTML = "";
+            if (!resultado.values || resultado.values.length === 0) {
+                tablaBody.innerHTML = `<tr><td colspan="4" class="lista-vacia">Sin estudiantes en esta sección.</td></tr>`;
+                return;
+            }
+
+            resultado.values.forEach(alumno => {
+                const tr = document.createElement('tr');
+                tr.className = 'fila-estudiante-aula';
+                tr.id = `fila-alumno-${alumno.nomina_id}`;
+                tr.dataset.nominaId = alumno.nomina_id;
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="alumno-info-celda" style="cursor: pointer;" onclick="AppAulaOperaciones.verReporteAcumuladoAlumno(${alumno.nomina_id}, '${alumno.apellido}, ${alumno.nombre}')" title="Toca para ver historial">
+                            <span class="alumno-nombre-completo" style="color: #0288d1; text-decoration: underline;">${alumno.apellido}, ${alumno.nombre} 📊</span>
+                            <small class="alumno-cedula-sub">C.I: ${alumno.id_cedula}</small>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <label class="switch-asistencia">
+                            <input type="checkbox" class="chk-asistencia" checked onchange="AppAulaOperaciones.alternarAsistenciaFila(this)">
+                            <span class="slider-control"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}">
+                            <!-- Se inyectan dinámicamente según los criterios activos -->
+                        </div>
+                    </td>
+                    <td class="text-center font-weight-bold cell-nota-final" id="nota-final-est-${alumno.nomina_id}" style="font-size:1.2rem; color:#1b5e20;">
+                        8.0
+                    </td>
+                `;
+                tablaBody.appendChild(tr);
+            });
+
+            this.recalcularNotasEnPantalla();
+        } catch (error) {
+            console.error("Error al mapear nómina de clase:", error);
+        }
+    },
+
+    // Dibuja los interruptores de los criterios elegidos para cada estudiante en la grilla
+    recalcularNotasEnPantalla: function() {
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        const numCriterios = this.criteriosSeleccionadosIds.length;
+        const valorPorCriterio = numCriterios > 0 ? (12 / numCriterios) : 0;
+
+        filas.forEach(fila => {
+            const nominaId = fila.dataset.nominaId;
+            const chkAsistencia = fila.querySelector('.chk-asistencia');
+            const zonaRasgos = fila.querySelector(`#rasgos-est-${nominaId}`);
+            const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
+
+            // Guardar estados previos de los checkboxes de rasgos para no perder la selección al redibujar
+            const estadosPrevios = {};
+            zonaRasgos.querySelectorAll('input[type="checkbox"]').forEach(c => {
+                estadosPrevios[c.dataset.critId] = c.checked;
+            });
+
+            zonaRasgos.innerHTML = "";
+
+            if (!chkAsistencia.checked) {
+                zonaRasgos.innerHTML = `<span style="color:#c62828; font-style:italic;">Inasistente - Bloqueado</span>`;
+                cellNota.innerText = "1.0";
+                cellNota.style.color = "#c62828";
+                return;
+            }
+
+            if (numCriterios === 0) {
+                zonaRasgos.innerHTML = `<small style="color:#757575;">No se han seleccionado rasgos para evaluar hoy.</small>`;
+                cellNota.innerText = "8.0";
+                cellNota.style.color = "#1b5e20";
+                return;
+            }
+
+            // Inyectar checkboxes compactos para cada rasgo pedagógico activo
+            this.criteriosSeleccionadosIds.forEach(critId => {
+                const checkedStr = estadosPrevios[critId] ? 'checked' : '';
+                const div = document.createElement('div');
+                div.className = 'subitem-rasgo-check';
+                div.innerHTML = `
+                    <label>
+                        <input type="checkbox" data-crit-id="${critId}" ${checkedStr} onchange="AppAulaOperaciones.calcularNotaEstudiante(${nominaId})">
+                        <span>P. Línea</span>
+                    </label>
+                `;
+                zonaRasgos.appendChild(div);
+            });
+
+            this.calcularNotaEstudiante(nominaId);
+        });
+    },
+
+    alternarAsistenciaFila: function(checkbox) {
+        this.recalcularNotasEnPantalla();
+    },
+
+    // Ejecuta la sumatoria aritmética del estudiante individual en tiempo real en la vista
+    calcularNotaEstudiante: function(nominaId) {
+        const fila = document.getElementById(`fila-alumno-${nominaId}`);
+        if (!fila) return;
+
+        const chkAsistencia = fila.querySelector('.chk-asistencia');
+        const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
+
+        if (!chkAsistencia.checked) {
+            cellNota.innerText = "1.0";
+            cellNota.style.color = "#c62828";
+            return;
+        }
+
+        let notaAcumulada = 8.0; // Base obligatoria por asistencia
+        const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
+        const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+        
+        if (totalCriteriosActivos > 0) {
+            const pesoCadaUno = 12.0 / totalCriteriosActivos;
+            checksRasgos.forEach(chk => {
+                if (chk.checked) {
+                    notaAcumulada += pesoCadaUno;
+                }
+            });
+        }
+        // Fijar a un decimal y formatear color cognitivo (Rojo reprobado < 10, Verde aprobado)
+        const notaFinalVal = parseFloat(notaAcumulada.toFixed(1));
+        cellNota.innerText = notaFinalVal.toFixed(1);
+        cellNota.style.color = notaFinalVal >= 9.5 ? "#1b5e20" : "#c62828";
+    },
+
+// ===== FUNCIONALIDADES DE INYECCIÓN DE ESTADOS EN BLOQUE (UX NEUROCOGNITIVA) =====
+    // Activa el interruptor de asistencia para todos los estudiantes y recalcula
+    inyectarAsistenciaPerfecta: function() {
+        const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
+        if (checkboxesAsistencia.length === 0) return;
+        
+        checkboxesAsistencia.forEach(chk => {
+            chk.checked = true;
+        });
+        
+        mostrarNotificacion("Se inyectó asistencia perfecta en la sección");
+        this.recalcularNotasEnPantalla();
+    },
+
+    // Activa de forma masiva todos los checkboxes de rasgos de los alumnos que estén presentes
+    inyectarTodoEvaluado: function() {
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+        
+        if (this.criteriosSeleccionadosIds.length === 0) {
+            alert("Operación omitida: Primero debe marcar arriba al menos un 'Enfoque Atencional' para hoy.");
+            return;
+        }
+
+        filas.forEach(fila => {
+            const chkAsistencia = fila.querySelector('.chk-asistencia');
+            // Solo se le asignan rasgos si el alumno está presente
+            if (chkAsistencia && chkAsistencia.checked) {
+                const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
+                checksRasgos.forEach(chkRasgo => {
+                    chkRasgo.checked = true;
+                });
+                
+                // Forzar el recálculo numérico de la nota de este estudiante específico
+                this.calcularNotaEstudiante(fila.dataset.nominaId);
+            }
+        });
+        
+        mostrarNotificacion("Se marcaron todos los rasgos como cumplidos");
+    },
+
+    // Devuelve la grilla a su estado basal (Asistencia en 8.0 y rasgos vacíos)
+    reiniciarMatrizFila: function() {
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+
+        const confirmar = confirm("¿Desea limpiar todas las marcas de evaluación de la grilla actual?");
+        if (!confirmar) return;
+
+        filas.forEach(fila => {
+            const chkAsistencia = fila.querySelector('.chk-asistencia');
+            if (chkAsistencia) chkAsistencia.checked = true;
+            
+            const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
+            checksRasgos.forEach(chkRasgo => {
+                chkRasgo.checked = false;
+            });
+            
+            this.calcularNotaEstudiante(fila.dataset.nominaId);
+        });
+        
+        this.recalcularNotasEnPantalla();
+        mostrarNotificacion("Grilla restablecida");
+    },
+    // ===== LÓGICA DE CORRECCIÓN Y EDICIÓN DE SESIONES PASADAS =====
+    // Alimenta el combo de historial con las últimas sesiones registradas
+    cargarHistorialSesionesCombo: async function() {
+        const select = document.getElementById('historial_sesiones_combo');
+        if (!select) return;
+        try {
+            const sql = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 15;";
+            const res = await db_real.query({ statement: sql });
+            
+            select.innerHTML = '<option value="">-- Seleccione una sesión para editar --</option>';
+            if (res.values && res.values.length > 0) {
+                res.values.forEach(ses => {
+                    const opt = document.createElement('option');
+                    opt.value = ses.id;
+                    // Limpiar la estampa de tiempo para que sea legible
+                    const fechaFormat = ses.fecha ? ses.fecha.split(' ')[0] : '';
+                    opt.textContent = `${ses.nombre} [${fechaFormat}]`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error("Error cargando historial de sesiones:", e);
+        }
+    },
+
+    // Activa la sesión antigua elegida y recupera los estados de los alumnos
+    cargarSesionPasadaParaEdicion: async function() {
+        const sesionId = document.getElementById('historial_sesiones_combo').value;
+        if (!sesionId) {
+            // Si limpian el selector, devolvemos la app a su estado inicial
+            window.editandoSesionPasada = false;
+            document.getElementById('btnAbrirSesion').disabled = false;
+            document.getElementById('btnAbrirSesion').style.opacity = "1";
+            document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
+            document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
+            document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
+            document.getElementById('zonaOperacionesAula').style.display = "none";
+            return;
+        }
+
+        window.sesionActivaId = parseInt(sesionId);
+        window.editandoSesionPasada = false;
+
+        // Cambiar estado visual del panel para alertar que estamos en modo EDITAR
+        const contenedorEstado = document.getElementById('estadoSesionDiaria');
+        contenedorEstado.className = "alerta-operacional";
+        contenedorEstado.style.backgroundColor = "#fff3e0";
+        contenedorEstado.style.color = "#e65100";
+        contenedorEstado.style.border = "1.5px solid #ffb74d";
+        contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
+
+        // Bloquear botón de apertura de hoy para evitar colisiones cognitivas
+        const btnApertura = document.getElementById('btnAbrirSesion');
+        if (btnApertura) {
+            btnApertura.disabled = true;
+            btnApertura.style.opacity = "0.5";
+            btnApertura.innerText = " Bloqueado por co-edición";
+        }
+
+        // Mostrar zona de trabajo y forzar la recarga
+        document.getElementById('zonaOperacionesAula').style.display = "block";
+        
+        // Auto-seleccionar el primer curso o pedir que elijan uno para mapear la nómina guardada
+        const selectCurso = document.getElementById('aula_select_curso');
+        if (selectCurso && selectCurso.value) {
+            this.cargarEstudiantesAsistencia();
+        }
+    },
+
+    // REFORMULACIÓN DE PERSISTENCIA: detecta si hace INSERT o UPDATE en SQLite
+    guardarAsistenciaYNotasLote: async function() {
+        if (!window.sesionActivaId) {
+            alert("Operación rechazada: No hay ninguna sesión seleccionada.");
+            return;
+        }
+
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+
+        try {
+            mostrarNotificacion("Sincronizando correcciones en SQLite...");
+
+            for (let fila of filas) {
+                const participantes_id = parseInt(fila.dataset.nominaId);
+                const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
+                const notaFinal = parseFloat(fila.querySelector('.cell-nota-final').innerText);
+                const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
+
+                let registroID = null;
+
+                // COMPROBACIÓN CRÍTICA: ¿Ya existe un registro previo de este alumno en esta sesión?
+                const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
+                const resCheck = await db_real.query({
+                    statement: queryCheck,
+                    values: [participantes_id, parseInt(window.sesionActivaId)]
+                });
+
+                if (resCheck.values && resCheck.values.length > 0) {
+                    // ESCENARIO A: El registro existe, aplicamos UPDATE para corregir en caliente
+                    registroID = resCheck.values[0].id;
+                    const sqlUpdateReg = `
+                        UPDATE registros 
+                        SET asistencia = ?, calificacion = ?, tipo_evaluacion = ?
+                        WHERE id = ?;
+                    `;
+                    await db_real.execute({
+                        statement: sqlUpdateReg,
+                        values: [asistencia, notaFinal, tipo_evaluacion, registroID]
+                    });
+                } else {
+                    // ESCENARIO B: No existía (por ejemplo, un alumno inscrito tarde), hacemos INSERT
+                    const sqlInsertReg = `
+                        INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento)
+                        VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');
+                    `;
+                    await db_real.execute({
+                        statement: sqlInsertReg,
+                        values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinal, tipo_evaluacion]
+                    });
+                    
+                    const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
+                    registroID = resNewID.values.id;
+                }
+
+                // 2. Sincronización del desglose de rasgos pedagógicos ('calificacion')
+                if (this.criteriosSeleccionadosIds.length > 0) {
+                    const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+                    const pesoCadaUno = 12.0 / totalCriteriosActivos;
+                    const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
+
+                    for (let chk of checksRasgos) {
+                        const criterioId = parseInt(chk.dataset.critId);
+                        const valoracionCalculada = (asistencia === 'true' && chk.checked) ? Math.round(pesoCadaUno) : 0;
+
+                        // Al usar un UNIQUE compuesto en la tabla (registro_id, criterio_id), 'INSERT OR REPLACE' reescribe el rasgo automáticamente sin duplicar filas
+                        const sqlCalificacion = `
+                            INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion)
+                            VALUES (?, ?, ?);
+                        `;
+                        await db_real.execute({
+                            statement: sqlCalificacion,
+                            values: [registroID, criterioId, valoracionCalculada]
+                        });
+                    }
+                }
+            }
+
+            alert("🎯 ¡Base de Datos Sincronizada!\nLas correcciones de asistencia y notas se han guardado con éxito.");
+            
+            // Si estábamos editando una sesión vieja, actualizamos el combo por consistencia
+            this.cargarHistorialSesionesCombo();
+            this.cargarEstudiantesAsistencia();
+            
+        } catch (error) {
+            console.error("Fallo crítico en la transacción de corrección:", error);
+            alert("Error interno de SQLite al sobreescribir las evaluaciones.");
+        }
+    },
+    // ===== SISTEMA DE AUDITORÍA Y REPORTES ACUMULADOS POR ALUMNO =====
+
+    verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
+        document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
+        const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
+        if (!tablaCuerpo) return;
+
+        try {
+            // Consulta relacional para extraer todas las clases evaluadas del alumno en el lapso
+            const sql = `
+                SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion
+                FROM registros r
+                INNER JOIN sesiones s ON r.sesion_id = s.id
+                WHERE r.participantes_id = ?
+                ORDER BY s.id DESC;
+            `;
+            const res = await db_real.query({
+                statement: sql,
+                values: [parseInt(nominaId)]
+            });
+
+            tablaCuerpo.innerHTML = "";
+
+            if (!res.values || res.values.length === 0) {
+                tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
+                document.getElementById('rep_promedio_val').innerText = "1.0";
+                document.getElementById('rep_promedio_val').style.color = "#c62828";
+                document.getElementById('rep_asistencia_val').innerText = "0 / 0";
+                document.getElementById('modalReporteEstudiante').style.display = 'flex';
+                return;
+            }
+
+            let sumaNotas = 0;
+            let totalAsistencias = 0;
+            let totalSesiones = res.values.length;
+
+            res.values.forEach(reg => {
+                const tr = document.createElement('tr');
+                const esAsistente = reg.asistencia === 'true';
+                if (esAsistente) totalAsistencias++;
+                
+                const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
+                sumaNotas += notaVal;
+
+                // Formatear la estampa de fecha
+                const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
+
+                tr.innerHTML = `
+                    <td>
+                        <b>${reg.clase_nombre}</b><br>
+                        <small style="color:#757575;">${fechaLimpia}</small>
+                    </td>
+                    <td class="text-center" style="font-weight:bold; color: ${esAsistente ? '#2e7d32' : '#c62828'}">
+                        ${esAsistente ? 'SÍ' : 'NO'}
+                    </td>
+                    <td class="text-center" style="font-weight:bold; color: ${notaVal >= 9.5 ? '#2e7d32' : '#c62828'}">
+                        ${notaVal.toFixed(1)}
+                    </td>
+                `;
+                tablaCuerpo.appendChild(tr);
+            });
+
+            // Cálculos métricos neurocognitivos aproximados
+            const promedioFinal = sumaNotas / totalSesiones;
+            const cellPromedio = document.getElementById('rep_promedio_val');
+            
+            cellPromedio.innerText = promedioFinal.toFixed(1);
+            cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+            
+            document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
+
+            // Desplegar el modal sobrepuesto
+            document.getElementById('modalReporteEstudiante').style.display = 'flex';
+
+        } catch (error) {
+            console.error("Error al procesar la auditoría acumulada:", error);
+            alert("No se pudo estructurar el reporte de calificaciones local.");
+        }
+    },
+
+    cerrarModalReporte: function() {
+        document.getElementById('modalReporteEstudiante').style.display = 'none';
+    },
+    // ===== SISTEMA DE AUDITORÍA CONSOLIDADA PARA EL PANEL ADMINISTRATIVO =====
+
+    abrirReporteConsolidadoAdmin: async function() {
+        // Obtenemos el curso que el profesor seleccionó en el módulo de nóminas
+        const cursoID = document.getElementById('nom_select_curso').value;
+        const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
+        
+        if (!cursoID) {
+            alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
+            return;
+        }
+
+        if (!window.escolaridadActivaId) {
+            alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
+            return;
+        }
+
+        try {
+            // Extraer la nómina completa inscrita en el curso con su información de género
+            const sqlNomina = `
+                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero
+                FROM nomina n
+                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
+                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
+                ORDER BY e.apellido ASC, e.nombre ASC;
+            `;
+            
+            const resNomina = await db_real.query({
+                statement: sqlNomina,
+                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+            });
+
+            tablaCuerpo.innerHTML = "";
+
+            if (!resNomina.values || resNomina.values.length === 0) {
+                tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
+                document.getElementById('stat_m_val').innerText = "0";
+                document.getElementById('stat_f_val').innerText = "0";
+                document.getElementById('stat_t_val').innerText = "0";
+                document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+                return;
+            }
+
+            // Variables de control estadístico (M, F, T)
+            let contM = 0;
+            let contF = 0;
+            let contT = resNomina.values.length;
+
+            // Procesar fila por fila a los estudiantes de forma asíncrona
+            for (let alumno of resNomina.values) {
+                if (alumno.genero === 'M') contM++;
+                if (alumno.genero === 'F') contF++;
+
+                // Consultar todas las calificaciones acumuladas de este estudiante específico
+                const sqlNotas = "SELECT calificacion FROM registros WHERE participantes_id = ? AND calificacion IS NOT NULL;";
+                const resNotas = await db_real.query({
+                    statement: sqlNotas,
+                    values: [alumno.nomina_id]
+                });
+
+                let promedioAcumulado = 1.0; // Base por defecto del sistema
+                if (resNotas.values && resNotas.values.length > 0) {
+                    let suma = 0;
+                    resNotas.values.forEach(n => suma += parseFloat(n.calificacion));
+                    promedioAcumulado = suma / resNotas.values.length;
+                }
+                
+                const claseGenero = alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="celda-cedula-mono"><b>${alumno.id_cedula}</b></td>
+                    <td>${alumno.apellido}, ${alumno.nombre}</td>
+                    <td class="text-center"><span class="badge ${claseGenero}">${alumno.genero}</span></td>
+                    <td class="text-center font-weight-bold cell-promedio-dinamico" style="color: ${promedioAcumulado >= 9.5 ? '#2e7d32' : '#c62828'};">
+                        ${promedioAcumulado.toFixed(1)}
+                    </td>
+                `;
+                tablaCuerpo.appendChild(tr);
+            }
+
+            // Renderizar las métricas demográficas de cabecera
+            document.getElementById('stat_m_val').innerText = contM;
+            document.getElementById('stat_f_val').innerText = contF;
+            document.getElementById('stat_t_val').innerText = contT;
+
+            // Mostrar formulario emergente de administración
+            document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+
+        } catch (error) {
+            console.error("Error crítico compilando el consolidado de administración:", error);
+            alert("Fallo del motor SQLite al procesar el reporte de la sección.");
+        }
+    },
+
+    cerrarReporteConsolidadoAdmin: function() {
+        document.getElementById('modalConsolidadoAdmin').style.display = 'none';
+    }
+
+
+};
+

@@ -130,7 +130,13 @@
     <p style="font-size: 0.9rem; color: #555;">Establezca los lapsos académicos activos para la evaluación continua.</p>
     <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
 </div>
-
+<!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
+        <div style="margin-top: 12px;">
+            <button type="button" class="btn-planificar" style="background-color: #673ab7; width: 100%;" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
+                📊 Ver Sábana de Notas y Totales (M / F / T)
+            </button>
+        </div>
+    </div> <!-- Cierre del panel administrativo de nóminas -->
         <!-- -->
     </section>
 
@@ -139,6 +145,18 @@
     <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
     <main class="contenedor-principal">
 <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Operación diaria en el aula) -->
+<!-- -->
+<div class="panel-docente">
+  
+
+    <!-- Estado de la sesión actual
+    <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
+        • No hay ninguna sesión activa para el día de hoy.
+    </div>
+    
+    El resto de tus botones como btnAbrirSesion y zonaOperacionesAula se quedan abajo -->
+
+<!-- DIVISON DE SESINES -->
 <section id="pantalla-docente" class="pantalla-vista" style="display: none;">
     <div class="panel-docente">
         <h3>📝 Control de Sesión Diaria</h3>
@@ -148,6 +166,13 @@
         <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
             ⚪ No hay ninguna sesión activa para el día de hoy.
         </div>
+    <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
+    <div class="campo-grupo" style="margin-bottom: 14px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
+        <label for="historial_sesiones_combo">📂 Corregir / Ver Sesión Pasada:</label>
+        <select id="historial_sesiones_combo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
+            <option value="" selected>-- Seleccione una sesión para editar --</option>
+        </select>
+    </div>
 <!-- -->
 <!-- BOTÓN DISPARADOR (Agrégalo en tu panel-docente, dentro de la zonaOperacionesAula del index.html) -->
 <!-- Como se requiere para la evaluación diaria, es ideal colocarlo en la pestaña de Práctica Diaria -->
@@ -166,10 +191,78 @@
         </div>
         
         <!-- Contenedor oculto que se activará cuando la sesión esté abierta -->
-        <div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
-            <div class="divisor-titulos">📋 Panel de Trabajo del Aula</div>
-            <!-- Aquí se inyectarán más adelante los pases de asistencia y notas -->
+        <!-- CONTENEDOR OPERACIONAL EN CALIENTE -->
+<div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
+    <div class="divisor-titulos">Panel de Trabajo del Aula</div>
+    
+    <!-- Selector de Curso Activo -->
+    <div class="campo-grupo">
+        <label for="aula_select_curso">Seleccione Curso/Sección a Evaluar Hoy:</label>
+        <select id="aula_select_curso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
+            <!-- Se puebla dinámicamente -->
+        </select>
+    </div>
+
+    <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
+    <div class="panel-administrativo" style="margin: 10px 0; background-color: #f4f6f7;">
+        <h4 style="color: #009688; margin-top: 0;">🧠 Enfoque Atencional del Día</h4>
+        <p class="instruccion-texto">Marque los rasgos específicos que va a observar y evaluar en esta sesión de clases. La nota de 12 puntos se distribuirá equitativamente entre ellos de forma automática.</p>
+        <div id="contenedorCheckboxesCriterios" class="grid-criterios-seleccion">
+            <!-- Se puebla dinámicamente desde la tabla 'criterios_evaluacion' con checkboxes -->
         </div>
+    </div>
+
+    <!-- Grilla de Evaluación de Alumnos -->
+    <div class="panel-tabla-aula">
+        <!-- Grilla de Evaluación de Alumnos -->
+    <div class="panel-tabla-aula">
+        <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0; color: #37474f;">Registro de Observación Directa</h4>
+                <button type="button" class="btn-guardar-lote" onclick="AppAulaOperaciones.guardarAsistenciaYNotasLote()">
+                    💾 Guardar Bloque Diario
+                </button>
+            </div>
+            
+            <!-- NUEVOS DISPARADORES DE INYECCIÓN EN BLOQUE -->
+            <div class="controles-bloque-neuro">
+                <span class="etiqueta-macro">Acciones en Lote:</span>
+                <button type="button" class="btn-macro-accion btn-macro-verde" onclick="AppAulaOperaciones.inyectarAsistenciaPerfecta()">
+                    ✅ Asistencia Perfecta
+                </button>
+                <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppAulaOperaciones.inyectarTodoEvaluado()">
+                    🎯 Marcar Todos los Rasgos
+                </button>
+                <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppAulaOperaciones.reiniciarMatrizFila()">
+                    🔄 Resetear Grilla
+                </button>
+            </div>
+        </div>
+        
+        <form id="formTablaAsistencia">
+<!-- El resto de la tabla permanece exactamente igual -->
+        
+        <form id="formTablaAsistencia">
+            <div class="tabla-responsiva">
+                <table class="tabla-aula">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th class="text-center">Asistencia (Base 8pts)</th>
+                            <th>Rasgos y Criterios Observados en Caliente (Máx 12pts)</th>
+                            <th class="text-center">Nota Generada</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaEstudiantesAula">
+                        <tr class="lista-vacia">
+                            <td colspan="4">Seleccione una sección para mapear los estudiantes matriculados.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</div>
     </div>
 </section>
 <!-- -->
@@ -406,7 +499,132 @@
         </form>
     </div>
 </div>
+<!-- Modal Emergente para el Reporte Neurocognitivo del Estudiante -->
+<div id="modalReporteEstudiante" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 550px;">
+        <h2 id="rep_alumno_nombre">Reporte de Desempeño</h2>
+        <p class="instruccion-texto" style="margin-bottom: 10px;">Análisis acumulado de asistencia y rasgos pedagógicos en el lapso activo.</p>
+        
+        <!-- Tarjeta de Estadísticas Rápidas -->
+        <div class="contenedor-metricas-rapidas">
+            <div class="tarjeta-metrica">
+                <span class="metrica-titulo">Promedio General</span>
+                <span id="rep_promedio_val" class="metrica-valor">1.0</span>
+            </div>
+            <div class="tarjeta-metrica">
+                <span class="metrica-titulo">Asistencias</span>
+                <span id="rep_asistencia_val" class="metrica-valor">0/0</span>
+            </div>
+        </div>
 
+        <!-- Tabla de Historial Detallado -->
+        <h4 style="margin: 14px 0 6px 0; color: #37474f;">Desglose de Sesiones</h4>
+        <div class="tabla-responsiva" style="max-height: 250px; overflow-y: auto;">
+            <table class="tabla-aula" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th>Clase / Fecha</th>
+                        <th class="text-center">Asist.</th>
+                        <th class="text-center">Nota</th>
+                    </tr>
+                </thead>
+                <tbody id="rep_tabla_cuerpo">
+                    <!-- Se puebla dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-botones" style="margin-top: 16px;">
+            <button type="button" class="btn-cancelar" style="flex: 1;" onclick="AppAulaOperaciones.cerrarModalReporte()">Cerrar Reporte</button>
+        </div>
+    </div>
+</div>
+<!-- Modal Emergente para el Reporte Neurocognitivo del Estudiante -->
+<div id="modalReporteEstudiante" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 550px;">
+        <h2 id="rep_alumno_nombre">Reporte de Desempeño</h2>
+        <p class="instruccion-texto" style="margin-bottom: 10px;">Análisis acumulado de asistencia y rasgos pedagógicos en el lapso activo.</p>
+        
+        <!-- Tarjeta de Estadísticas Rápidas -->
+        <div class="contenedor-metricas-rapidas">
+            <div class="tarjeta-metrica">
+                <span class="metrica-titulo">Promedio General</span>
+                <span id="rep_promedio_val" class="metrica-valor">1.0</span>
+            </div>
+            <div class="tarjeta-metrica">
+                <span class="metrica-titulo">Asistencias</span>
+                <span id="rep_asistencia_val" class="metrica-valor">0/0</span>
+            </div>
+        </div>
+
+        <!-- Tabla de Historial Detallado -->
+        <h4 style="margin: 14px 0 6px 0; color: #37474f;">Desglose de Sesiones</h4>
+        <div class="tabla-responsiva" style="max-height: 250px; overflow-y: auto;">
+            <table class="tabla-aula" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th>Clase / Fecha</th>
+                        <th class="text-center">Asist.</th>
+                        <th class="text-center">Nota</th>
+                    </tr>
+                </thead>
+                <tbody id="rep_tabla_cuerpo">
+                    <!-- Se puebla dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-botones" style="margin-top: 16px;">
+            <button type="button" class="btn-cancelar" style="flex: 1;" onclick="AppAulaOperaciones.cerrarModalReporte()">Cerrar Reporte</button>
+        </div>
+    </div>
+</div>
+<!-- Modal Emergente: Sábana de Notas y Demografía Consolidada (Admin) -->
+<div id="modalConsolidadoAdmin" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-ancho-consolidado">
+        <h2>📋 Consolidado de Rendimiento Escolar</h2>
+        <p class="instruccion-texto">Sábana de promedios acumulados y distribución estadística de la sección activa.</p>
+        
+        <!-- Tarjetas Estadísticas de Demografía (M, F, T) -->
+        <div class="contenedor-metricas-rapidas">
+            <div class="tarjeta-metrica tarjeta-m">
+                <span class="metrica-titulo">Masculinos (M)</span>
+                <span id="stat_m_val" class="metrica-valor">0</span>
+            </div>
+            <div class="tarjeta-metrica tarjeta-f">
+                <span class="metrica-titulo">Femeninos (F)</span>
+                <span id="stat_f_val" class="metrica-valor">0</span>
+            </div>
+            <div class="tarjeta-metrica tarjeta-t">
+                <span class="metrica-titulo">Total General (T)</span>
+                <span id="stat_t_val" class="metrica-valor">0</span>
+            </div>
+        </div>
+
+        <!-- Tabla Sábana de Estudiantes -->
+        <div class="tabla-responsiva contenedor-tabla-scroll">
+            <table class="tabla-aula tabla-formato-admin">
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Apellidos y Nombres</th>
+                        <th class="text-center">Sexo</th>
+                        <th class="text-center">Promedio Acum.</th>
+                    </tr>
+                </thead>
+                <tbody id="con_tabla_cuerpo">
+                    <!-- Se puebla dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-botones espaciado-superior-modal">
+            <button type="button" class="btn-cancelar btn-bloque" onclick="AppAulaOperaciones.cerrarReporteConsolidadoAdmin()">
+                Cerrar Sábana de Notas
+            </button>
+        </div>
+    </div>
+</div>
     <script src="register.js"></script>
 </body>
 </html>
