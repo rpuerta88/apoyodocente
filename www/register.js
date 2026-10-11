@@ -1059,7 +1059,7 @@ const AppCriterios = {
             
             await db_real.execute({
                 statement: sqlInsert,
-                values: [nombre, descripcion ? descripcion : null, puntos]
+                values: [nombre, descripcion ? descripcion : null]
             });
 
             // Recuperar el ID asignado por el AUTOINCREMENT de SQLite
