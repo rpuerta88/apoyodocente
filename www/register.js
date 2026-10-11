@@ -364,7 +364,6 @@ const AppCursos = {
         }
         // Renderizar la lista de cursos existentes
         await this.cargarListaCursos();
-        await AppNominas.inicializar();
     },
 
     // 1. LEER CURSOS DESDE SQLITE Y RENDERIZAR INTERFAZ
@@ -421,6 +420,7 @@ const AppCursos = {
             mostrarNotificacion(`Curso "${valorCurso}" agregado`);
             inputCurso.value = ""; // Limpiar campo
             await this.cargarListaCursos(); // Refrescar lista en pantalla
+            await AppNominas.cargarSelectorCursos();
 
         } catch (error) {
             // Captura el error UNIQUE de SQLite si intentan meter el mismo curso
@@ -449,6 +449,7 @@ const AppCursos = {
 
             mostrarNotificacion(`Curso "${nombreCurso}" eliminado`);
             await this.cargarListaCursos(); // Refrescar lista
+            await AppNominas.cargarSelectorCursos();
 
         } catch (error) {
             console.error("Error al eliminar curso:", error);
@@ -691,7 +692,6 @@ const AppLapsos = {
 
         document.getElementById('formLapso').reset();
         document.getElementById('modalLapso').style.display = 'flex';
-
         document.getElementById('formLapso').onsubmit = async (e) => {
             e.preventDefault();
             await this.guardarLapso();
@@ -780,76 +780,189 @@ const AppNominas = {
         const res = await db_real.query({ statement: query, values: [parseInt(cedula)] });
         return (res.values && res.values.length > 0);
     },
-    // OPCIÓN 1: CARGA MASIVA DE NÓMINA (CSV)
-    importarCSVNomina: function(inputElement) {
+    // ===== NUEVO ENFOQUE: MATRIZ DE PREVISUALIZACIÓN TÁCTIL PARA CSV =====
+    alumnosAnalizadosCache: [],
+
+    // ===== ASIGNACIÓN MASIVA DIRECTA DESDE SQLITE (SIN ARCHIVOS EXTERNOS) =====
+
+    abrirModalAsignacionMasiva: async function() {
         const cursoID = document.getElementById('nom_select_curso').value;
-        // Validaciones previas obligatorias de llaves foráneas
+        const tablaCuerpo = document.getElementById('prev_tabla_nomina_cuerpo');
+        
         if (!window.escolaridadActivaId) {
             alert("⚠️ Operación rechazada: No hay una escolaridad vigente activa.");
-            inputElement.value = "";
             return;
         }
         if (!cursoID) {
-            alert("⚠️ Selección requerida: Por favor, escoja un Curso/Sección en el selector antes de importar el archivo CSV.");
-            inputElement.value = "";
+            alert("⚠️ Selección requerida: Por favor, escoja un Curso/Sección en el selector antes de abrir la asignación masiva.");
             return;
         }
-        const archivo = inputElement.files[0];
-        if (!archivo) return;
-        const lector = new FileReader();
-        lector.onload = async (evento) => {
-            const lineas = evento.target.result.split(/\r\)?\n/);
-            let insertados = 0;
-            let omitidosNoEncontrados = [];
-            let omitidosDuplicados = 0;
-            mostrarNotificacion("Validando e importando nómina...");
-            for (let i = 0; i < lineas.length; i++) {
-                const linea = lineas[i].trim();
-                if (!linea || linea.toLowerCase().includes("cedula")) continue;
-                const delimitador = linea.includes(";") ? ";" : ",";
-                const columnas = linea.split(delimitador);
-                // Formato esperado en el CSV de nómina: cedula,condicion (ej: 31000222,Regular)
-                if (columnas.length >= 1) {
-                    const cedula = parseInt(columnas[0].trim());
-                    const condicion = (columnas[1] && columnas[1].trim()) ? columnas[1].trim() : "Regular";
-                    if (isNaN(cedula)) continue;
-                    // VALIDACIÓN SOLICITADA: Revisar si el alumno existe en la App
-                    const existe = await this.verificarEstudianteExiste(cedula);
-                    if (!existe) {
-                        omitidosNoEncontrados.push(cedula);
-                        continue;
-                    }
-                    try {
-                        // El UNIQUE compuesto en el Schema evita que un alumno se inscriba dos veces en el mismo curso/año
-                        const sql = `
-                            INSERT INTO nomina (estudiantes_id, cursoseccion_id, escolaridades_id, condicion_acadm)
-                            VALUES (?, ?, ?, ?);
-                        `;
-                        await db_real.execute({
-                            statement: sql,
-                            values: [cedula, parseInt(cursoID), parseInt(window.escolaridadActivaId), condicion]
-                        });
-                        insertados++;
-                    } catch (error) {
-                        if (error.message && error.message.includes("UNIQUE")) {
-                            omitidosDuplicados++;
-                        } else {
-                            console.error("Error asignando en lote:", error);
-                        }
+
+        try {
+            mostrarNotificacion("Consultando estudiantes disponibles...");
+
+            // SQL Relacional: Trae los estudiantes que NO están inscritos en este curso en el año escolar actual
+            const sqlEstudiantesDisponibles = `
+                SELECT id_cedula, nombre, apellido, genero 
+                FROM estudiantes 
+                WHERE id_cedula NOT IN (
+                    SELECT estudiantes_id FROM nomina 
+                    WHERE cursoseccion_id = ? AND escolaridades_id = ?
+                )
+                ORDER BY apellido ASC, nombre ASC;
+            `;
+
+            const res = await db_real.query({
+                statement: sqlEstudiantesDisponibles,
+                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+            });
+
+            tablaCuerpo.innerHTML = "";
+
+            if (!res.values || res.values.length === 0) {
+                alert("✨ Todos los estudiantes registrados en el sistema ya se encuentran asignados a esta sección o la tabla general de estudiantes está vacía.");
+                return;
+            }
+
+            // Poblamos la grilla interactiva directamente desde la memoria local del dispositivo
+            res.values.forEach(alumno => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <input type="checkbox" class="chk-select-nomina" data-cedula="${alumno.id_cedula}">
+                    </td>
+                    <td class="celda-cedula-mono">${alumno.id_cedula}</td>
+                    <td><b>${alumno.apellido}, ${alumno.nombre}</b></td>
+                    <td><span class="badge ${alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f'}">${alumno.genero}</span></td>
+                `;
+                tablaCuerpo.appendChild(tr);
+            });
+
+            // Desplegar el modal interactivo con los datos precargados de la BD
+            document.getElementById('modalPrevisualizarNomina').style.display = 'flex';
+
+        } catch (error) {
+            console.error("Error al extraer estudiantes para asignación masiva:", error);
+            alert("Fallo interno de SQLite al cargar la matriz de matrícula.");
+        }
+    },
+
+    // Permite marcar o desmarcar todos los checkboxes visibles de la grilla
+    alternarSeleccionMatriz: function(estado) {
+        const checkboxes = document.querySelectorAll('#prev_tabla_nomina_cuerpo .chk-select-nomina');
+        checkboxes.forEach(chk => {
+            chk.checked = estado;
+        });
+    },
+
+    cerrarModalPrevisualizacion: function() {
+        document.getElementById('modalPrevisualizarNomina').style.display = 'none';
+        document.getElementById('prev_tabla_nomina_cuerpo').innerHTML = "";
+    },
+
+    // PROCESAMIENTO MASIVAMENTE SEGURO EN SQLITE AL CONFIRMAR LA SELECCIÓN
+    procesarInscripcionLoteMatriz: async function() {
+        const cursoID = document.getElementById('nom_select_curso').value;
+        const checkboxesSeleccionados = document.querySelectorAll('#prev_tabla_nomina_cuerpo .chk-select-nomina:checked');
+
+        if (checkboxesSeleccionados.length === 0) {
+            alert("Operación anulada: No ha seleccionado ningún estudiante.");
+            return;
+        }
+
+        let insertados = 0;
+
+        try {
+            mostrarNotificacion("Inscribiendo estudiantes seleccionados...");
+
+            for (let chk of checkboxesSeleccionados) {
+                const cedula = parseInt(chk.dataset.cedula);
+                // Por defecto los inscribimos con condición académica "Regular" en lote
+                const condicion = "Regular"; 
+
+                const sqlInsert = `
+                    INSERT INTO nomina (estudiantes_id, cursoseccion_id, escolaridades_id, condicion_acadm)
+                    VALUES (?, ?, ?, ?);
+                `;
+                await db_real.execute({
+                    statement: sqlInsert,
+                    values: [cedula, parseInt(cursoID), parseInt(window.escolaridadActivaId), condicion]
+                });
+                insertados++;
+            }
+
+            alert(`🎯 ¡Inscripción Completada!\n\n✅ ${insertados} Estudiantes han sido agregados con éxito a la nómina de esta sección.`);
+            this.cerrarModalPrevisualizacion();
+
+        } catch (err) {
+            console.error("Error crítico ejecutando la transacción de nómina:", err);
+            alert("Error de consistencia en SQLite. Verifique las llaves foráneas.");
+        }
+    },
+
+    // Permite al docente marcar o desmarcar el bloque completo de la grilla emergente
+    alternarSeleccionMatriz: function(estado) {
+        const checkboxes = document.querySelectorAll('#prev_tabla_nomina_cuerpo .chk-select-nomina');
+        checkboxes.forEach(chk => {
+            if (!chk.disabled) chk.checked = estado;
+        });
+    },
+
+    cerrarModalPrevisualizacion: function() {
+        document.getElementById('modalPrevisualizarNomina').style.display = 'none';
+        document.getElementById('prev_tabla_nomina_cuerpo').innerHTML = "";
+    },
+
+    // PROCESAMIENTO MASIVO SEGURO EN SQLITE DE LAS FILAS SELECCIONADAS
+    procesarInscripcionLoteMatriz: async function() {
+        const cursoID = document.getElementById('nom_select_curso').value;
+        const checkboxesSeleccionados = document.querySelectorAll('#prev_tabla_nomina_cuerpo .chk-select-nomina:checked');
+
+        if (checkboxesSeleccionados.length === 0) {
+            alert("Operación anulada: No ha marcado ningún estudiante para ser inscrito.");
+            return;
+        }
+
+        let insertados = 0;
+        let duplicados = 0;
+
+        try {
+            mostrarNotificacion("Inscribiendo nómina seleccionada...");
+
+            for (let chk of checkboxesSeleccionados) {
+                const cedula = parseInt(chk.dataset.cedula);
+                const condicion = chk.dataset.condicion;
+
+                try {
+                    const sqlInsert = `
+                        INSERT INTO nomina (estudiantes_id, cursoseccion_id, escolaridades_id, condicion_acadm)
+                        VALUES (?, ?, ?, ?);
+                    `;
+                    await db_real.execute({
+                        statement: sqlInsert,
+                        values: [cedula, parseInt(cursoID), parseInt(window.escolaridadActivaId), condicion]
+                    });
+                    insertados++;
+                } catch (error) {
+                    // El UNIQUE de tu Schema frena la duplicación si el alumno ya estaba en la sección
+                    if (error.message && error.message.includes("UNIQUE")) {
+                        duplicados++;
+                    } else {
+                        console.error("Fallo inyectando registro individual de nómina:", error);
                     }
                 }
             }
-            // Alerta de resumen detallada con las cédulas no encontradas
-            let mensajeResultado = `Resumen de asignación masiva:\n✅ ${insertados} Alumnos agregados a la nómina del curso.\n`;
-            if (omitidosDuplicados > 0) mensajeResultado += `⚠️ ${omitidosDuplicados} Ya pertenecían a esta nómina.\n`;
-            if (omitidosNoEncontrados.length > 0) {
-                mensajeResultado += `❌ REGISTRO NO ENCONTRADO: Las siguientes ${omitidosNoEncontrados.length} cédulas no existen en la base de datos de estudiantes y fueron rechazadas:\n[${omitidosNoEncontrados.join(", ")}]`;
-            }
-            alert(mensajeResultado);
-            inputElement.value = "";
-        };
 
-        lector.readAsText(archivo, "UTF-8");
+            alert(`🎯 ¡Nómina Actualizada de Forma Segura!\n\n✅ ${insertados} Alumnos inscritos exitosamente en la sección.\n⚠️ ${duplicados} Registros omitidos por filiación previa.`);
+            // >>> AJUSTE DE LIMPIEZA TOTAL DEL CONTEXTO AQUÍ <<<
+            const inputArchivo = document.getElementById('archivoCSVNomina');
+            if (inputArchivo) inputArchivo.value = "";
+            this.cerrarModalPrevisualizacion();
+
+        } catch (err) {
+            console.error("Error crítico procesando lote de matrícula:", err);
+            alert("Fallo general del motor relacional SQLite.");
+        }
     },
     // OPCIÓN 2: ASIGNACIÓN INDIVIDUAL (MANUAL)
     abrirModalIndividual: function() {
@@ -1013,12 +1126,6 @@ const AppCriterios = {
     guardarCriterio: async function() {
         const nombre = document.getElementById('crit_nombre').value.trim().toUpperCase();
         const descripcion = document.getElementById('crit_descripcion').value.trim();
-
-        // Validación preventiva antes de tocar la base de datos
-        if (isNaN(puntos) || puntos <= 0 || puntos > 20) {
-            alert("⚠️ El puntaje debe ser un valor numérico mayor a 0 y menor o igual a 20 puntos.");
-            return;
-        }
 
         try {
             const sqlInsert = `

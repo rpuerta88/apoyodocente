@@ -97,22 +97,24 @@
             <option value="" disabled selected>Cargando cursos disponibles...</option>
         </select>
     </div>
+<!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
+        <div style="margin-top: 12px;">
+            <button type="button" class="btn-planificar" style="background-color: #673ab7; width: 100%;" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
+                📊 Ver Sábana de Notas y Totales (M / F / T)
+            </button>
+        </div>
+<!-- CONTENEDOR DE CONTROL DE MATRÍCULA INTERNO -->
+        <div class="dos-columnas-botones">
+            <!-- Opción 1: Carga masiva directa desde la base de datos local -->
+            <button type="button" class="btn-accion btn-csv-nomina" onclick="AppNominas.abrirModalAsignacionMasiva()">
+                👥 Asignación Masiva desde Matrícula
+            </button>
 
-    <div class="dos-columnas-botones">
-        <!-- Opción 1: Carga Masiva a Nómina vía CSV -->
-        <label class="btn-accion btn-csv-nomina">
-            📁 Cargar Nómina Masiva (.CSV)
-            <input type="file" id="archivoCSVNomina" accept=".csv" onchange="AppNominas.importarCSVNomina(this)" style="display: none;">
-        </label>
-        
-        <!-- Opción 2: Registro Individual -->
-        <button type="button" class="btn-accion btn-manual-nomina" onclick="AppNominas.abrirModalIndividual()">
-            👤 Asignación Individual
-        </button>
-    </div>
-</div>
-
-<!-- -->
+            <!-- Opción 2: Registro unitario tradicional -->
+            <button type="button" class="btn-accion btn-manual-nomina" onclick="AppNominas.abrirModalIndividual()">
+                👤 Asignación Individual
+            </button>
+        </div>
 <!-- -->
 <!-- BOTÓN DISPARADOR (Agrégalo dentro de tu pantalla-admin en el index.html) -->
 <div class="panel-administrativo">
@@ -130,12 +132,6 @@
     <p style="font-size: 0.9rem; color: #555;">Establezca los lapsos académicos activos para la evaluación continua.</p>
     <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
 </div>
-<!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
-        <div style="margin-top: 12px;">
-            <button type="button" class="btn-planificar" style="background-color: #673ab7; width: 100%;" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
-                📊 Ver Sábana de Notas y Totales (M / F / T)
-            </button>
-        </div>
     </div> <!-- Cierre del panel administrativo de nóminas -->
         <!-- -->
     </section>
@@ -621,6 +617,50 @@
         <div class="modal-botones espaciado-superior-modal">
             <button type="button" class="btn-cancelar btn-bloque" onclick="AppAulaOperaciones.cerrarReporteConsolidadoAdmin()">
                 Cerrar Sábana de Notas
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Modal Emergente: Previsualización y Selección de Nómina Masiva -->
+<div id="modalPrevisualizarNomina" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-ancho-consolidado">
+        <h2>📋 Alumnos Encontrados en el CSV</h2>
+        <p class="instruccion-texto">Confirme la nómina leyendo los datos reales de SQLite. Desmarque a quienes no pertenezcan a esta sección.</p>
+        
+        <!-- Acciones Rápidas del Selector Masivo -->
+        <div class="controles-bloque-neuro">
+            <span class="etiqueta-macro">Marcar Grupo:</span>
+            <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppNominas.alternarSeleccionMatriz(true)">
+                ☑️ Seleccionar Todos
+            </button>
+            <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppNominas.alternarSeleccionMatriz(false)">
+                🔲 Desmarcar Todos
+            </button>
+        </div>
+
+        <!-- Tabla de Previsualización -->
+        <div class="tabla-responsiva contenedor-tabla-scroll">
+            <table class="tabla-aula tabla-formato-admin">
+                <thead>
+                    <tr>
+                        <th class="text-center">Inscribir</th>
+                        <th>Cédula</th>
+                        <th>Estudiante</th>
+                        <th>Condición</th>
+                    </tr>
+                </thead>
+                <tbody id="prev_tabla_nomina_cuerpo">
+                    <!-- Se puebla dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-botones espaciado-superior-modal">
+            <button type="button" class="btn-guardar" style="flex: 1;" onclick="AppNominas.procesarInscripcionLoteMatriz()">
+                🚀 Confirmar e Inscribir Selección
+            </button>
+            <button type="button" class="btn-cancelar" onclick="AppNominas.cerrarModalPrevisualizacion()">
+                Cancelar
             </button>
         </div>
     </div>
