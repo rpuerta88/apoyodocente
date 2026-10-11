@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AppEscolaridad.controlarFlujoInicial();
         await AppCursos.inicializar();
         await AppNominas.inicializar();
+        await AppLapsos.cargarLapsoVigenteInicial();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -823,6 +824,74 @@ const AppNominas = {
         const res = await db_real.query({ statement: query, values: [parseInt(cedula)] });
         return (res.values && res.values.length > 0);
     },
+    // ===== NUEVO: Leer alumnos de la BD y abrir el modal de previsualización =====
+abrirModalMasivo: async function() {
+    const cursoID = document.getElementById('nom_select_curso').value;
+    if (!cursoID) {
+        alert("Por favor, seleccione el Curso Destino antes de continuar.");
+        return;
+    }
+    if (!window.escolaridadActivaId) {
+        alert("Requiere registrar una escolaridad vigente primero.");
+        return;
+    }
+
+    try {
+        // Consultar estudiantes que NO estén inscritos en este año escolar y curso
+        const sql = `SELECT id_cedula, nombre, apellido 
+                     FROM estudiantes 
+                     WHERE id_cedula NOT IN (
+                        SELECT estudiantes_id FROM nomina WHERE escolaridades_id = ?
+                     )
+                     ORDER BY apellido ASC, nombre ASC;`;
+                     
+        const resultado = await db_real.query({ 
+            statement: sql, 
+            values: [parseInt(window.escolaridadActivaId)] 
+        });
+
+        const tablaCuerpo = document.getElementById('prev_tabla_nomina_cuerpo');
+        if (!tablaCuerpo) return;
+
+        tablaCuerpo.innerHTML = "";
+
+        if (!resultado.values || resultado.values.length === 0) {
+            alert("No hay estudiantes nuevos disponibles para asignar en la base de datos.");
+            return;
+        }
+
+        // Poblar la tabla del modal de previsualización de forma dinámica
+        resultado.values.forEach(alumno => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center">
+                    <input type="checkbox" class="chk-select-nomina" checked data-cedula="${alumno.id_cedula}">
+                </td>
+                <td><b>${alumno.id_cedula}</b></td>
+                <td>${alumno.apellido}, ${alumno.nombre}</td>
+                <td>Regular</td>
+            `;
+            tablaCuerpo.appendChild(tr);
+        });
+
+        // Mostrar el modal que ya tienes maquetado en el HTML
+        document.getElementById('modalPrevisualizarNomina').style.display = 'flex';
+
+    } catch (error) {
+        console.error("Error al cargar estudiantes para asignación masiva:", error);
+        alert("Error al conectar con la base de datos de estudiantes.");
+    }
+},
+
+// Funciones de utilidad para cerrar y controlar el nuevo modal
+cerrarModalPrevisualizacion: function() {
+    document.getElementById('modalPrevisualizarNomina').style.display = 'none';
+},
+
+alternarSeleccionMatriz: function(estado) {
+    const checks = document.querySelectorAll('#prev_tabla_nomina_cuerpo .chk-select-nomina');
+    checks.forEach(chk => chk.checked = estado);
+},
     // ===== NUEVO ENFOQUE: MATRIZ DE PREVISUALIZACIÓN TÁCTIL PARA CSV =====
     alumnosAnalizadosCache: [],
 // PROCESAMIENTO MASIVAMENTE SEGURO EN SQLITE AL CONFIRMAR LA SELECCIÓN (VERSIÓN APK ROBUSTA)
