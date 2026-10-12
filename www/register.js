@@ -1155,9 +1155,8 @@ const AppCriterios = {
             // Recuperar el ID asignado por el AUTOINCREMENT de SQLite
             const queryID = "SELECT id, nombre_criterio FROM criterios_evaluacion ORDER BY id DESC LIMIT 1;";
             const resultado = await db_real.query({ statement: queryID });
-
             if (resultado.values && resultado.values.length > 0) {
-                window.criterioActivoId = resultado.values.id;
+                window.criterioActivoId = resultado.values[0].id;
                 console.log(`Criterio de evaluación indexado. ID FK Listo: ${window.criterioActivoId}`);
                 mostrarNotificacion(`Criterio "${resultado.values.nombre_criterio}" registrado`);
             }
@@ -1174,6 +1173,11 @@ const AppCriterios = {
 // ====== MÓDULO NEUROEDUCATIVO DE OPERACIONES EN AULA ======
 const AppAulaOperaciones = {
     criteriosSeleccionadosIds: [],
+    escalaEstimacion: {
+        'I':  { texto: 'I',  multiplicador: 0.0, color: '#e0e0e0', textoColor: '#424242', clase: 'escala-iniciado' },
+        'EP': { texto: 'EP', multiplicador: 0.5, color: '#ffb74d', textoColor: '#e65100', clase: 'escala-proceso' },
+        'C':  { texto: 'C',  multiplicador: 1.0, color: '#81c784', textoColor: '#1b5e20', clase: 'escala-consolidado' }
+    },
 
     inicializarSelectoresAula: async function() {
         const select = document.getElementById('aula_select_curso');
@@ -1197,7 +1201,6 @@ const AppAulaOperaciones = {
             console.error("Error al arrancar el panel de aula:", e);
         }
     },
-
     // Recupera todos los criterios creados por el docente para que elija cuáles evaluar hoy
     cargarCriteriosDisponiblesASeleccion: async function() {
         const contenedor = document.getElementById('contenedorCheckboxesCriterios');
@@ -1224,7 +1227,6 @@ const AppAulaOperaciones = {
             console.error("Error al mapear criterios evaluativos:", err);
         }
     },
-
     // Escucha qué checkboxes de la sesión se marcaron para reconfigurar la tabla en caliente
     actualizarMatrizCriteriosActivos: function() {
         const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]:checked');
@@ -1232,7 +1234,6 @@ const AppAulaOperaciones = {
         // Re-renderizar estudiantes para adaptar las columnas visuales sin perder datos
         this.recalcularNotasEnPantalla();
     },
-
     cargarEstudiantesAsistencia: async function() {
         const cursoID = document.getElementById('aula_select_curso').value;
         const tablaBody = document.getElementById('listaEstudiantesAula');
@@ -1277,8 +1278,8 @@ const AppAulaOperaciones = {
                         </label>
                     </td>
                     <td>
-                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}">
-                            <!-- Se inyectan dinámicamente según los criterios activos -->
+                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <!-- Controles táctiles triestatales inyectados dinámicamente -->
                         </div>
                     </td>
                     <td class="text-center font-weight-bold cell-nota-final" id="nota-final-est-${alumno.nomina_id}" style="font-size:1.2rem; color:#1b5e20;">
@@ -1298,7 +1299,6 @@ const AppAulaOperaciones = {
     recalcularNotasEnPantalla: function() {
         const filas = document.querySelectorAll('.fila-estudiante-aula');
         const numCriterios = this.criteriosSeleccionadosIds.length;
-        const valorPorCriterio = numCriterios > 0 ? (12 / numCriterios) : 0;
 
         filas.forEach(fila => {
             const nominaId = fila.dataset.nominaId;
@@ -1306,38 +1306,44 @@ const AppAulaOperaciones = {
             const zonaRasgos = fila.querySelector(`#rasgos-est-${nominaId}`);
             const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
 
-            // Guardar estados previos de los checkboxes de rasgos para no perder la selección al redibujar
+            // Almacenar el estado cualitativo previo ('I', 'EP', 'C') para no perderlo al rediseñar la grilla
             const estadosPrevios = {};
-            zonaRasgos.querySelectorAll('input[type="checkbox"]').forEach(c => {
-                estadosPrevios[c.dataset.critId] = c.checked;
+            zonaRasgos.querySelectorAll('.btn-escala-ciclo').forEach(btn => {
+                estadosPrevios[btn.dataset.critId] = btn.dataset.estadoActual;
             });
 
             zonaRasgos.innerHTML = "";
 
             if (!chkAsistencia.checked) {
                 zonaRasgos.innerHTML = `<span style="color:#c62828; font-style:italic;">Inasistente - Bloqueado</span>`;
-                cellNota.innerText = "1.0";
+                cellNota.innerText = "1.00";
                 cellNota.style.color = "#c62828";
                 return;
             }
 
             if (numCriterios === 0) {
                 zonaRasgos.innerHTML = `<small style="color:#757575;">No se han seleccionado rasgos para evaluar hoy.</small>`;
-                cellNota.innerText = "8.0";
+                cellNota.innerText = "8.00";
                 cellNota.style.color = "#1b5e20";
                 return;
             }
 
-            // Inyectar checkboxes compactos para cada rasgo pedagógico activo
+            // Inyección de botones táctiles interactivos de estimación
             this.criteriosSeleccionadosIds.forEach(critId => {
-                const checkedStr = estadosPrevios[critId] ? 'checked' : '';
+                const estadoInicial = estadosPrevios[critId] || 'I'; // Predeterminado: Iniciado ('I')
+                const configEscala = this.escalaEstimacion[estadoInicial];
+
                 const div = document.createElement('div');
-                div.className = 'subitem-rasgo-check';
+                div.className = 'subitem-rasgo-escala';
                 div.innerHTML = `
-                    <label>
-                        <input type="checkbox" data-crit-id="${critId}" ${checkedStr} onchange="AppAulaOperaciones.calcularNotaEstudiante(${nominaId})">
-                        <span>P. Línea</span>
-                    </label>
+                    <button type="button" 
+                            class="btn-escala-ciclo" 
+                            data-crit-id="${critId}" 
+                            data-estado-actual="${estadoInicial}"
+                            style="background-color: ${configEscala.color}; color: ${configEscala.textoColor}; border: 1px solid rgba(0,0,0,0.1); padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onclick="AppAulaOperaciones.conmutarEstadoEscalaTacto(this, ${nominaId})">
+                        ${configEscala.texto}
+                    </button>
                 `;
                 zonaRasgos.appendChild(div);
             });
@@ -1345,44 +1351,61 @@ const AppAulaOperaciones = {
             this.calcularNotaEstudiante(nominaId);
         });
     },
+    // Manejador del toque físico: rota el estado del botón en un ciclo cerrado
+    conmutarEstadoEscalaTacto: function(boton, nominaId) {
+        const estadoActual = boton.dataset.estadoActual;
+        let siguienteEstado = 'I';
 
+        if (estadoActual === 'I') siguienteEstado = 'EP';
+        else if (estadoActual === 'EP') siguienteEstado = 'C';
+        else if (estadoActual === 'C') siguienteEstado = 'I';
+
+        // Actualizar el estado del botón
+        boton.dataset.estadoActual = siguienteEstado;
+        
+        // Aplicar la configuración visual correspondiente en caliente
+        const nuevaConfig = this.escalaEstimacion[siguienteEstado];
+        boton.style.backgroundColor = nuevaConfig.color;
+        boton.style.color = nuevaConfig.textoColor;
+        boton.innerText = nuevaConfig.texto;
+        // Recalcular inmediatamente la puntuación del estudiante
+        this.calcularNotaEstudiante(nominaId);
+    },
+    
     alternarAsistenciaFila: function(checkbox) {
         this.recalcularNotasEnPantalla();
     },
-
-    // Ejecuta la sumatoria aritmética del estudiante individual en tiempo real en la vista
     calcularNotaEstudiante: function(nominaId) {
         const fila = document.getElementById(`fila-alumno-${nominaId}`);
         if (!fila) return;
-
+        
         const chkAsistencia = fila.querySelector('.chk-asistencia');
         const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
-
+        
         if (!chkAsistencia.checked) {
-            cellNota.innerText = "1.0";
+            cellNota.innerText = "1.00";
             cellNota.style.color = "#c62828";
             return;
         }
-
-        let notaAcumulada = 8.0; // Base obligatoria por asistencia
-        const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
+        
+        let notaAcumulada = 8.00; // Base por asistir
+        const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
         const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
         
         if (totalCriteriosActivos > 0) {
-            const pesoCadaUno = 12.0 / totalCriteriosActivos;
-            checksRasgos.forEach(chk => {
-                if (chk.checked) {
-                    notaAcumulada += pesoCadaUno;
-                }
-            });
-        }
-        // Fijar a un decimal y formatear color cognitivo (Rojo reprobado < 10, Verde aprobado)
-        const notaFinalVal = parseFloat(notaAcumulada.toFixed(1));
-        cellNota.innerText = notaFinalVal.toFixed(1);
-        cellNota.style.color = notaFinalVal >= 9.5 ? "#1b5e20" : "#c62828";
+            const pesoBaseCriterio = 12.00 / totalCriteriosActivos;
+            botonesEscala.forEach(btn => {
+                const estado = btn.dataset.estadoActual;
+                const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                // Sumamos la fracción correspondiente de forma exacta
+                notaAcumulada += (pesoBaseCriterio * multiplicador);
+                });
+            }
+        // REDONDEO CRÍTICO A DOS DECIMALES
+        const notaFinalVal = parseFloat(notaAcumulada.toFixed(2));
+        cellNota.innerText = notaFinalVal.toFixed(2);
+        cellNota.style.color = notaFinalVal >= 9.50 ? "#1b5e20" : "#c62828";
     },
-
-// ===== FUNCIONALIDADES DE INYECCIÓN DE ESTADOS EN BLOQUE (UX NEUROCOGNITIVA) =====
     // Activa el interruptor de asistencia para todos los estudiantes y recalcula
     inyectarAsistenciaPerfecta: function() {
         const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
@@ -1408,20 +1431,21 @@ const AppAulaOperaciones = {
 
         filas.forEach(fila => {
             const chkAsistencia = fila.querySelector('.chk-asistencia');
-            // Solo se le asignan rasgos si el alumno está presente
             if (chkAsistencia && chkAsistencia.checked) {
-                const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
-                checksRasgos.forEach(chkRasgo => {
-                    chkRasgo.checked = true;
+                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+                botonesEscala.forEach(btn => {
+                    btn.dataset.estadoActual = 'C';
+                    btn.style.backgroundColor = this.escalaEstimacion['C'].color;
+                    btn.style.color = this.escalaEstimacion['C'].textoColor;
+                    btn.innerText = this.escalaEstimacion['C'].texto;
                 });
-                
-                // Forzar el recálculo numérico de la nota de este estudiante específico
-                this.calcularNotaEstudiante(fila.dataset.nominaId);
+            this.calcularNotaEstudiante(fila.dataset.nominaId);
             }
         });
-        
-        mostrarNotificacion("Se marcaron todos los rasgos como cumplidos");
+
+        mostrarNotificacion("Se marcaron todos los rasgos como Consolidados (100%)");
     },
+
 
     // Devuelve la grilla a su estado basal (Asistencia en 8.0 y rasgos vacíos)
     reiniciarMatrizFila: function() {
@@ -1434,17 +1458,20 @@ const AppAulaOperaciones = {
         filas.forEach(fila => {
             const chkAsistencia = fila.querySelector('.chk-asistencia');
             if (chkAsistencia) chkAsistencia.checked = true;
-            
-            const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
-            checksRasgos.forEach(chkRasgo => {
-                chkRasgo.checked = false;
+                        
+            const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+            botonesEscala.forEach(btn => {
+                btn.dataset.estadoActual = 'I';
+                btn.style.backgroundColor = this.escalaEstimacion['I'].color;
+                btn.style.color = this.escalaEstimacion['I'].textoColor;
+                btn.innerText = this.escalaEstimacion['I'].texto;
             });
-            
             this.calcularNotaEstudiante(fila.dataset.nominaId);
         });
+            
         
         this.recalcularNotasEnPantalla();
-        mostrarNotificacion("Grilla restablecida");
+        mostrarNotificacion("Grilla restablecida a Iniciado (0%)");
     },
     // ===== LÓGICA DE CORRECCIÓN Y EDICIÓN DE SESIONES PASADAS =====
     // Alimenta el combo de historial con las últimas sesiones registradas
@@ -1567,7 +1594,7 @@ const AppAulaOperaciones = {
                     });
                     
                     const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
-                    registroID = resNewID.values.id;
+                    registroID = resNewID.values[0].id;
                 }
 
                 // 2. Sincronización del desglose de rasgos pedagógicos ('calificacion')
@@ -1578,7 +1605,8 @@ const AppAulaOperaciones = {
 
                     for (let chk of checksRasgos) {
                         const criterioId = parseInt(chk.dataset.critId);
-                        const valoracionCalculada = (asistencia === 'true' && chk.checked) ? Math.round(pesoCadaUno) : 0;
+                        const valoracionCalculada = (asistencia === 'true' && chk.checked) ? 
+                        parseFloat((pesoBaseCriterio * multiplicador).toFixed(2)) : 0.00;
 
                         // Al usar un UNIQUE compuesto en la tabla (registro_id, criterio_id), 'INSERT OR REPLACE' reescribe el rasgo automáticamente sin duplicar filas
                         const sqlCalificacion = `
@@ -1593,7 +1621,7 @@ const AppAulaOperaciones = {
                 }
             }
 
-            alert("🎯 ¡Base de Datos Sincronizada!\nLas correcciones de asistencia y notas se han guardado con éxito.");
+            alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
             
             // Si estábamos editando una sesión vieja, actualizamos el combo por consistencia
             this.cargarHistorialSesionesCombo();
@@ -1652,6 +1680,13 @@ const AppAulaOperaciones = {
                 const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
 
                 tr.innerHTML = `
+                    ${esAsistente ? 'SÍ' : 'NO'}
+                    ${notaVal.toFixed(2)}
+                    `;
+                tablaCuerpo.appendChild(tr);
+            });
+/*
+                tr.innerHTML = `
                     <td>
                         <b>${reg.clase_nombre}</b><br>
                         <small style="color:#757575;">${fechaLimpia}</small>
@@ -1665,7 +1700,7 @@ const AppAulaOperaciones = {
                 `;
                 tablaCuerpo.appendChild(tr);
             });
-
+*/
             // Cálculos métricos neurocognitivos aproximados
             const promedioFinal = sumaNotas / totalSesiones;
             const cellPromedio = document.getElementById('rep_promedio_val');

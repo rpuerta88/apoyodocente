@@ -8,11 +8,10 @@
     --color-exito: #10b981;        /* Verde esmeralda (Logrado / Asistencia) */
     --color-alerta: #f59e0b;       /* Ámbar (En proceso) */
     --color-peligro: #ef4444;      /* Rojo coral (Alertas / Inasistencias) */
-    --color-fondo: #f8fafc;        /* Blanco grisáceo (Fondo de descanso visual) */
+    --color-fondo: #ebf7d5;        /* Blanco grisáceo (Fondo de descanso visual) */
     --color-tarjeta: #ffffff;      /* Blanco Puro */
     --color-texto: #334155;        /* Gris oscuro (Alto contraste, baja fatiga) */
     --color-texto-mutado: #64748b; /* Gris medio para etiquetas secundarias */
-
     /* Tipografía y Bordes */
     --fuente-principal: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --radio-borde: 12px;
@@ -22,6 +21,44 @@
     --transicion: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.app-header{
+    background-color: #aab891;
+    font-family: var(--fuente-principal);
+    border-bottom: 10px solid #83965f;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    padding: 5px;
+}
+
+.estado-barra{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.badge{
+    border-radius: 15px;
+    border: solid #83965f;
+    padding: 10px;
+}
+
+.barra-navegacion{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.formulario-lineal{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+#curso_seccion{
+    width: 70%;
+}
+
+.btn-agregar-curso{
+    width: 100px;
+}
 /* ==========================================================================
    RESETEO ERGONÓMICO Y NATIVO
    ========================================================================== */
