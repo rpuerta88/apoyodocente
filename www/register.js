@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AppCursos.inicializar();
         await AppNominas.inicializar();
         await AppLapsos.cargarLapsoVigenteInicial();
+        await AppPlanificacion.cargarTemarioVigenteInicial();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -565,6 +566,26 @@ const AppPlanificacion = {
         } catch (error) {
             console.error("Fallo en la transacción de planificación:", error);
             alert("Error al procesar la planificación.");
+        }
+    },
+    cargarTemarioVigenteInicial: async function() {
+        try {
+            // Consultar el último temario enlazado a la base de datos
+            const res = await db_real.query({ 
+                statement: "SELECT id FROM temario ORDER BY id DESC LIMIT 1;" 
+            });
+        
+            // Verificamos que el arreglo exista y que contenga al menos un registro
+            if (res.values && res.values.length > 0) {
+                // CORRECCIÓN CRÍTICA: Acceder al índice [0] del arreglo de filas
+                window.temarioActivoId = res.values[0].id; 
+                console.log("Planificación pedagógica recuperada localmente. ID:", window.temarioActivoId);
+            } else {
+                window.temarioActivoId = null;
+                console.log("No se encontraron registros previos en la tabla 'temario'.");
+            }
+        } catch (e) {
+            console.error("Error al recuperar el temario inicial:", e);
         }
     }
 };
