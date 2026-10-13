@@ -3,15 +3,15 @@
    ========================================================================== */
 :root {
     /* Paleta Cromática */
-    --color-primario: #1e293b;     /* Azul pizarra profundo (Sofisticación y lectura) */
-    --color-secundario: #3b82f6;   /* Azul eléctrico (Interactividad principal) */
+    --color-primario: #1d4732;;     /* Azul pizarra profundo (Sofisticación y lectura) */
+    --color-secundario: #2a4f42;   /* Azul eléctrico (Interactividad principal) */
     --color-exito: #10b981;        /* Verde esmeralda (Logrado / Asistencia) */
     --color-alerta: #f59e0b;       /* Ámbar (En proceso) */
     --color-peligro: #ef4444;      /* Rojo coral (Alertas / Inasistencias) */
-    --color-fondo: #ebf7d5;        /* Blanco grisáceo (Fondo de descanso visual) */
+    --color-fondo: #1d5932;        /* Blanco grisáceo (Fondo de descanso visual) */
     --color-tarjeta: #ffffff;      /* Blanco Puro */
-    --color-texto: #334155;        /* Gris oscuro (Alto contraste, baja fatiga) */
-    --color-texto-mutado: #64748b; /* Gris medio para etiquetas secundarias */
+    --color-texto: #f3b91d;        /* Dorado (Alto contraste, baja fatiga) */
+    --color-texto-mutado: #dda13a; /* Gris medio para etiquetas secundarias */
     /* Tipografía y Bordes */
     --fuente-principal: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --radio-borde: 12px;
@@ -21,8 +21,8 @@
     --transicion: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.app-header{
-    background-color: #aab891;
+.app-header {
+    background-color: #aab89155;
     font-family: var(--fuente-principal);
     border-bottom: 10px solid #83965f;
     display: grid;
@@ -30,6 +30,18 @@
     padding: 5px;
 }
 
+.pantalla-vista {
+    background-color: var(--color-primario);
+}
+
+p {
+    color: var(--color-texto-mutado);
+}
+
+h1{
+    font-size: 160%;
+    color: var(--color-texto);
+}
 .estado-barra{
     display: flex;
     align-items: center;
