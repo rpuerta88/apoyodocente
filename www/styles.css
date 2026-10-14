@@ -38,6 +38,7 @@
 }
 .pantalla-vista {
     background-color: var(--color-primario);
+    width: 95%;
 }
 
 p {
@@ -72,6 +73,19 @@ h1{
     z-index: 100;
 }
 
+.nav-link {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.nav-link activo {
+    color: var(--color-primario);
+    font-weight: bold;
+    border-top: 3px solid var(--color-primario);
+}
 .formulario-lineal{
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -327,10 +341,36 @@ body {
     overflow-y: auto;
 }
 
-/* ==========================================================================
-   ANIMACIONES DE ENTRADA (Microinteracciones)
-   ========================================================================== */
-@keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+/* MODALES */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo translúcido oscuro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que se dibuje por encima de todo */
+    padding: 16px;
+    box-sizing: border-box;
+    backdrop-filter: blur(4px); /* Suave desenfoque de fondo en Android moderno */
+}
+/* Contenedor del formulario (La tarjeta blanca) */
+.modal-content {
+    background-color: var(--color-fondo);
+    width: 100%;
+    max-width: 480px; /* Tamaño máximo óptimo para phablets o tablets */
+    max-height: 90vh; /* Evita que se salga en pantallas pequeñas */
+    overflow-y: auto; /* Permite scroll interno si el teclado virtual emerge */
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    animation: entradaModal 0.3s ease-out;
+}
+/* Animación sutil de escala para la aparición en el dispositivo */
+@keyframes entradaModal {
+from { transform: scale(0.9); opacity: 0; }
+to { transform: scale(1); opacity: 1; }
 }
