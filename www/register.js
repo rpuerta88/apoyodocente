@@ -1078,9 +1078,8 @@ const AppClasesDiarias = {
             const resultado = await db_real.query({ statement: queryID });
 
             if (resultado.values && resultado.values.length > 0) {
-                //~ const sesionCreada = resultado.values;
-                window.sesionActivaId = resultado.values[0].id;
-                //~ window.sesionActivaId = sesionCreada.id;
+                const sesionCreada = resultado.values[0]; 
+                window.sesionActivaId = sesionCreada.id;
                 console.log(`Sesión de Aula iniciada con éxito. ID FK Disponible: ${window.sesionActivaId}`);
                 
                 // 5. ACTUALIZAR INTERFAZ EN TIEMPO REAL
