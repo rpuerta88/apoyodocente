@@ -71,7 +71,6 @@ const AppDB = {
             } catch (e) {
                 console.warn("Inconsistencia nativa detectada, procediendo a restaurar:", e);
                 consistencia = { result: false };
-                mostrarNotificacion("no tuvo consistencia nativa");
             }
 
             // Comprobar si la conexión ya existe en memoria nativa
@@ -80,7 +79,6 @@ const AppDB = {
                 estaConectado = await SQLite.isConnection({ database: this.dbName });
             } catch (e) {
                 estaConectado = { result: false };
-                mostrarNotificacion("no está conectada");
             }
 
             // Manejo dinámico del pool de conexiones nativas
@@ -124,9 +122,7 @@ const AppDB = {
                     return await SQLite.execute({ database: AppDB.dbName, statements: statement });
                 }
             };
-
             mostrarNotificacion("Inicialización exitosa");
-            
             // Forzar activación de claves foráneas y mandar a construir las tablas
             await db_real.execute({ statement: "PRAGMA foreign_keys = ON;" });
             await this.crearTablas();
@@ -136,8 +132,7 @@ const AppDB = {
             console.error("Error crítico en inicialización de base de datos:", error);
             throw error;
         }
-    }, // <-- Aquí cierra la función inicializar correctamente
-
+    },
     crearTablas: async function() {
         try {
             const ddl = `
@@ -166,7 +161,7 @@ const AppDB = {
             `;
             
             await db_real.execute({ statement: ddl });
-            alert("Estructura de la base de datos lista");
+            mostrarNotificacion('Bienvenido al Sistema de Apoyo Docente');
         } catch (error) {
             console.error("Fallo al inicializar las tablas:", error);
             alert("Falla al construir base de datos");
@@ -392,7 +387,7 @@ const AppCursos = {
                 const li = document.createElement('li');
                 li.className = 'item-curso';
                 li.innerHTML = `
-                    <span class="curso-texto">▪️ ${curso.cursoseccion}</span>
+                    <span class="curso-texto">${curso.cursoseccion}</span>
                     <button type="button" class="btn-eliminar-item" onclick="AppCursos.eliminarCurso(${curso.id}, '${curso.cursoseccion}')" aria-label="Eliminar curso">
                         🗑️
                     </button>
@@ -1170,13 +1165,17 @@ const AppCriterios = {
     }
 };
 
-// ====== MÓDULO NEUROEDUCATIVO DE OPERACIONES EN AULA ======
 const AppAulaOperaciones = {
     criteriosSeleccionadosIds: [],
+    
+    // 1. NUEVA ESCALA DE 4 NIVELES ACTUALIZADA
+    // Se redistribuyeron los multiplicadores de forma proporcional (0.0 -> 0.33 -> 0.66 -> 1.0)
+    // Se añadió el nivel 'A' (Avanzado) con color azul celeste.
     escalaEstimacion: {
-        'I':  { texto: 'I',  multiplicador: 0.0, color: '#e0e0e0', textoColor: '#424242', clase: 'escala-iniciado' },
-        'EP': { texto: 'EP', multiplicador: 0.5, color: '#ffb74d', textoColor: '#e65100', clase: 'escala-proceso' },
-        'C':  { texto: 'C',  multiplicador: 1.0, color: '#81c784', textoColor: '#1b5e20', clase: 'escala-consolidado' }
+        'I':  { texto: 'I',  multiplicador: 0.0,  color: '#e0e0e0', textoColor: '#424242', clase: 'escala-iniciado' },
+        'EP': { texto: 'EP', multiplicador: 0.33, color: '#ffb74d', textoColor: '#e65100', clase: 'escala-proceso' },
+        'C':  { texto: 'C',  multiplicador: 0.66, color: '#81c784', textoColor: '#1b5e20', clase: 'escala-consolidado' },
+        'A':  { texto: 'A',  multiplicador: 1.0,  color: '#4fc3f7', textoColor: '#01579b', clase: 'escala-avanzado' }
     },
 
     inicializarSelectoresAula: async function() {
@@ -1195,13 +1194,12 @@ const AppAulaOperaciones = {
                     select.appendChild(opt);
                 });
             }
-            // Ejecutar la carga de criterios configurados en el sistema
             await this.cargarCriteriosDisponiblesASeleccion();
         } catch (e) {
             console.error("Error al arrancar el panel de aula:", e);
         }
     },
-    // Recupera todos los criterios creados por el docente para que elija cuáles evaluar hoy
+
     cargarCriteriosDisponiblesASeleccion: async function() {
         const contenedor = document.getElementById('contenedorCheckboxesCriterios');
         if (!contenedor) return;
@@ -1227,13 +1225,13 @@ const AppAulaOperaciones = {
             console.error("Error al mapear criterios evaluativos:", err);
         }
     },
-    // Escucha qué checkboxes de la sesión se marcaron para reconfigurar la tabla en caliente
+
     actualizarMatrizCriteriosActivos: function() {
         const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]:checked');
         this.criteriosSeleccionadosIds = Array.from(checkboxes).map(chk => parseInt(chk.value));
-        // Re-renderizar estudiantes para adaptar las columnas visuales sin perder datos
         this.recalcularNotasEnPantalla();
     },
+
     cargarEstudiantesAsistencia: async function() {
         const cursoID = document.getElementById('aula_select_curso').value;
         const tablaBody = document.getElementById('listaEstudiantesAula');
@@ -1279,7 +1277,7 @@ const AppAulaOperaciones = {
                     </td>
                     <td>
                         <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <!-- Controles táctiles triestatales inyectados dinámicamente -->
+                            <!-- Controles táctiles inyectados dinámicamente -->
                         </div>
                     </td>
                     <td class="text-center font-weight-bold cell-nota-final" id="nota-final-est-${alumno.nomina_id}" style="font-size:1.2rem; color:#1b5e20;">
@@ -1295,7 +1293,6 @@ const AppAulaOperaciones = {
         }
     },
 
-    // Dibuja los interruptores de los criterios elegidos para cada estudiante en la grilla
     recalcularNotasEnPantalla: function() {
         const filas = document.querySelectorAll('.fila-estudiante-aula');
         const numCriterios = this.criteriosSeleccionadosIds.length;
@@ -1306,7 +1303,6 @@ const AppAulaOperaciones = {
             const zonaRasgos = fila.querySelector(`#rasgos-est-${nominaId}`);
             const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
 
-            // Almacenar el estado cualitativo previo ('I', 'EP', 'C') para no perderlo al rediseñar la grilla
             const estadosPrevios = {};
             zonaRasgos.querySelectorAll('.btn-escala-ciclo').forEach(btn => {
                 estadosPrevios[btn.dataset.critId] = btn.dataset.estadoActual;
@@ -1328,9 +1324,8 @@ const AppAulaOperaciones = {
                 return;
             }
 
-            // Inyección de botones táctiles interactivos de estimación
             this.criteriosSeleccionadosIds.forEach(critId => {
-                const estadoInicial = estadosPrevios[critId] || 'I'; // Predeterminado: Iniciado ('I')
+                const estadoInicial = estadosPrevios[critId] || 'I'; 
                 const configEscala = this.escalaEstimacion[estadoInicial];
 
                 const div = document.createElement('div');
@@ -1351,476 +1346,345 @@ const AppAulaOperaciones = {
             this.calcularNotaEstudiante(nominaId);
         });
     },
-    // Manejador del toque físico: rota el estado del botón en un ciclo cerrado
+
+    // 2. LOGICA DE ROTACIÓN PARA 4 NIVELES ACTUALIZADA
+    // Ahora el ciclo cerrado avanza: I -> EP -> C -> A -> y vuelve a empezar en I.
     conmutarEstadoEscalaTacto: function(boton, nominaId) {
         const estadoActual = boton.dataset.estadoActual;
         let siguienteEstado = 'I';
 
         if (estadoActual === 'I') siguienteEstado = 'EP';
         else if (estadoActual === 'EP') siguienteEstado = 'C';
-        else if (estadoActual === 'C') siguienteEstado = 'I';
+        else if (estadoActual === 'C') siguienteEstado = 'A';
+        else if (estadoActual === 'A') siguienteEstado = 'I';
 
-        // Actualizar el estado del botón
         boton.dataset.estadoActual = siguienteEstado;
         
-        // Aplicar la configuración visual correspondiente en caliente
         const nuevaConfig = this.escalaEstimacion[siguienteEstado];
         boton.style.backgroundColor = nuevaConfig.color;
         boton.style.color = nuevaConfig.textoColor;
         boton.innerText = nuevaConfig.texto;
-        // Recalcular inmediatamente la puntuación del estudiante
+        
         this.calcularNotaEstudiante(nominaId);
     },
     
     alternarAsistenciaFila: function(checkbox) {
         this.recalcularNotasEnPantalla();
     },
+
     calcularNotaEstudiante: function(nominaId) {
-        const fila = document.getElementById(`fila-alumno-${nominaId}`);
-        if (!fila) return;
-        
-        const chkAsistencia = fila.querySelector('.chk-asistencia');
-        const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
-        
-        if (!chkAsistencia.checked) {
-            cellNota.innerText = "1.00";
-            cellNota.style.color = "#c62828";
-            return;
-        }
-        
-        let notaAcumulada = 8.00; // Base por asistir
-        const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-        const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
-        
-        if (totalCriteriosActivos > 0) {
-            const pesoBaseCriterio = 12.00 / totalCriteriosActivos;
-            botonesEscala.forEach(btn => {
-                const estado = btn.dataset.estadoActual;
-                const multiplicador = this.escalaEstimacion[estado].multiplicador;
-                // Sumamos la fracción correspondiente de forma exacta
-                notaAcumulada += (pesoBaseCriterio * multiplicador);
-                });
-            }
-        // REDONDEO CRÍTICO A DOS DECIMALES
-        const notaFinalVal = parseFloat(notaAcumulada.toFixed(2));
-        cellNota.innerText = notaFinalVal.toFixed(2);
-        cellNota.style.color = notaFinalVal >= 9.50 ? "#1b5e20" : "#c62828";
-    },
-    // Activa el interruptor de asistencia para todos los estudiantes y recalcula
-    inyectarAsistenciaPerfecta: function() {
-        const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
-        if (checkboxesAsistencia.length === 0) return;
-        
-        checkboxesAsistencia.forEach(chk => {
-            chk.checked = true;
-        });
-        
-        mostrarNotificacion("Se inyectó asistencia perfecta en la sección");
-        this.recalcularNotasEnPantalla();
-    },
+const fila = document.getElementById(`fila-alumno-${nominaId}`);
+if (!fila) return;
+const chkAsistencia = fila.querySelector('.chk-asistencia');
+const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
+if (!chkAsistencia.checked) {
+cellNota.innerText = "1.00";
+cellNota.style.color = "#c62828";
+return;
+}
+let notaAcumulada = 8.00;
+const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+if (totalCriteriosActivos > 0) {
+const pesoBaseCriterio = 12.00 / totalCriteriosActivos;
+botonesEscala.forEach(btn => {
+const estado = btn.dataset.estadoActual;
+const multiplicador = this.escalaEstimacion[estado].multiplicador;
+notaAcumulada += (pesoBaseCriterio * multiplicador);
+});
+}
+const notaFinalVal = parseFloat(notaAcumulada.toFixed(2));
+cellNota.innerText = notaFinalVal.toFixed(2);
+cellNota.style.color = notaFinalVal >= 9.50 ? "#1b5e20" : "#c62828";
+},
 
-    // Activa de forma masiva todos los checkboxes de rasgos de los alumnos que estén presentes
-    inyectarTodoEvaluado: function() {
-        const filas = document.querySelectorAll('.fila-estudiante-aula');
-        if (filas.length === 0) return;
-        
-        if (this.criteriosSeleccionadosIds.length === 0) {
-            alert("Operación omitida: Primero debe marcar arriba al menos un 'Enfoque Atencional' para hoy.");
-            return;
-        }
+inyectarAsistenciaPerfecta: function() {
+const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
+if (checkboxesAsistencia.length === 0) return;
+checkboxesAsistencia.forEach(chk => {
+chk.checked = true;
+});
+mostrarNotificacion("Se inyectó asistencia perfecta en la sección");
+this.recalcularNotasEnPantalla();
+},
+// 3. ACTUALIZACIÓN DE INYECCIÓN MASIVA ('inyectarTodoEvaluado')
+// Ahora marca a los estudiantes en el nivel más alto disponible: 'A' (Avanzado / 100%)
+inyectarTodoEvaluado: function() {
+const filas = document.querySelectorAll('.fila-estudiante-aula');
+if (filas.length === 0) return;
+if (this.criteriosSeleccionadosIds.length === 0) {
+alert("Operación omitida: Primero debe marcar arriba al menos un 'Enfoque Atencional' para hoy.");
+return;
+}
+filas.forEach(fila => {
+const chkAsistencia = fila.querySelector('.chk-asistencia');
+if (chkAsistencia && chkAsistencia.checked) {
+const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+botonesEscala.forEach(btn => {
+btn.dataset.estadoActual = 'A';
+btn.style.backgroundColor = this.escalaEstimacion['A'].color;
+btn.style.color = this.escalaEstimacion['A'].textoColor;
+btn.innerText = this.escalaEstimacion['A'].texto;
+});
+this.calcularNotaEstudiante(fila.dataset.nominaId);
+}
+});
+mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
+},
+reiniciarMatrizFila: function() {
+const filas = document.querySelectorAll('.fila-estudiante-aula');
+if (filas.length === 0) return;
+const confirmar = confirm("¿Desea limpiar todas las marcas de evaluación de la grilla actual?");
+if (!confirmar) return;
+filas.forEach(fila => {
+const chkAsistencia = fila.querySelector('.chk-asistencia');
+if (chkAsistencia) chkAsistencia.checked = true;
+const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+botonesEscala.forEach(btn => {
+btn.dataset.estadoActual = 'I';
+btn.style.backgroundColor = this.escalaEstimacion['I'].color;
+btn.style.color = this.escalaEstimacion['I'].textoColor;
+btn.innerText = this.escalaEstimacion['I'].texto;
+});
+this.calcularNotaEstudiante(fila.dataset.nominaId);
+});
+this.recalcularNotasEnPantalla();
+mostrarNotificacion("Grilla restablecida a Iniciado (0%)");
+},
+cargarHistorialSesionesCombo: async function() {
+const select = document.getElementById('historial_sesiones_combo');
+if (!select) return;
+try {
+const sql = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 15;";
+const res = await db_real.query({ statement: sql });
+select.innerHTML = '-- Seleccione una sesión para editar --';
+if (res.values && res.values.length > 0) {
+res.values.forEach(ses => {
+const opt = document.createElement('option');
+opt.value = ses.id;
+const fechaFormat = ses.fecha ? ses.fecha.split(' ')[0] : '';
+opt.textContent = `${ses.nombre} [${fechaFormat}]`;
+select.appendChild(opt);
+});
+}
+} catch (e) {
+console.error("Error cargando historial de sesiones:", e);
+}
+},
+cargarSesionPasadaParaEdicion: async function() {
+const sesionId = document.getElementById('historial_sesiones_combo').value;
+if (!sesionId) {
+window.editandoSesionPasada = false;
+document.getElementById('btnAbrirSesion').disabled = false;
+document.getElementById('btnAbrirSesion').style.opacity = "1";
+document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
+document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
+document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
+document.getElementById('zonaOperacionesAula').style.display = "none";
+return;
+}
+window.sesionActivaId = parseInt(sesionId);
+window.editandoSesionPasada = false;
+const contenedorEstado = document.getElementById('estadoSesionDiaria');
+contenedorEstado.className = "alerta-operacional";
+contenedorEstado.style.backgroundColor = "#fff3e0";
+contenedorEstado.style.color = "#e65100";
+contenedorEstado.style.border = "1.5px solid #ffb74d";
+contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
+const btnApertura = document.getElementById('btnAbrirSesion');
+if (btnApertura) {
+btnApertura.disabled = true;
+btnApertura.style.opacity = "0.5";
+btnApertura.innerText = " Bloqueado por co-edición";
+}
+document.getElementById('zonaOperacionesAula').style.display = "block";
+const selectCurso = document.getElementById('aula_select_curso');
+if (selectCurso && selectCurso.value) {
+this.cargarEstudiantesAsistencia();
+}
+},
+guardarAsistenciaYNotasLote: async function() {
+if (!window.sesionActivaId) {
+alert("Operación rechazada: No hay ninguna sesión seleccionada.");
+return;
+}
+const filas = document.querySelectorAll('.fila-estudiante-aula');
+if (filas.length === 0) return;
+try {
+mostrarNotificacion("Sincronizando correcciones en SQLite...");
+for (let fila of filas) {
+const participantes_id = parseInt(fila.dataset.nominaId);
+const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
+const notaFinal = parseFloat(fila.querySelector('.cell-nota-final').innerText);
+const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
+let registroID = null;
+const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
+const resCheck = await db_real.query({
+statement: queryCheck,
+values: [participantes_id, parseInt(window.sesionActivaId)]
+});
+if (resCheck.values && resCheck.values.length > 0) {
+registroID = resCheck.values[0].id;
+const sqlUpdateReg = `UPDATE registros  SET asistencia = ?, calificacion = ?, tipo_evaluacion = ? WHERE id = ?;`;
+await db_real.execute({
+statement: sqlUpdateReg,
+values: [asistencia, notaFinal, tipo_evaluacion, registroID]
+});
+} else {
+const sqlInsertReg = `INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento) VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');`;
+await db_real.execute({
+statement: sqlInsertReg,
+values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinal, tipo_evaluacion]
+});
+const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
+registroID = resNewID.values[0].id;
+}
+// 4. CORRECCIÓN EN EL CICLO DE GUARDADO
+// Nota: Tu código original tenía un error aquí ("pesoBaseCriterio" y "multiplicador" no estaban definidos).
+// He corregido la lectura para que tome dinámicamente el estado actual del botón interactivo.
+if (this.criteriosSeleccionadosIds.length > 0) {
+const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+const pesoCadaUno = 12.0 / totalCriteriosActivos;
+const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+for (let btn of botonesEscala) {
+const criterioId = parseInt(btn.dataset.critId);
+const estado = btn.dataset.estadoActual;
+const multiplicador = this.escalaEstimacion[estado].multiplicador;
+const valoracionCalculada = (asistencia === 'true') ?
+parseFloat((pesoCadaUno * multiplicador).toFixed(2)) : 0.00;
+const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
+await db_real.execute({
+statement: sqlCalificacion,
+values: [registroID, criterioId, valoracionCalculada]
+});
+}
+}
+}
+alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
+this.cargarHistorialSesionesCombo();
+this.cargarEstudiantesAsistencia();
+} catch (error) {
+console.error("Fallo crítico en la transacción de corrección:", error);
+alert("Error interno de SQLite al sobreescribir las evaluaciones.");
+}
+},
+verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
+document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
+const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
+if (!tablaCuerpo) return;
+try {
+const sql = `SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion FROM registros r INNER JOIN sesiones s ON r.sesion_id = s.id WHERE r.participantes_id = ? ORDER BY s.id DESC;`;
+const res = await db_real.query({
+statement: sql,
+values: [parseInt(nominaId)]
+});
+tablaCuerpo.innerHTML = "";
+if (!res.values || res.values.length === 0) {
+tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
+document.getElementById('rep_promedio_val').innerText = "1.0";
+document.getElementById('rep_promedio_val').style.color = "#c62828";
+document.getElementById('rep_asistencia_val').innerText = "0 / 0";
+document.getElementById('modalReporteEstudiante').style.display = 'flex';
+return;
+}
+let sumaNotas = 0;
+let totalAsistencias = 0;
+let totalSesiones = res.values.length;
+res.values.forEach(reg => {
+const tr = document.createElement('tr');
+const esAsistente = reg.asistencia === 'true';
+if (esAsistente) totalAsistencias++;
+const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
+sumaNotas += notaVal;
+const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
+tr.innerHTML = `
+    <td>${esAsistente ? 'SÍ' : 'NO'}</td>
+    <td>${notaVal.toFixed(1)}</td>
+`;
 
-        filas.forEach(fila => {
-            const chkAsistencia = fila.querySelector('.chk-asistencia');
-            if (chkAsistencia && chkAsistencia.checked) {
-                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-                botonesEscala.forEach(btn => {
-                    btn.dataset.estadoActual = 'C';
-                    btn.style.backgroundColor = this.escalaEstimacion['C'].color;
-                    btn.style.color = this.escalaEstimacion['C'].textoColor;
-                    btn.innerText = this.escalaEstimacion['C'].texto;
-                });
-            this.calcularNotaEstudiante(fila.dataset.nominaId);
-            }
-        });
-
-        mostrarNotificacion("Se marcaron todos los rasgos como Consolidados (100%)");
-    },
-
-
-    // Devuelve la grilla a su estado basal (Asistencia en 8.0 y rasgos vacíos)
-    reiniciarMatrizFila: function() {
-        const filas = document.querySelectorAll('.fila-estudiante-aula');
-        if (filas.length === 0) return;
-
-        const confirmar = confirm("¿Desea limpiar todas las marcas de evaluación de la grilla actual?");
-        if (!confirmar) return;
-
-        filas.forEach(fila => {
-            const chkAsistencia = fila.querySelector('.chk-asistencia');
-            if (chkAsistencia) chkAsistencia.checked = true;
-                        
-            const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-            botonesEscala.forEach(btn => {
-                btn.dataset.estadoActual = 'I';
-                btn.style.backgroundColor = this.escalaEstimacion['I'].color;
-                btn.style.color = this.escalaEstimacion['I'].textoColor;
-                btn.innerText = this.escalaEstimacion['I'].texto;
-            });
-            this.calcularNotaEstudiante(fila.dataset.nominaId);
-        });
-            
-        
-        this.recalcularNotasEnPantalla();
-        mostrarNotificacion("Grilla restablecida a Iniciado (0%)");
-    },
-    // ===== LÓGICA DE CORRECCIÓN Y EDICIÓN DE SESIONES PASADAS =====
-    // Alimenta el combo de historial con las últimas sesiones registradas
-    cargarHistorialSesionesCombo: async function() {
-        const select = document.getElementById('historial_sesiones_combo');
-        if (!select) return;
-        try {
-            const sql = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 15;";
-            const res = await db_real.query({ statement: sql });
-            
-            select.innerHTML = '<option value="">-- Seleccione una sesión para editar --</option>';
-            if (res.values && res.values.length > 0) {
-                res.values.forEach(ses => {
-                    const opt = document.createElement('option');
-                    opt.value = ses.id;
-                    // Limpiar la estampa de tiempo para que sea legible
-                    const fechaFormat = ses.fecha ? ses.fecha.split(' ')[0] : '';
-                    opt.textContent = `${ses.nombre} [${fechaFormat}]`;
-                    select.appendChild(opt);
-                });
-            }
-        } catch (e) {
-            console.error("Error cargando historial de sesiones:", e);
-        }
-    },
-
-    // Activa la sesión antigua elegida y recupera los estados de los alumnos
-    cargarSesionPasadaParaEdicion: async function() {
-        const sesionId = document.getElementById('historial_sesiones_combo').value;
-        if (!sesionId) {
-            // Si limpian el selector, devolvemos la app a su estado inicial
-            window.editandoSesionPasada = false;
-            document.getElementById('btnAbrirSesion').disabled = false;
-            document.getElementById('btnAbrirSesion').style.opacity = "1";
-            document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
-            document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
-            document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
-            document.getElementById('zonaOperacionesAula').style.display = "none";
-            return;
-        }
-
-        window.sesionActivaId = parseInt(sesionId);
-        window.editandoSesionPasada = false;
-
-        // Cambiar estado visual del panel para alertar que estamos en modo EDITAR
-        const contenedorEstado = document.getElementById('estadoSesionDiaria');
-        contenedorEstado.className = "alerta-operacional";
-        contenedorEstado.style.backgroundColor = "#fff3e0";
-        contenedorEstado.style.color = "#e65100";
-        contenedorEstado.style.border = "1.5px solid #ffb74d";
-        contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
-
-        // Bloquear botón de apertura de hoy para evitar colisiones cognitivas
-        const btnApertura = document.getElementById('btnAbrirSesion');
-        if (btnApertura) {
-            btnApertura.disabled = true;
-            btnApertura.style.opacity = "0.5";
-            btnApertura.innerText = " Bloqueado por co-edición";
-        }
-
-        // Mostrar zona de trabajo y forzar la recarga
-        document.getElementById('zonaOperacionesAula').style.display = "block";
-        
-        // Auto-seleccionar el primer curso o pedir que elijan uno para mapear la nómina guardada
-        const selectCurso = document.getElementById('aula_select_curso');
-        if (selectCurso && selectCurso.value) {
-            this.cargarEstudiantesAsistencia();
-        }
-    },
-
-    // REFORMULACIÓN DE PERSISTENCIA: detecta si hace INSERT o UPDATE en SQLite
-    guardarAsistenciaYNotasLote: async function() {
-        if (!window.sesionActivaId) {
-            alert("Operación rechazada: No hay ninguna sesión seleccionada.");
-            return;
-        }
-
-        const filas = document.querySelectorAll('.fila-estudiante-aula');
-        if (filas.length === 0) return;
-
-        try {
-            mostrarNotificacion("Sincronizando correcciones en SQLite...");
-
-            for (let fila of filas) {
-                const participantes_id = parseInt(fila.dataset.nominaId);
-                const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
-                const notaFinal = parseFloat(fila.querySelector('.cell-nota-final').innerText);
-                const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
-
-                let registroID = null;
-
-                // COMPROBACIÓN CRÍTICA: ¿Ya existe un registro previo de este alumno en esta sesión?
-                const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
-                const resCheck = await db_real.query({
-                    statement: queryCheck,
-                    values: [participantes_id, parseInt(window.sesionActivaId)]
-                });
-
-                if (resCheck.values && resCheck.values.length > 0) {
-                    // ESCENARIO A: El registro existe, aplicamos UPDATE para corregir en caliente
-                    registroID = resCheck.values[0].id;
-                    const sqlUpdateReg = `
-                        UPDATE registros 
-                        SET asistencia = ?, calificacion = ?, tipo_evaluacion = ?
-                        WHERE id = ?;
-                    `;
-                    await db_real.execute({
-                        statement: sqlUpdateReg,
-                        values: [asistencia, notaFinal, tipo_evaluacion, registroID]
-                    });
-                } else {
-                    // ESCENARIO B: No existía (por ejemplo, un alumno inscrito tarde), hacemos INSERT
-                    const sqlInsertReg = `
-                        INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento)
-                        VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');
-                    `;
-                    await db_real.execute({
-                        statement: sqlInsertReg,
-                        values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinal, tipo_evaluacion]
-                    });
-                    
-                    const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
-                    registroID = resNewID.values[0].id;
-                }
-
-                // 2. Sincronización del desglose de rasgos pedagógicos ('calificacion')
-                if (this.criteriosSeleccionadosIds.length > 0) {
-                    const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
-                    const pesoCadaUno = 12.0 / totalCriteriosActivos;
-                    const checksRasgos = fila.querySelectorAll('.zona-rasgos-estudiante input[type="checkbox"]');
-
-                    for (let chk of checksRasgos) {
-                        const criterioId = parseInt(chk.dataset.critId);
-                        const valoracionCalculada = (asistencia === 'true' && chk.checked) ? 
-                        parseFloat((pesoBaseCriterio * multiplicador).toFixed(2)) : 0.00;
-
-                        // Al usar un UNIQUE compuesto en la tabla (registro_id, criterio_id), 'INSERT OR REPLACE' reescribe el rasgo automáticamente sin duplicar filas
-                        const sqlCalificacion = `
-                            INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion)
-                            VALUES (?, ?, ?);
-                        `;
-                        await db_real.execute({
-                            statement: sqlCalificacion,
-                            values: [registroID, criterioId, valoracionCalculada]
-                        });
-                    }
-                }
-            }
-
-            alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
-            
-            // Si estábamos editando una sesión vieja, actualizamos el combo por consistencia
-            this.cargarHistorialSesionesCombo();
-            this.cargarEstudiantesAsistencia();
-            
-        } catch (error) {
-            console.error("Fallo crítico en la transacción de corrección:", error);
-            alert("Error interno de SQLite al sobreescribir las evaluaciones.");
-        }
-    },
-    // ===== SISTEMA DE AUDITORÍA Y REPORTES ACUMULADOS POR ALUMNO =====
-
-    verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
-        document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
-        const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
-        if (!tablaCuerpo) return;
-
-        try {
-            // Consulta relacional para extraer todas las clases evaluadas del alumno en el lapso
-            const sql = `
-                SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion
-                FROM registros r
-                INNER JOIN sesiones s ON r.sesion_id = s.id
-                WHERE r.participantes_id = ?
-                ORDER BY s.id DESC;
-            `;
-            const res = await db_real.query({
-                statement: sql,
-                values: [parseInt(nominaId)]
-            });
-
-            tablaCuerpo.innerHTML = "";
-
-            if (!res.values || res.values.length === 0) {
-                tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
-                document.getElementById('rep_promedio_val').innerText = "1.0";
-                document.getElementById('rep_promedio_val').style.color = "#c62828";
-                document.getElementById('rep_asistencia_val').innerText = "0 / 0";
-                document.getElementById('modalReporteEstudiante').style.display = 'flex';
-                return;
-            }
-
-            let sumaNotas = 0;
-            let totalAsistencias = 0;
-            let totalSesiones = res.values.length;
-
-            res.values.forEach(reg => {
-                const tr = document.createElement('tr');
-                const esAsistente = reg.asistencia === 'true';
-                if (esAsistente) totalAsistencias++;
-                
-                const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
-                sumaNotas += notaVal;
-
-                // Formatear la estampa de fecha
-                const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
-
-                tr.innerHTML = `
-                    ${esAsistente ? 'SÍ' : 'NO'}
-                    ${notaVal.toFixed(2)}
-                    `;
-                tablaCuerpo.appendChild(tr);
-            });
-/*
-                tr.innerHTML = `
-                    <td>
-                        <b>${reg.clase_nombre}</b><br>
-                        <small style="color:#757575;">${fechaLimpia}</small>
-                    </td>
-                    <td class="text-center" style="font-weight:bold; color: ${esAsistente ? '#2e7d32' : '#c62828'}">
-                        ${esAsistente ? 'SÍ' : 'NO'}
-                    </td>
-                    <td class="text-center" style="font-weight:bold; color: ${notaVal >= 9.5 ? '#2e7d32' : '#c62828'}">
-                        ${notaVal.toFixed(1)}
-                    </td>
-                `;
-                tablaCuerpo.appendChild(tr);
-            });
-*/
-            // Cálculos métricos neurocognitivos aproximados
-            const promedioFinal = sumaNotas / totalSesiones;
-            const cellPromedio = document.getElementById('rep_promedio_val');
-            
-            cellPromedio.innerText = promedioFinal.toFixed(1);
-            cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
-            
-            document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
-
-            // Desplegar el modal sobrepuesto
-            document.getElementById('modalReporteEstudiante').style.display = 'flex';
-
-        } catch (error) {
-            console.error("Error al procesar la auditoría acumulada:", error);
-            alert("No se pudo estructurar el reporte de calificaciones local.");
-        }
-    },
-
-    cerrarModalReporte: function() {
-        document.getElementById('modalReporteEstudiante').style.display = 'none';
-    },
-    // ===== SISTEMA DE AUDITORÍA CONSOLIDADA PARA EL PANEL ADMINISTRATIVO =====
-
-    abrirReporteConsolidadoAdmin: async function() {
-        // Obtenemos el curso que el profesor seleccionó en el módulo de nóminas
-        const cursoID = document.getElementById('nom_select_curso').value;
-        const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
-        
-        if (!cursoID) {
-            alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
-            return;
-        }
-
-        if (!window.escolaridadActivaId) {
-            alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
-            return;
-        }
-
-        try {
-            // Extraer la nómina completa inscrita en el curso con su información de género
-            const sqlNomina = `
-                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero
-                FROM nomina n
-                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
-                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
-                ORDER BY e.apellido ASC, e.nombre ASC;
-            `;
-            
-            const resNomina = await db_real.query({
-                statement: sqlNomina,
-                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
-            });
-
-            tablaCuerpo.innerHTML = "";
-
-            if (!resNomina.values || resNomina.values.length === 0) {
-                tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
-                document.getElementById('stat_m_val').innerText = "0";
-                document.getElementById('stat_f_val').innerText = "0";
-                document.getElementById('stat_t_val').innerText = "0";
-                document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
-                return;
-            }
-
-            // Variables de control estadístico (M, F, T)
-            let contM = 0;
-            let contF = 0;
-            let contT = resNomina.values.length;
-
-            // Procesar fila por fila a los estudiantes de forma asíncrona
-            for (let alumno of resNomina.values) {
-                if (alumno.genero === 'M') contM++;
-                if (alumno.genero === 'F') contF++;
-
-                // Consultar todas las calificaciones acumuladas de este estudiante específico
-                const sqlNotas = "SELECT calificacion FROM registros WHERE participantes_id = ? AND calificacion IS NOT NULL;";
-                const resNotas = await db_real.query({
-                    statement: sqlNotas,
-                    values: [alumno.nomina_id]
-                });
-
-                let promedioAcumulado = 1.0; // Base por defecto del sistema
-                if (resNotas.values && resNotas.values.length > 0) {
-                    let suma = 0;
-                    resNotas.values.forEach(n => suma += parseFloat(n.calificacion));
-                    promedioAcumulado = suma / resNotas.values.length;
-                }
-                
-                const claseGenero = alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="celda-cedula-mono"><b>${alumno.id_cedula}</b></td>
-                    <td>${alumno.apellido}, ${alumno.nombre}</td>
-                    <td class="text-center"><span class="badge ${claseGenero}">${alumno.genero}</span></td>
-                    <td class="text-center font-weight-bold cell-promedio-dinamico" style="color: ${promedioAcumulado >= 9.5 ? '#2e7d32' : '#c62828'};">
-                        ${promedioAcumulado.toFixed(1)}
-                    </td>
-                `;
-                tablaCuerpo.appendChild(tr);
-            }
-
-            // Renderizar las métricas demográficas de cabecera
-            document.getElementById('stat_m_val').innerText = contM;
-            document.getElementById('stat_f_val').innerText = contF;
-            document.getElementById('stat_t_val').innerText = contT;
-
-            // Mostrar formulario emergente de administración
-            document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
-
-        } catch (error) {
-            console.error("Error crítico compilando el consolidado de administración:", error);
-            alert("Fallo del motor SQLite al procesar el reporte de la sección.");
-        }
-    },
-
-    cerrarReporteConsolidadoAdmin: function() {
-        document.getElementById('modalConsolidadoAdmin').style.display = 'none';
-    }
-
-
+tablaCuerpo.appendChild(tr);
+});
+const promedioFinal = sumaNotas / totalSesiones;
+const cellPromedio = document.getElementById('rep_promedio_val');
+cellPromedio.innerText = promedioFinal.toFixed(1);
+cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
+document.getElementById('modalReporteEstudiante').style.display = 'flex';
+} catch (error) {
+console.error("Error al procesar la auditoría acumulada:", error);
+alert("No se pudo estructurar el reporte de calificaciones local.");
+}
+},
+cerrarModalReporte: function() {
+document.getElementById('modalReporteEstudiante').style.display = 'none';
+},
+abrirReporteConsolidadoAdmin: async function() {
+const cursoID = document.getElementById('nom_select_curso').value;
+const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
+if (!cursoID) {
+alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
+return;
+}
+if (!window.escolaridadActivaId) {
+alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
+return;
+}
+try {
+const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
+const resNomina = await db_real.query({
+statement: sqlNomina,
+values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+});
+tablaCuerpo.innerHTML = "";
+if (!resNomina.values || resNomina.values.length === 0) {
+tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
+document.getElementById('stat_m_val').innerText = "0";
+document.getElementById('stat_f_val').innerText = "0";
+document.getElementById('stat_t_val').innerText = "0";
+document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+return;
+}
+let contM = 0;
+let contF = 0;
+let contT = resNomina.values.length;
+for (let alumno of resNomina.values) {
+if (alumno.genero === 'M') contM++;
+if (alumno.genero === 'F') contF++;
+const sqlNotas = "SELECT calificacion FROM registros WHERE participantes_id = ? AND calificacion IS NOT NULL;";
+const resNotas = await db_real.query({
+statement: sqlNotas,
+values: [alumno.nomina_id]
+});
+let promedioAcumulado = 1.0;
+if (resNotas.values && resNotas.values.length > 0) {
+let suma = 0;
+resNotas.values.forEach(n => suma += parseFloat(n.calificacion));
+promedioAcumulado = suma / resNotas.values.length;
+}
+const claseGenero = alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f';
+const tr = document.createElement('tr');
+tr.innerHTML = `
+${alumno.id_cedula}
+alumno.apellido,{alumno.nombre}
+${alumno.genero}
+${promedioAcumulado.toFixed(1)}
+`;
+tablaCuerpo.appendChild(tr);
+}
+document.getElementById('stat_m_val').innerText = contM;
+document.getElementById('stat_f_val').innerText = contF;
+document.getElementById('stat_t_val').innerText = contT;
+document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+} catch (error) {
+console.error("Error crítico compilando el consolidado de administración:", error);
+alert("Fallo del motor SQLite al procesar el reporte de la sección.");
+}
+},
+cerrarReporteConsolidadoAdmin: function() {
+document.getElementById('modalConsolidadoAdmin').style.display = 'none';
+}
 };
+
+
+
 

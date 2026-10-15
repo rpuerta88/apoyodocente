@@ -33,12 +33,17 @@
 .contenedor-pantallas {
     padding: 15px;
     padding-bottom: 70px; /* Espacio para el menú inferior */
-    max-width: 500px;
+    width: 97%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
     margin: 0 auto;
 }
+
 .pantalla-vista {
     background-color: var(--color-primario);
-    width: 95%;
+    width: 100%;
 }
 
 p {
@@ -49,10 +54,15 @@ h1{
     font-size: 160%;
     color: var(--color-texto);
 }
+
 .estado-barra{
     display: flex;
     align-items: center;
     justify-content: flex-end;
+}
+
+.instruccion-texto {
+    font-size: 12px;
 }
 
 .badge{
@@ -92,11 +102,37 @@ h1{
 }
 
 #curso_seccion{
-    width: 70%;
+    width: 40%;
+}
+
+.lista-interactiva {
+    display: flex;
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+.lista-vacia {
+    width: 25%;
+    margin-left: 15px;
+}
+.campo-grupo-no-margin {
+    display: flex;
+    flex-direction: row;
+    width: 480px;
+}
+
+.btn-planificar {
+    background-color: #373a67;
+    width: 100%;
+    height: 30px;
+    border-radius: 5px;
+    color: #f1b71b;
 }
 
 .btn-agregar-curso{
-    width: 100px;
+    width: 25px;
+    height: 25px;
+    border-radius: 40px;
 }
 /* ==========================================================================
    RESETEO ERGONÓMICO Y NATIVO
@@ -114,6 +150,7 @@ body {
     color: var(--color-texto);
     line-height: 1.5;
     padding: 16px;
+    width: 100%;
 }
 
 /* ==========================================================================

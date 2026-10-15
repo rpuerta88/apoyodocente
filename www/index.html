@@ -14,7 +14,6 @@
             <span class="badge">SQLite OK</span>
         </div>
     </header>
-<!-- -->
 <!-- BARRA DE NAVEGACIÓN TÁCTIL (TABS) -->
 <nav class="barra-navegacion">
     <button type="button" id="tab-admin" class="nav-link activo" onclick="AppNavegacion.cambiarPantalla('admin')">
@@ -32,39 +31,30 @@
 
     <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
     <section id="pantalla-admin" class="pantalla-vista">
-        <!-- -->
-<!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
-<!-- ***REVISAR SANGRÍAS*** -->
-<div id="seccionCursos" class="panel-administrativo">
-    <h3>🏛️ Registro de Cursos y Secciones</h3>
-    
-    <!-- Formulario de Registro Rápido -->
-    <form id="formCursos" class="formulario-lineal">
-        <div class="campo-grupo no-margin">
-            <label for="curso_seccion">Curso y Sección:</label>
-            <input type="text" id="curso_seccion" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
+        <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
+        <div id="seccionCursos" class="panel-administrativo">
+        <h3>🏛️ Registro de Cursos y Secciones</h3>
+            <!-- Formulario de Registro Rápido -->
+            <form id="formCursos" class="formulario-lineal">
+                <div class="campo-grupo-no-margin">
+                    <label for="curso_seccion">Curso y Sección:</label>
+                    <input type="text" id="curso_seccion" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-agregar-curso" title='Añadir'>➕</button>
+            </form>
         </div>
-        <button type="submit" class="btn-agregar-curso">➕ Añadir</button>
-    </form>
-
-</div>
         <!-- Aquí va todo lo que ya hemos hecho: El botón de Escolaridad y el Registro de Cursos -->
         <div id="seccionCursos" class="panel-administrativo">
-            <!-- -->
-    <!-- Lista Dinámica Interactiva -->
-<!-- ***REVISAR SANGRÍAS*** -->
-    <div class="contenedor-lista-cursos">
-        <h4>Cursos Registrados</h4>
-        <ul id="listaCursosActivos" class="lista-interactiva">
-            <!-- Se puebla dinámicamente desde SQLite -->
-            <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
+            <!-- Lista Dinámica Interactiva -->
+            <div class="contenedor-lista-cursos">
+                <h4>Cursos Registrados:</h4>
+                <ul id="listaCursosActivos" class="lista-interactiva">
+                    <!-- Se puebla dinámicamente desde SQLite -->
+                    <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
         </ul>
     </div>
 
-            <!-- -->
-            <!-- (Tu formulario y lista de cursos actual se quedan aquí adentro) -->
         </div>
-<!-- -->
 <!-- MÓDULO DE REGISTRO DE ESTUDIANTES -->
 <div class="panel-administrativo">
     <h3>👥 Registro y Matrícula de Estudiantes</h3>
@@ -99,7 +89,7 @@
     </div>
 <!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
         <div style="margin-top: 12px;">
-            <button type="button" class="btn-planificar" style="background-color: #673ab7; width: 100%;" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
+            <button type="button" class="btn-planificar" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
                 📊 Ver Sábana de Notas y Totales (M / F / T)
             </button>
         </div>
@@ -137,11 +127,9 @@
     </section>
 
     <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) -->
-<!-- -->
     <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
     <main class="contenedor-principal">
 <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Operación diaria en el aula) -->
-<!-- -->
 <div class="panel-docente">
   
 
