@@ -1,413 +1,415 @@
 /* ==========================================================================
-   VARIABLES GLOBALES: Sistema de Diseño Neurocognitivo
+   VARIABLES GLOBALES Y CONFIGURACIÓN DE TEMA (SAAD - NeuroAula)
    ========================================================================== */
 :root {
-    /* Paleta Cromática */
-    --color-primario: #1d4732;;     /* Azul pizarra profundo (Sofisticación y lectura) */
-    --color-secundario: #2a4f42;   /* Azul eléctrico (Interactividad principal) */
-    --color-exito: #10b981;        /* Verde esmeralda (Logrado / Asistencia) */
-    --color-alerta: #f59e0b;       /* Ámbar (En proceso) */
-    --color-peligro: #ef4444;      /* Rojo coral (Alertas / Inasistencias) */
-    --color-fondo: #1d5932;        /* Blanco grisáceo (Fondo de descanso visual) */
-    --color-tarjeta: #ffffff;      /* Blanco Puro */
-    --color-texto: #f3b91d;        /* Dorado (Alto contraste, baja fatiga) */
-    --color-texto-mutado: #dda13a; /* Gris medio para etiquetas secundarias */
-    /* Tipografía y Bordes */
-    --fuente-principal: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --radio-borde: 12px;
-    --radio-borde-compacto: 6px;
-    --sombra-suave: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --sombra-profunda: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-    --transicion: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Paleta de Colores Principal */
+    --color-primario: #0288d1;       /* Azul NeuroAula */
+    --color-primario-light: #e1f5fe; /* Azul Fondo */
+    --color-secundario: #26a69a;     /* Verde Techo (Éxito) */
+    --color-background: #f5f7fa;     /* Fondo de la App */
+    --color-superficie: #ffffff;     /* Tarjetas y Contenedores */
+    
+    /* Colores de Estado Operacional */
+    --color-texto-base: #37474f;
+    --color-exito: #2e7d32;
+    --color-alerta: #e65100;
+    --color-peligro: #c62828;
+    --color-borde: #cfd8dc;
+
+    /* Escala de Estimación (4 Niveles) */
+    --escala-i: #e0e0e0;
+    --escala-ep: #ffb74d;
+    --escala-c: #81c784;
+    --escala-a: #4fc3f7;
+
+    /* Fuentes y Bordes */
+    --fuente-app: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif;
+    --borde-radio: 8px;
+    --sombra-suave: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.app-header {
-    background-color: #aab89155;
-    font-family: var(--fuente-principal);
-    border-bottom: 10px solid #83965f;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    padding: 5px;
-}
-
-.contenedor-pantallas {
-    padding: 15px;
-    padding-bottom: 70px; /* Espacio para el menú inferior */
-    width: 97%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    margin: 0 auto;
-}
-
-.pantalla-vista {
-    background-color: var(--color-primario);
-    width: 100%;
-}
-
-p {
-    color: var(--color-texto-mutado);
-}
-
-h1{
-    font-size: 160%;
-    color: var(--color-texto);
-}
-
-.estado-barra{
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-.instruccion-texto {
-    font-size: 12px;
-}
-
-.badge{
-    border-radius: 15px;
-    border: solid #83965f;
-    padding: 10px;
-}
-
-.barra-navegacion {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background: white;
-    display: flex;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    z-index: 100;
-}
-
-.nav-link {
-    flex: 1;
-    border: none;
-    background: none;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
-.nav-link activo {
-    color: var(--color-primario);
-    font-weight: bold;
-    border-top: 3px solid var(--color-primario);
-}
-.formulario-lineal{
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-}
-
-#curso_seccion{
-    width: 40%;
-}
-
-.lista-interactiva {
-    display: flex;
-    box-sizing: border-box;
-    justify-content: center;
-}
-
-.lista-vacia {
-    width: 25%;
-    margin-left: 15px;
-}
-.campo-grupo-no-margin {
-    display: flex;
-    flex-direction: row;
-    width: 480px;
-}
-
-.btn-planificar {
-    background-color: #373a67;
-    width: 100%;
-    height: 30px;
-    border-radius: 5px;
-    color: #f1b71b;
-}
-
-.btn-agregar-curso{
-    width: 25px;
-    height: 25px;
-    border-radius: 40px;
-}
 /* ==========================================================================
-   RESETEO ERGONÓMICO Y NATIVO
+   RESET Y ESTILOS BASE (Optimizado para Pantallas Táctiles)
    ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    -webkit-tap-highlight-color: transparent; /* Elimina el flash azul nativo al tocar en Android */
+    -webkit-tap-highlight-color: transparent; /* Elimina parpadeo táctil en Android */
 }
 
 body {
-    font-family: var(--fuente-principal);
-    background-color: var(--color-fondo);
-    color: var(--color-texto);
+    font-family: var(--fuente-app);
+    background-color: var(--color-background);
+    color: var(--color-texto-base);
     line-height: 1.5;
-    padding: 16px;
+    padding-bottom: 70px; /* Espacio preventivo para la barra de navegación inferior */
+}
+
+/* ==========================================================================
+   ESTRUCTURA DE NAVEGACIÓN (Tabs de la Barra Inferior / Superior)
+   ========================================================================== */
+.barra-navegacion {
+    position: fixed;
+    bottom: 0;
+    left: 0;
     width: 100%;
-}
-
-/* ==========================================================================
-   CONTENEDORES Y TARJETAS (Estructura de la Interfaz)
-   ========================================================================== */
-.panel-modulo {
-    background: var(--color-tarjeta);
-    border-radius: var(--radio-borde);
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: var(--sombra-suave);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-}
-
-.titulo-seccion {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--color-primario);
-    margin-bottom: 12px;
+    background-color: var(--color-superficie);
     display: flex;
-    align-items: center;
-    gap: 8px;
+    justify-content: space-around;
+    border-top: 1px solid var(--color-borde);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    z-index: 100;
+}
+
+.tab-boton {
+    flex: 1;
+    padding: 14px 0;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #78909c;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-boton.activo {
+    color: var(--color-primario);
+    border-top: 3px solid var(--color-primario);
+    background-color: var(--color-primario-light);
 }
 
 /* ==========================================================================
-   BOTONES E INTERACCIONES MODERNAS
+   VISTAS Y CONTENEDORES PRINCIPALES
    ========================================================================== */
-.btn-accion {
+.pantalla-modulo {
+    padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.tarjeta-seccion {
+    background-color: var(--color-superficie);
+    border-radius: var(--borde-radio);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--sombra-suave);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.tarjeta-seccion h3, .tarjeta-seccion h2 {
+    color: var(--color-primario);
+    margin-bottom: 15px;
+    font-size: 1.25rem;
+    border-bottom: 2px solid var(--color-primario-light);
+    padding-bottom: 6px;
+}
+
+/* ==========================================================================
+   ELEMENTOS DE FORMULARIO MODERNO
+   ========================================================================== */
+.grupo-campo {
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.grupo-campo label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #546e7a;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--color-borde);
+    border-radius: var(--borde-radio);
+    font-size: 1rem;
+    background-color: #fafafa;
+    color: var(--color-texto-base);
+    transition: border-color 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    background-color: #ffffff;
+}
+
+/* ==========================================================================
+   BOTONES Y ACCIONES TÁCTILES (Mínimo 44px de alto para usabilidad)
+   ========================================================================== */
+.btn-base {
+    padding: 12px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: var(--borde-radio);
+    border: none;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    font-family: var(--fuente-principal);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 12px 20px;
-    border-radius: var(--radio-borde-compacto);
-    border: none;
-    cursor: pointer;
-    transition: var(--transicion);
-    width: 100%; /* Optimizado para clicks en smartphones */
-    text-align: center;
+    min-height: 46px;
+    transition: opacity 0.2s, transform 0.1s;
 }
 
-/* Variaciones del Botón */
+.btn-base:active {
+    transform: scale(0.98);
+}
+
 .btn-primario {
-    background-color: var(--color-secundario);
-    color: white;
-}
-.btn-primario:active { background-color: #2563eb; }
-
-.btn-guardar-diario {
     background-color: var(--color-primario);
-    color: white;
-    box-shadow: var(--sombra-suave);
+    color: #ffffff;
 }
-.btn-guardar-diario:active { background-color: #0f172a; }
 
-.btn-accion-lote {
-    background-color: #eff6ff;
-    color: var(--color-secundario);
-    border: 1px dashed rgba(59, 130, 246, 0.4);
+.btn-secundario {
+    background-color: var(--color-secundario);
+    color: #ffffff;
+}
+
+.btn-peligro {
+    background-color: var(--color-peligro);
+    color: #ffffff;
+}
+
+.btn-neutral {
+    background-color: #cfd8dc;
+    color: var(--color-texto-base);
+}
+
+.btn-bloque {
+    display: flex;
+    width: 100%;
 }
 
 /* ==========================================================================
-   LA GRILLA DIARIA: Estudiantes y Notas en Tiempo Real
+   ALERTAS Y ESTADOS OPERACIONALES
+   ========================================================================== */
+.alerta-operacional {
+    padding: 12px 16px;
+    border-radius: var(--borde-radio);
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+}
+
+.estado-espera {
+    background-color: #eceff1;
+    color: #455a64;
+    border: 1px solid #b0bec5;
+}
+
+.estado-activa {
+    background-color: #e8f5e9;
+    color: var(--color-exito);
+    border: 1px solid #a5d6a7;
+}
+
+/* ==========================================================================
+   TABLAS Y MATRICES DE ASISTENCIA / NOTAS
    ========================================================================== */
 .tabla-contenedor {
     width: 100%;
-    overflow-x: auto; /* Scroll horizontal fluido en móviles */
-    border-radius: var(--radio-borde-compacto);
-    border: 1px solid #e2e8f0;
-    margin-top: 16px;
+    overflow-x: auto;
+    margin-top: 15px;
+    border-radius: var(--borde-radio);
+    border: 1px solid var(--color-borde);
 }
 
-.tabla-aula {
+.tabla-general {
     width: 100%;
     border-collapse: collapse;
-    background: var(--color-tarjeta);
+    background-color: #ffffff;
     text-align: left;
+    font-size: 0.95rem;
 }
 
-.tabla-aula th {
+.tabla-general th {
     background-color: #f1f5f9;
-    color: var(--color-texto-mutado);
-    font-size: 11px;
-    text-transform: uppercase;
-    font-weight: 700;
+    color: #475569;
     padding: 12px;
-    border-bottom: 2px solid #e2e8f0;
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-borde);
 }
 
-.tabla-aula td {
-    padding: 14px 12px;
+.tabla-general td {
+    padding: 12px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
 
-/* Bloque de Información de Alumno */
-.alumno-perfil-bloque {
+.fila-estudiante-aula:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+/* Información del Alumno en la Celda */
+.alumno-info-celda {
     display: flex;
     flex-direction: column;
 }
-.alumno-nombre {
+
+.alumno-nombre-completo {
     font-weight: 600;
-    color: var(--color-primario);
-    font-size: 14px;
-    text-decoration: none;
-}
-.alumno-cedula {
-    font-size: 11px;
-    color: var(--color-texto-mutado);
-    margin-top: 2px;
 }
 
-/* ==========================================================================
-   NUEVA BOTONERA HORIZONTAL DE 4 OPCIONES (CRITERIOS NEURO)
-   ========================================================================== */
-.contenedor-criterio-bloque {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    background: #f8fafc;
-    padding: 8px 12px;
-    border-radius: var(--radio-borde-compacto);
-    border: 1px solid #edf2f7;
+.alumno-cedula-sub {
+    font-size: 0.75rem;
+    color: #78909c;
 }
 
-.etiqueta-nombre-rasgo {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--color-texto-mutado);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-}
-
-.grupo-radios-horizontal {
-    display: flex;
-    background: #e2e8f0;
-    padding: 2px;
-    border-radius: 6px;
-    gap: 2px;
-}
-
-.opcion-radio-nivel input[type="radio"] {
-    display: none; /* Escondemos el radio circular nativo */
-}
-
-.opcion-radio-nivel {
-    display: block;
-}
-
-.opcion-radio-nivel span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-texto);
-    background: var(--color-tarjeta);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: var(--transicion);
-}
-
-/* Colores Dinámicos cuando el Docente selecciona el Nivel (Feedback Instantáneo) */
-.nivel-0 input[type="radio"]:checked + span { background-color: var(--color-peligro); color: white; }
-.nivel-1 input[type="radio"]:checked + span { background-color: var(--color-alerta); color: white; }
-.nivel-2 input[type="radio"]:checked + span { background-color: #60a5fa; color: white; }
-.nivel-3 input[type="radio"]:checked + span { background-color: var(--color-exito); color: white; }
-
-/* ==========================================================================
-   CONTENEDOR DE NOTA GENERADA (Fórmula Neurocognitiva 0-20)
-   ========================================================================== */
-.nota-generada-celda {
-    font-size: 1.25rem;
-    font-weight: 800;
-    text-align: center;
-    padding: 8px 12px;
-    border-radius: var(--radio-borde-compacto);
-    background-color: #f0fdf4; /* Tono verde suave de fondo por defecto */
-    border: 1px solid rgba(16, 185, 129, 0.15);
-    min-width: 60px;
+/* Switch de Asistencia Moderno */
+.switch-asistencia {
+    position: relative;
     display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch-asistencia input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-control {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #b0bec5;
+    transition: .3s;
+    border-radius: 34px;
+}
+
+.slider-control:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 4px; bottom: 4px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider-control {
+    background-color: var(--color-secundario);
+}
+
+input:checked + .slider-control:before {
+    transform: translateX(24px);
 }
 
 /* ==========================================================================
-   MODALES Y VENTANAS EMERGENTES (UI Limpia)
+   BOTONES DE ESCALA PEDAGÓGICA (I, EP, C, A)
    ========================================================================== */
-.modal-mascara {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(15, 23, 42, 0.6); /* Backdrop oscuro con desenfoque */
-    backdrop-filter: blur(4px);
+.btn-escala-ciclo {
+    min-width: 42px;
+    height: 36px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ==========================================================================
+   LISTAS SIMPLES (Cursos y Listados)
+   ========================================================================== */
+.lista-activos {
+    list-style: none;
+    margin-top: 10px;
+}
+
+.item-curso {
     display: flex;
+    justify-content: space-between;
     align-items: center;
+    padding: 10px 14px;
+    background-color: #f8f9fa;
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.btn-eliminar-item {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+}
+
+.lista-vacia {
+    text-align: center;
+    color: #90a4ae;
+    padding: 20px 0;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   VENTANAS MODALES (UI Capa Superior / Popups)
+   ========================================================================== */
+.modal-capa {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(38, 50, 56, 0.6); /* Backdrop oscuro */
+    backdrop-filter: blur(3px);
+    display: none; /* Controlado dinámicamente con .style.display = 'flex' */
     justify-content: center;
-    z-index: 9999;
+    align-items: center;
+    z-index: 200;
     padding: 16px;
 }
 
 .modal-contenedor {
-    background: var(--color-tarjeta);
-    border-radius: var(--radio-borde);
+    background-color: var(--color-superficie);
     width: 100%;
     max-width: 500px;
-    box-shadow: var(--sombra-profunda);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: abrirModalAnim 0.25s ease-out;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
 }
 
 .modal-cabecera {
     padding: 16px 20px;
-    background-color: var(--color-fondo);
-    border-bottom: 1px solid #e2e8f0;
-    font-weight: 700;
+    border-bottom: 1px solid var(--color-borde);
     color: var(--color-primario);
+    font-weight: bold;
+    font-size: 1.15rem;
 }
 
 .modal-cuerpo {
     padding: 20px;
-    max-height: 60vh;
     overflow-y: auto;
 }
 
-/* MODALES */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Fondo translúcido oscuro */
+.modal-pie {
+    padding: 14px 20px;
+    border-top: 1px solid var(--color-borde);
     display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000; /* Asegura que se dibuje por encima de todo */
-    padding: 16px;
-    box-sizing: border-box;
-    backdrop-filter: blur(4px); /* Suave desenfoque de fondo en Android moderno */
+    justify-content: flex-end;
+    gap: 10px;
+background-color: #fafafa;
+border-bottom-left-radius: 12px;
+border-bottom-right-radius: 12px;
 }
-/* Contenedor del formulario (La tarjeta blanca) */
-.modal-content {
-    background-color: var(--color-fondo);
-    width: 100%;
-    max-width: 480px; /* Tamaño máximo óptimo para phablets o tablets */
-    max-height: 90vh; /* Evita que se salga en pantallas pequeñas */
-    overflow-y: auto; /* Permite scroll interno si el teclado virtual emerge */
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    animation: entradaModal 0.3s ease-out;
-}
-/* Animación sutil de escala para la aparición en el dispositivo */
-@keyframes entradaModal {
+
+@keyframes abrirModalAnim {
 from { transform: scale(0.9); opacity: 0; }
 to { transform: scale(1); opacity: 1; }
 }
+
+/* Ajuste específico para el Modal Masivo de Nóminas / Tablas Internas */
+.modal-contenedor-ancho {
+max-width: 700px;
+}
+
