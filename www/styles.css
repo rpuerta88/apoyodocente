@@ -39,7 +39,7 @@
     --color-superficie: #ffffff;     /* Tarjetas y Contenedores */
     
     /* Colores de Estado Operacional */
-    --color-texto-base: #ebebeb;
+    --color-texto-base: #505050;
     --color-exito: #2e7d32;
     --color-alerta: #e65100;
     --color-peligro: #c62828;
@@ -70,6 +70,10 @@ body {
     color: var(--color-texto-base);
     line-height: 1.5;
     padding-bottom: 70px; /* Espacio preventivo para la barra de navegación inferior */
+}
+
+.instruccion-texto {
+     color: #d0d0d0;
 }
 
 /* ==========================================================================
@@ -113,6 +117,9 @@ body {
     overflow-y: auto;
 }
 /*
+app-header
+estado-barra
+badge
 pantalla-vista
 panel-docente
 */
@@ -234,9 +241,18 @@ input:focus, select:focus, textarea:focus {
     width: 100%;
 }
 
+.btn-cancelar {
+    background-color: #cfd8dc;
+    color: var(--color-texto-base);
+}
+
+.modal-botones {
+    display: flex;
+    align-items: inline;
+    justify-content: center;
+}
 /*
 btn-guardar
-btn-cancelar
 */
 /* ==========================================================================
    ALERTAS Y ESTADOS OPERACIONALES
@@ -412,6 +428,7 @@ input:checked + .slider-control:before {
     align-items: center;
     z-index: 200;
     padding: 16px;
+    box-sizing: border-box;
 }
 
 .modal-contenedor {
@@ -424,6 +441,7 @@ input:checked + .slider-control:before {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-cabecera {
@@ -433,12 +451,12 @@ input:checked + .slider-control:before {
     font-weight: bold;
     font-size: 1rem;
 }
-
+/*
 .modal-cuerpo {
     padding: 20px;
     overflow-y: auto;
 }
-
+*/
 .modal-pie {
     padding: 14px 20px;
     border-top: 1px solid var(--color-borde);
