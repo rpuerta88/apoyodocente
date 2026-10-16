@@ -21,234 +21,194 @@
      </nav>
 
 <!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
-<main class="contenedor-pantallas">
-
-    <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
-    <section id="pantalla-admin" class="pantalla-vista">
-        <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
-        <div id="seccionCursos" class="panel-administrativo">
-        <h3>🏛️ Registro de Cursos y Secciones</h3>
-            <!-- Formulario de Registro Rápido -->
-            <form id="formCursos" class="formulario-lineal">
-                <div class="modal-cabecera-no-margin">
-                    <label for="curso_seccion">Curso y Sección:</label>
-                    <input type="text" id="curso_seccion" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
-                </div>
-                <button type="submit" class="btn-agregar-curso" title='Añadir'>➕</button>
-            </form>
-        </div>
-        <!-- Aquí va todo lo que ya hemos hecho: El botón de Escolaridad y el Registro de Cursos -->
-        <div id="seccionCursos" class="panel-administrativo">
+    <main class="contenedor-pantallas">
+            <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
+        <section id="pantalla-admin" class="modal-cabecera">
+            <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
+            <div id="seccionCursos" class="panel-administrativo">
+                <h3>🏛️ Registro de Cursos y Secciones</h3>
+                <!-- Formulario de Registro Rápido -->
+                <form id="formCursos" class="formulario-lineal">
+                    <div class="container-secc">
+                        <label for="curso_seccion" class="into-secc">Curso y Sección:</label>
+                        <input type="text" id="curso_seccion" class="into-secc" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
+                        <button type="submit" class="into-secc" title='Añadir'>➕</button>
+                    </div>
+                </form>
+            </div>
+            <!-- Aquí va todo lo que ya hemos hecho: El botón de Escolaridad y el Registro de Cursos -->
+            <div id="seccionCursos" class="panel-administrativo">
             <!-- Lista Dinámica Interactiva -->
-            <div class="contenedor-lista-cursos">
-                <h4>Cursos Registrados:</h4>
-                <ul id="listaCursosActivos" class="lista-interactiva">
-                    <!-- Se puebla dinámicamente desde SQLite -->
-                    <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
-        </ul>
-    </div>
-
-        </div>
-<!-- MÓDULO DE REGISTRO DE ESTUDIANTES -->
-<div class="panel-administrativo">
-    <h3>👥 Registro y Matrícula de Estudiantes</h3>
-    <p class="instruccion-texto">Cargue la lista de alumnos masivamente o registre un estudiante de forma individual.</p>
-    
-    <div class="dos-columnas-botones">
-        <!-- Opción 1: Entrada de Archivo CSV oculto con botón estilizado -->
-        <label class="btn-accion btn-csv">
-            📁 Importar Matrícula (.CSV)
-            <input type="file" id="archivoCSV" accept=".csv" onchange="AppEstudiantes.importarCSV(this)" style="display: none;">
-        </label>
-        
-        <!-- Opción 2: Botón Manual -->
-        <button type="button" class="btn-accion btn-manual" onclick="AppEstudiantes.abrirModalManual()">
-            👤 Registro Manual
-        </button>
-    </div>
-</div>
-<!-- -->
-<!-- MÓDULO DE CONFIGURACIÓN DE NÓMINAS -->
-<div class="panel-administrativo">
-    <h3>📋 Asignación y Elaboración de Nóminas</h3>
-    <p class="instruccion-texto">Vincule a los alumnos matriculados con sus respectivas secciones para el año escolar activo.</p>
-    
-    <!-- Selectores base para saber a qué curso se le va a asignar la nómina -->
-    <div class="modal-cabecera">
-        <label for="nom_select_curso">Seleccione el Curso / Sección Destino:</label>
-        <select id="nom_select_curso" required>
-            <!-- Se poblará dinámicamente desde SQLite con los cursos existentes -->
-            <option value="" disabled selected>Cargando cursos disponibles...</option>
-        </select>
-    </div>
-<!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
-        <div style="margin-top: 12px;">
-            <button type="button" class="btn-planificar" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
-                📊 Ver Sábana de Notas y Totales (M / F / T)
-            </button>
-        </div>
-<!-- CONTENEDOR DE CONTROL DE MATRÍCULA INTERNO -->
-        <div class="dos-columnas-botones">
-            <!-- Opción 1: Carga masiva directa desde la base de datos local -->
-            <button type="button" class="btn-accion btn-csv-nomina" onclick="AppNominas.abrirModalMasivo()">
-                👥 Asignación Masiva desde Matrícula
-            </button>
-
-            <!-- Opción 2: Registro unitario tradicional -->
-            <button type="button" class="btn-accion btn-manual-nomina" onclick="AppNominas.abrirModalIndividual()">
-                👤 Asignación Individual
-            </button>
-        </div>
-<!-- -->
-<!-- BOTÓN DISPARADOR (Agrégalo dentro de tu pantalla-admin en el index.html) -->
-<div class="panel-administrativo">
-    <h3>📐 Planificación Pedagógica</h3>
-    <p style="font-size: 0.9rem; color: #555;">Defina los contenidos programáticos antes de iniciar las clases.</p>
-    <button type="button" class="btn-planificar" onclick="AppPlanificacion.abrirModal()">➕ Planificar Nuevo Tema</button>
-</div>
-<!-- Botón flotante o administrativo en tu interfaz para editar cuando se requiera -->
-<button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
-        <!-- -->
-        <!-- -->
-<!-- BOTÓN DISPARADOR (Agrégalo en tu panel administrativo dentro de pantalla-admin) -->
-<div class="panel-administrativo">
-    <h3>📆 Períodos y Lapsos</h3>
-    <p style="font-size: 0.9rem; color: #555;">Establezca los lapsos académicos activos para la evaluación continua.</p>
-    <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
-</div>
-    </div> <!-- Cierre del panel administrativo de nóminas -->
-        <!-- -->
-    </section>
-
-    <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) -->
-    <!-- PANEL OPERACIONAL DIARIO (En Caliente) -->
-    <main class="contenedor-principal">
-<!-- SECCIÓN 2: PRÁCTICA DOCENTE (Operación diaria en el aula) -->
-<div class="panel-docente">
-  
-
-    <!-- Estado de la sesión actual
-    <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
-        • No hay ninguna sesión activa para el día de hoy.
-    </div>
-    
-    El resto de tus botones como btnAbrirSesion y zonaOperacionesAula se quedan abajo -->
-
-<!-- DIVISON DE SESIONES -->
-<section id="pantalla-docente" class="pantalla-vista" style="display: none;">
-    <div class="panel-docente">
-        <h3>📝 Control de Sesión Diaria</h3>
-        <p class="subtitulo-docente">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
-        
-        <!-- Estado de la sesión actual -->
-        <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
-            ⚪ No hay ninguna sesión activa para el día de hoy.
-        </div>
-    <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
-    <div class="modal-cabecera" style="margin-bottom: 14px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
-        <label for="historial_sesiones_combo">📂 Corregir / Ver Sesión Pasada:</label>
-        <select id="historial_sesiones_combo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
-            <option value="" selected>-- Seleccione una sesión para editar --</option>
-        </select>
-    </div>
-<!-- -->
-<!-- BOTÓN DISPARADOR (Agrégalo en tu panel-docente, dentro de la zonaOperacionesAula del index.html) -->
-<!-- Como se requiere para la evaluación diaria, es ideal colocarlo en la pestaña de Práctica Diaria -->
-<div class="bloque-criterio-aula" style="margin-top: 14px;">
-    <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
-        🎯 Configurar Criterio de Evaluación para Hoy
-    </button>
-</div>
-<!-- -->
-
-        <!-- Botón de apertura rápida -->
-        <div class="contenedor-acciones-aula">
-            <button type="button" id="btnAbrirSesion" class="btn-aula btn-apertura" onclick="AppClasesDiarias.abrirSesionHoy()">
-                🚀 Abrir Sesión de Hoy
-            </button>
-        </div>
-        
-        <!-- Contenedor oculto que se activará cuando la sesión esté abierta -->
-        <!-- CONTENEDOR OPERACIONAL EN CALIENTE -->
-<div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
-    <div class="divisor-titulos">Panel de Trabajo del Aula</div>
-    
-    <!-- Selector de Curso Activo -->
-    <div class="modal-cabecera">
-        <label for="aula_select_curso">Seleccione Curso/Sección a Evaluar Hoy:</label>
-        <select id="aula_select_curso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
-            <!-- Se puebla dinámicamente -->
-        </select>
-    </div>
-
-    <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
-    <div class="panel-administrativo" style="margin: 10px 0; background-color: #f4f6f7;">
-        <h4 style="color: #009688; margin-top: 0;">🧠 Enfoque Atencional del Día</h4>
-        <p class="instruccion-texto">Marque los rasgos específicos que va a observar y evaluar en esta sesión de clases. La nota de 12 puntos se distribuirá equitativamente entre ellos de forma automática.</p>
-        <div id="contenedorCheckboxesCriterios" class="grid-criterios-seleccion">
-            <!-- Se puebla dinámicamente desde la tabla 'criterios_evaluacion' con checkboxes -->
-        </div>
-    </div>
-
-    <!-- Grilla de Evaluación de Alumnos -->
-    <div class="panel-tabla-aula">
-        <!-- Grilla de Evaluación de Alumnos -->
-    <div class="panel-tabla-aula">
-        <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #37474f;">Registro de Observación Directa</h4>
-                <button type="button" class="btn-guardar-lote" onclick="AppAulaOperaciones.guardarAsistenciaYNotasLote()">
-                    💾 Guardar Bloque Diario
+                <div class="contenedor-lista-cursos">
+                    <h4>Cursos Registrados:</h4>
+                    <ul id="listaCursosActivos" class="lista-interactiva">
+                        <!-- Se puebla dinámicamente desde SQLite -->
+                        <li class="lista-vacia">No hay cursos registrados en el sistema.</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- MÓDULO DE REGISTRO DE ESTUDIANTES -->
+            <div class="panel-administrativo">
+                <h3>👥 Registro y Matrícula de Estudiantes</h3>
+                <p class="instruccion-texto">Cargue la lista de alumnos masivamente o registre un estudiante de forma individual.</p>
+                <div class="dos-columnas-botones">
+                    <!-- Opción 1: Entrada de Archivo CSV oculto con botón estilizado -->
+                    <label class="btn-accion btn-csv">
+                        📁 Importar Matrícula (.CSV)
+                        <input type="file" id="archivoCSV" accept=".csv" onchange="AppEstudiantes.importarCSV(this)" style="display: none;">
+                    </label>
+                    <!-- Opción 2: Botón Manual -->
+                    <button type="button" class="btn-accion btn-manual" onclick="AppEstudiantes.abrirModalManual()">
+                        👤 Registro Manual
+                    </button>
+                </div>
+            </div>
+            <!-- MÓDULO DE CONFIGURACIÓN DE NÓMINAS -->
+            <div class="panel-administrativo">
+                <h3>📋 Asignación y Elaboración de Nóminas</h3>
+                <p class="instruccion-texto">Vincule a los alumnos matriculados con sus respectivas secciones para el año escolar activo.</p>
+                <!-- Selectores base para saber a qué curso se le va a asignar la nómina -->
+                <div class="modal-cabecera">
+                    <label for="nom_select_curso">Seleccione el Curso / Sección Destino:</label>
+                    <select id="nom_select_curso" required>
+                        <!-- Se poblará dinámicamente desde SQLite con los cursos existentes -->
+                        <option value="" disabled selected>Cargando cursos disponibles...</option>
+                    </select>
+                </div>
+            </div>
+            <!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
+            <div style="margin-top: 12px;">
+                <button type="button" class="btn-planificar" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
+                    📊 Ver Sábana de Notas y Totales (M / F / T)
                 </button>
             </div>
-            
-            <!-- NUEVOS DISPARADORES DE INYECCIÓN EN BLOQUE -->
-            <div class="controles-bloque-neuro">
-                <span class="etiqueta-macro">Acciones en Lote:</span>
-                <button type="button" class="btn-macro-accion btn-macro-verde" onclick="AppAulaOperaciones.inyectarAsistenciaPerfecta()">
-                    ✅ Asistencia Perfecta
+            <!-- CONTENEDOR DE CONTROL DE MATRÍCULA INTERNO -->
+            <div class="dos-columnas-botones">
+                <!-- Opción 1: Carga masiva directa desde la base de datos local -->
+                <button type="button" class="btn-accion btn-csv-nomina" onclick="AppNominas.abrirModalMasivo()">
+                    👥 Asignación Masiva desde Matrícula
                 </button>
-                <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppAulaOperaciones.inyectarTodoEvaluado()">
-                    🎯 Marcar Todos los Rasgos
-                </button>
-                <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppAulaOperaciones.reiniciarMatrizFila()">
-                    🔄 Resetear Grilla
+                <!-- Opción 2: Registro unitario tradicional -->
+                <button type="button" class="btn-accion btn-manual-nomina" onclick="AppNominas.abrirModalIndividual()">
+                    👤 Asignación Individual
                 </button>
             </div>
-        </div>
-        
-        <form id="formTablaAsistencia">
-<!-- El resto de la tabla permanece exactamente igual -->
-        
-        <form id="formTablaAsistencia">
-            <div class="tabla-responsiva">
-                <table class="tabla-aula">
-                    <thead>
-                        <tr>
-                            <th>Estudiante</th>
-                            <th class="text-center">Asistencia (Base 8pts)</th>
-                            <th>Rasgos y Criterios Observados en Caliente (Máx 12pts)</th>
-                            <th class="text-center">Nota Generada</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaEstudiantesAula">
-                        <tr class="lista-vacia">
-                            <td colspan="4">Seleccione una sección para mapear los estudiantes matriculados.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- BOTÓN DISPARADOR (Agrégalo dentro de tu pantalla-admin en el index.html) -->
+            <div class="panel-administrativo">
+                <h3>📐 Planificación Pedagógica</h3>
+                <p style="font-size: 0.9rem; color: #555;">Defina los contenidos programáticos antes de iniciar las clases.</p>
+                <button type="button" class="btn-planificar" onclick="AppPlanificacion.abrirModal()">➕ Planificar Nuevo Tema</button>
             </div>
-        </form>
-    </div>
-</div>
-    </div>
-</section>
-<!-- -->
+            <!-- Botón flotante o administrativo en tu interfaz para editar cuando se requiera -->
+            <button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
+                <!-- BOTÓN DISPARADOR (Agrégalo en tu panel administrativo dentro de pantalla-admin) -->
+            <div class="panel-administrativo">
+                <h3>📆 Períodos y Lapsos</h3>
+                <p style="font-size: 0.9rem; color: #555;">Establezca los lapsos académicos activos para la evaluación continua.</p>
+                <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
+            </div>
+        </section>
+        <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) PANEL OPERACIONAL DIARIO (En Caliente) -->
+        <section id="pantalla-docente" class="modal-cabecera" style="display: none;">
+            <div class="panel-docente">
+                <h3>📝 Control de Sesión Diaria</h3>
+                <p class="subtitulo-docente">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
+                <!-- Estado de la sesión actual -->
+                <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
+                    ⚪ No hay ninguna sesión activa para el día de hoy.
+                </div>
+                <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
+            <div class="modal-cabecera" style="margin-bottom: 14px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
+                <label for="historial_sesiones_combo">📂 Corregir / Ver Sesión Pasada:</label>
+                <select id="historial_sesiones_combo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
+                    <option value="" selected>-- Seleccione una sesión para editar --</option>
+                </select>
+            </div>
+            <!-- BOTÓN DISPARADOR (Agrégalo en tu panel-docente, dentro de la zonaOperacionesAula del index.html) -->
+            <div class="bloque-criterio-aula" style="margin-top: 14px;">
+                <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
+                    🎯 Configurar Criterio de Evaluación para Hoy
+                </button>
+            </div>
+                <!-- Botón de apertura rápida -->
+            <div class="contenedor-acciones-aula">
+                <button type="button" id="btnAbrirSesion" class="btn-aula btn-apertura" onclick="AppClasesDiarias.abrirSesionHoy()">
+                    🚀 Abrir Sesión de Hoy
+                </button>
+            </div>
+                <!-- Contenedor oculto que se activará cuando la sesión esté abierta -->
+                <div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
+                    <div class="divisor-titulos">
+                        Panel de Trabajo del Aula
+                    </div>
+                    <!-- Selector de Curso Activo -->
+                        <div class="modal-cabecera">
+                            <label for="aula_select_curso">Seleccione Curso/Sección a Evaluar Hoy:</label>
+                            <select id="aula_select_curso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
+                                <!-- Se puebla dinámicamente -->
+                            </select>
+                        </div>
+                    <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
+                </div>
+                    <div class="panel-administrativo" style="margin: 10px 0; background-color: #f4f6f7;">
+                        <h4 style="color: #009688; margin-top: 0;">🧠 Enfoque Atencional del Día</h4>
+                        <p class="instruccion-texto">Marque los rasgos específicos que va a observar y evaluar en esta sesión de clases. La nota de 12 puntos se distribuirá equitativamente entre ellos de forma automática.</p>
+                        <div id="contenedorCheckboxesCriterios" class="grid-criterios-seleccion">
+                            <!-- Se puebla dinámicamente desde la tabla 'criterios_evaluacion' con checkboxes -->
+                        </div>
+                    </div>
+            </div>
+                <!-- Grilla de Evaluación de Alumnos -->
+            <div class="panel-tabla-aula">
+                    <!-- Grilla de Evaluación de Alumnos -->
+                <div class="panel-tabla-aula">
+                    <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin: 0; color: #37474f;">Registro de Observación Directa</h4>
+                            <button type="button" class="btn-guardar-lote" onclick="AppAulaOperaciones.guardarAsistenciaYNotasLote()">
+                                💾 Guardar Bloque Diario
+                            </button>
+                        </div>
+                        <!-- NUEVOS DISPARADORES DE INYECCIÓN EN BLOQUE -->
+                        <div class="controles-bloque-neuro">
+                            <span class="etiqueta-macro">Acciones en Lote:</span>
+                            <button type="button" class="btn-macro-accion btn-macro-verde" onclick="AppAulaOperaciones.inyectarAsistenciaPerfecta()">
+                                ✅ Asistencia Perfecta
+                            </button>
+                            <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppAulaOperaciones.inyectarTodoEvaluado()">
+                                🎯 Marcar Todos los Rasgos
+                            </button>
+                            <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppAulaOperaciones.reiniciarMatrizFila()">
+                                🔄 Resetear Grilla
+                            </button>
+                        </div>
+                    </div>
+                    <div class="por-definir">
+                        <form id="formTablaAsistencia">
+                            <div class="tabla-responsiva">
+                                <table class="tabla-aula">
+                                    <thead>
+                                        <tr>
+                                            <th>Estudiante</th>
+                                            <th class="text-center">Asistencia (Base 8pts)</th>
+                                            <th>Rasgos y Criterios Observados en Caliente (Máx 12pts)</th>
+                                            <th class="text-center">Nota Generada</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="listaEstudiantesAula">
+                                        <tr class="lista-vacia">
+                                            <td colspan="4">Seleccione una sección para mapear los estudiantes matriculados.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
-<!-- -->
-    </section>
-
-</main>
 
 
 <!--
@@ -262,12 +222,13 @@
 <!-- FORMULARIOS MODALES -->
 <!-- Modal Emergente para Configuración Administrativa de Escolaridad -->
 <div id="modalEscolaridad" class="modal-capa" style="display: none;">
-    <div class="modal-contenedor">
+    <div class="modal-cabesera">
         <h2 id="modalTitulo">Configuración de Escolaridad</h2>
         <p id="modalMensaje" class="alerta-texto" style="display: none;">
             ⚠️ No se detectó ninguna escolaridad vigente para la fecha actual. Por favor, configure el período.
         </p>
-        
+    </div>
+    <div class="modal-cuerpo">
         <form id="formEscolaridad">
             <!-- Campo oculto para cuando estemos editando -->
             <input type="hidden" id="escolaridad_id" value="">
@@ -315,37 +276,31 @@
     <div class="modal-contenedor">
         <h2>📐 Planificación de Contenidos</h2>
         <p class="instruccion-texto">Registre el núcleo temático que se desarrollará en las próximas sesiones.</p>
-        <!-- -->
         <form id="formPlanificacion">
-<!-- ***ARREGLAR SANGRIAS*** -->
-    <!-- 1. SELECCIÓN O CREACIÓN DEL TEMA CENTRAL -->
-    <div class="modal-cabecera">
-        <label for="plan_select_catedra">Tema Central (Cátedra):</label>
-        <select id="plan_select_catedra" onchange="AppPlanificacion.evaluarSeleccionCatedra()" required>
-            <!-- Se poblará dinámicamente desde SQLite -->
-            <option value="" disabled selected>Seleccione un tema central...</option>
-            <option value="NUEVO">➕ [ Registrar Nuevo Tema Central ]</option>
-        </select>
-    </div>
-
-    <!-- Campo de texto oculto por defecto, solo se muestra si elige "NUEVO" -->
-    <div class="modal-cabecera" id="grupo_nuevo_tema_central" style="display: none;">
-        <label for="plan_tema_central">Nombre del Nuevo Tema Central:</label>
-        <input type="text" id="plan_tema_central" placeholder="Ej: Unidad I: Mecánica Clásica" autocomplete="off">
-    </div>
-
-    <!-- 2. REGISTRO DEL SUBTEMA (SIEMPRE VISIBLE) -->
-    <div class="modal-cabecera">
-        <label for="plan_tema_generador">Tema Generador (Subtema / Temario):</label>
-        <input type="text" id="plan_tema_generador" placeholder="Ej: Las leyes de Newton" required autocomplete="off">
-    </div>
-
-    <div class="modal-botones">
-        <button type="submit" class="btn-guardar-plan">💾 Registrar Contenido</button>
-        <button type="button" class="btn-cancelar" onclick="AppPlanificacion.cerrarModal()">Cancelar</button>
-    </div>
-</form>
-        <!-- -->
+            <!-- 1. SELECCIÓN O CREACIÓN DEL TEMA CENTRAL -->
+            <div class="modal-cabecera">
+                <label for="plan_select_catedra">Tema Central (Cátedra):</label>
+                <select id="plan_select_catedra" onchange="AppPlanificacion.evaluarSeleccionCatedra()" required>
+                    <!-- Se poblará dinámicamente desde SQLite -->
+                    <option value="" disabled selected>Seleccione un tema central...</option>
+                    <option value="NUEVO">➕ [ Registrar Nuevo Tema Central ]</option>
+                </select>
+            </div>
+            <!-- Campo de texto oculto por defecto, solo se muestra si elige "NUEVO" -->
+            <div class="modal-cabecera" id="grupo_nuevo_tema_central" style="display: none;">
+                <label for="plan_tema_central">Nombre del Nuevo Tema Central:</label>
+                <input type="text" id="plan_tema_central" placeholder="Ej: Unidad I: Mecánica Clásica" autocomplete="off">
+            </div>
+            <!-- 2. REGISTRO DEL SUBTEMA (SIEMPRE VISIBLE) -->
+            <div class="modal-cabecera">
+                <label for="plan_tema_generador">Tema Generador (Subtema / Temario):</label>
+                <input type="text" id="plan_tema_generador" placeholder="Ej: Las leyes de Newton" required autocomplete="off">
+            </div>
+            <div class="modal-botones">
+                <button type="submit" class="btn-guardar-plan">💾 Registrar Contenido</button>
+                <button type="button" class="btn-cancelar" onclick="AppPlanificacion.cerrarModal()">Cancelar</button>
+            </div>
+        </form>
     </div>
 </div>
 <!-- Modal Emergente para Registro Manual de Estudiantes -->

@@ -1,16 +1,45 @@
 /* ==========================================================================
    VARIABLES GLOBALES Y CONFIGURACIÓN DE TEMA (SAAD - NeuroAula)
    ========================================================================== */
+/*
+:root {
+    Paleta de Colores Principal 
+    --color-primario: #0288d1;       /* Azul NeuroAula 
+    --color-primario-light: #e1f5fe; /* Azul Fondo 
+    --color-secundario: #26a69a;     /* Verde Techo (Éxito) 
+    --color-background: #f5f7fa;     /* Fondo de la App 
+    --color-superficie: #ffffff;     /* Tarjetas y Contenedores 
+    
+    Colores de Estado Operacional 
+    --color-texto-base: #37474f;
+    --color-exito: #2e7d32;
+    --color-alerta: #e65100;
+    --color-peligro: #c62828;
+    --color-borde: #cfd8dc;
+
+    Escala de Estimación (4 Niveles) 
+    --escala-i: #e0e0e0;
+    --escala-ep: #ffb74d;
+    --escala-c: #81c784;
+    --escala-a: #4fc3f7;
+
+    Fuentes y Bordes 
+    --fuente-app: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif;
+    --borde-radio: 8px;
+    --sombra-suave: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+*/
+
 :root {
     /* Paleta de Colores Principal */
-    --color-primario: #0288d1;       /* Azul NeuroAula */
-    --color-primario-light: #e1f5fe; /* Azul Fondo */
+    --color-primario: #eaa824;       /* Azul NeuroAula */
+    --color-primario-light: #4ab874; /* Azul Fondo */
     --color-secundario: #26a69a;     /* Verde Techo (Éxito) */
-    --color-background: #f5f7fa;     /* Fondo de la App */
+    --color-background: #1d7f3a;     /* Fondo de la App */
     --color-superficie: #ffffff;     /* Tarjetas y Contenedores */
     
     /* Colores de Estado Operacional */
-    --color-texto-base: #37474f;
+    --color-texto-base: #ebebeb;
     --color-exito: #2e7d32;
     --color-alerta: #e65100;
     --color-peligro: #c62828;
@@ -27,10 +56,7 @@
     --borde-radio: 8px;
     --sombra-suave: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-
-/* ==========================================================================
-   RESET Y ESTILOS BASE (Optimizado para Pantallas Táctiles)
-   ========================================================================== */
+/* RESET Y ESTILOS BASE (Optimizado para Pantallas Táctiles)*/
 * {
     box-sizing: border-box;
     margin: 0;
@@ -81,14 +107,31 @@ body {
     background-color: var(--color-primario-light);
 }
 
-/* ==========================================================================
-   VISTAS Y CONTENEDORES PRINCIPALES
-   ========================================================================== */
+/* VISTAS Y CONTENEDORES PRINCIPALES*/
+
+.contenedor-pantallas {
+    overflow-y: auto;
+}
+/*
+pantalla-vista
+panel-docente
+*/
+.container-secc {
+    display: flex;
+    flex-direction: row;
+}
+
+. into-secc {
+    display: inline-block;
+    width: 200px;
+}
+/*
 .pantalla-modulo {
     padding: 16px;
     max-width: 800px;
     margin: 0 auto;
 }
+
 
 .tarjeta-seccion {
     background-color: var(--color-superficie);
@@ -106,10 +149,9 @@ body {
     border-bottom: 2px solid var(--color-primario-light);
     padding-bottom: 6px;
 }
+*/
 
-/* ==========================================================================
-   ELEMENTOS DE FORMULARIO MODERNO
-   ========================================================================== */
+/* ELEMENTOS DE FORMULARIO MODERNO
 .grupo-campo {
     margin-bottom: 14px;
     display: flex;
@@ -122,6 +164,7 @@ body {
     margin-bottom: 6px;
     color: #546e7a;
 }
+*/
 
 input[type="text"],
 input[type="number"],
@@ -133,7 +176,7 @@ textarea {
     border: 1.5px solid var(--color-borde);
     border-radius: var(--borde-radio);
     font-size: 1rem;
-    background-color: #fafafa;
+    background-color: #4ac874ff;
     color: var(--color-texto-base);
     transition: border-color 0.2s;
 }
@@ -141,7 +184,7 @@ textarea {
 input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--color-primario);
-    background-color: #ffffff;
+    background-color: #eeeeee;
 }
 
 /* ==========================================================================
@@ -191,6 +234,10 @@ input:focus, select:focus, textarea:focus {
     width: 100%;
 }
 
+/*
+btn-guardar
+btn-cancelar
+*/
 /* ==========================================================================
    ALERTAS Y ESTADOS OPERACIONALES
    ========================================================================== */
@@ -380,11 +427,11 @@ input:checked + .slider-control:before {
 }
 
 .modal-cabecera {
-    padding: 16px 20px;
+    padding: 10px 13px;
     border-bottom: 1px solid var(--color-borde);
     color: var(--color-primario);
     font-weight: bold;
-    font-size: 1.15rem;
+    font-size: 1rem;
 }
 
 .modal-cuerpo {
