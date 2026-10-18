@@ -23,7 +23,7 @@
 <!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
     <main class="contenedor-pantallas">
             <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
-        <section id="pantalla-admin" class="modal-cabecera" syle="display: none;">
+        <section id="pantalla-admin" class="modal-cabecera" syle="display: flex;">
             <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
             <div id="seccionCursos">
                 <h3>🏛️ Registro de Cursos y Secciones</h3>
@@ -109,7 +109,7 @@
             </div>
         </section>
         <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) PANEL OPERACIONAL DIARIO (En Caliente) -->
-        <section id="pantalla-docente" class="modal-cabecera" style="display: none;">
+        <section id="pantalla-docente" class="modal-cabecera" style="display: flex;">
             <div class="panel-docente">
                 <h3>📝 Control de Sesión Diaria</h3>
                 <p class="instruccion-texto">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
@@ -564,7 +564,7 @@
     </div>
 </div>
 <!-- Modal Emergente: Previsualización y Selección de Nómina Masiva -->
-<div id="modalPrevisualizarNomina" class="modal-capa" style="display: flex;">
+<div id="modalPrevisualizarNomina" class="modal-capa" style="display: none;">
     <div class="modal-contenedor modal-ancho-consolidado">
         <h2>📋 Alumnos Encontrados en el CSV</h2>
         <p class="instruccion-texto">Confirme la nómina leyendo los datos reales de SQLite. Desmarque a quienes no pertenezcan a esta sección.</p>
