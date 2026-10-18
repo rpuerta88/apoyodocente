@@ -30,9 +30,9 @@
                 <!-- Formulario de Registro Rápido -->
                 <form id="formCursos" class="formulario-lineal">
                     <div class="container-secc">
-                        <label for="curso_seccion" class="into-secc">Curso y Sección:</label>
+                        <label for="curso_seccion" class="label-secc">Curso y Sección:</label>
                         <input type="text" id="curso_seccion" class="into-secc" placeholder="Ej: 5TO AÑO A" required autocomplete="off">
-                        <button type="submit" class="into-secc" title='Añadir'>➕</button>
+                        <button type="submit" class="btn-secc" title='Añadir'>➕</button>
                     </div>
                 </form>
             </div>
@@ -79,7 +79,7 @@
             <!-- BOTÓN DE AUDITORÍA GLOBAL DE LA NÓMINA -->
             <div style="margin-top: 12px;">
                 <button type="button" class="btn-planificar" onclick="AppAulaOperaciones.abrirReporteConsolidadoAdmin()">
-                    📊 Ver Sábana de Notas y Totales (M / F / T)
+                    📊 Ver Estudiante
                 </button>
             </div>
             <!-- CONTENEDOR DE CONTROL DE MATRÍCULA INTERNO -->
@@ -235,32 +235,32 @@
 
             <div class="modal-cabecera">
                 <label for="esc_nombre">Año Escolar / Escolaridad:</label>
-                <input type="text" id="esc_nombre" placeholder="Ej: 2026-2027" required>
+                <input type="text" id="esc_nombre" class="into-data" placeholder="Ej: 2026-2027" required>
             </div>
 
             <div class="modal-cabecera">
                 <label for="esc_profesor">Nombre del Profesor:</label>
-                <input type="text" id="esc_profesor" placeholder="Nombre y Apellido" required>
+                <input type="text" id="esc_profesor" class="into-data" placeholder="Nombre y Apellido" required>
             </div>
 
             <div class="modal-cabecera">
                 <label for="esc_area">Área de Formación:</label>
-                <input type="text" id="esc_area" placeholder="Ej: Matemáticas, GHC" required>
+                <input type="text" id="esc_area" class="into-data" placeholder="Ej: Matemáticas, GHC" required>
             </div>
 
             <div class="modal-cabecera">
                 <label for="esc_peic">Nombre del PEIC:</label>
-                <input type="text" id="esc_peic" placeholder="Proyecto Educativo Integral Comunitario" required>
+                <input type="text" id="esc_peic" class="into-data" placeholder="Proyecto Educativo Integral Comunitario" required>
             </div>
 
             <div class="dos-columnas">
                 <div class="modal-cabecera">
                     <label for="esc_inicio">Fecha de Inicio:</label>
-                    <input type="date" id="esc_inicio" required>
+                    <input type="date" id="esc_inicio" class="into-data" required>
                 </div>
                 <div class="modal-cabecera">
                     <label for="esc_cierre">Fecha de Cierre:</label>
-                    <input type="date" id="esc_cierre" required>
+                    <input type="date" id="esc_cierre" class="into-data" required>
                 </div>
             </div>
 
@@ -312,27 +312,27 @@
         <form id="formEstudianteManual">
             <div class="modal-cabecera">
                 <label for="est_cedula">Cédula de Identidad (Sólo números):</label>
-                <input type="number" id="est_cedula" placeholder="Ej: 31222444" required>
+                <input type="number" id="est_cedula" class="into-data" placeholder="Ej: 31222444" required>
             </div>
 
             <div class="modal-cabecera">
                 <label for="est_nombre">Nombres:</label>
-                <input type="text" id="est_nombre" placeholder="Ej: Juan Carlos" required autocomplete="off">
+                <input type="text" id="est_nombre" class="into-data" placeholder="Ej: Juan Carlos" required autocomplete="off">
             </div>
 
             <div class="modal-cabecera">
                 <label for="est_apellido">Apellidos:</label>
-                <input type="text" id="est_apellido" placeholder="Ej: Pérez Rodríguez" required autocomplete="off">
+                <input type="text" id="est_apellido" class="into-data" placeholder="Ej: Pérez Rodríguez" required autocomplete="off">
             </div>
 
             <div class="dos-columnas">
                 <div class="modal-cabecera">
                     <label for="est_nacimiento">Fecha de Nacimiento:</label>
-                    <input type="date" id="est_nacimiento" required>
+                    <input type="date" id="est_nacimiento" class="into-data" required>
                 </div>
                 <div class="modal-cabecera">
                     <label for="est_genero">Género / Sexo:</label>
-                    <select id="est_genero" required>
+                    <select id="est_genero" class="into-data" required>
                         <option value="" disabled selected>Seleccione...</option>
                         <option value="M">Masculino (M)</option>
                         <option value="F">Femenino (F)</option>

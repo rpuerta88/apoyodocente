@@ -747,10 +747,8 @@ const AppLapsos = {
             if (typeof AppEscolaridad !== 'undefined') AppEscolaridad.abrirModalObligatorio();
             return;
         }
-
         document.getElementById('formLapso').reset();
         document.getElementById('modalLapso').style.display = 'flex';
-
         document.getElementById('formLapso').onsubmit = async (e) => {
             e.preventDefault();
             await this.guardarLapso();
@@ -1618,70 +1616,69 @@ alert("No se pudo estructurar el reporte de calificaciones local.");
 cerrarModalReporte: function() {
 document.getElementById('modalReporteEstudiante').style.display = 'none';
 },
-abrirReporteConsolidadoAdmin: async function() {
-const cursoID = document.getElementById('nom_select_curso').value;
-const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
-if (!cursoID) {
-alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
-return;
-}
-if (!window.escolaridadActivaId) {
-alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
-return;
-}
-try {
-const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
-const resNomina = await db_real.query({
-statement: sqlNomina,
-values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
-});
-tablaCuerpo.innerHTML = "";
-if (!resNomina.values || resNomina.values.length === 0) {
-tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
-document.getElementById('stat_m_val').innerText = "0";
-document.getElementById('stat_f_val').innerText = "0";
-document.getElementById('stat_t_val').innerText = "0";
-document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
-return;
-}
-let contM = 0;
-let contF = 0;
-let contT = resNomina.values.length;
-for (let alumno of resNomina.values) {
-if (alumno.genero === 'M') contM++;
-if (alumno.genero === 'F') contF++;
-const sqlNotas = "SELECT calificacion FROM registros WHERE participantes_id = ? AND calificacion IS NOT NULL;";
-const resNotas = await db_real.query({
-statement: sqlNotas,
-values: [alumno.nomina_id]
-});
-let promedioAcumulado = 1.0;
-if (resNotas.values && resNotas.values.length > 0) {
-let suma = 0;
-resNotas.values.forEach(n => suma += parseFloat(n.calificacion));
-promedioAcumulado = suma / resNotas.values.length;
-}
-const claseGenero = alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f';
-const tr = document.createElement('tr');
-tr.innerHTML = `
-${alumno.id_cedula}
-alumno.apellido,{alumno.nombre}
-${alumno.genero}
-${promedioAcumulado.toFixed(1)}
-`;
-tablaCuerpo.appendChild(tr);
-}
-document.getElementById('stat_m_val').innerText = contM;
-document.getElementById('stat_f_val').innerText = contF;
-document.getElementById('stat_t_val').innerText = contT;
-document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
-} catch (error) {
-console.error("Error crítico compilando el consolidado de administración:", error);
-alert("Fallo del motor SQLite al procesar el reporte de la sección.");
-}
-},
-cerrarReporteConsolidadoAdmin: function() {
-document.getElementById('modalConsolidadoAdmin').style.display = 'none';
+    abrirReporteConsolidadoAdmin: async function() {
+        const cursoID = document.getElementById('nom_select_curso').value;
+        const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
+        if (!cursoID) {
+            alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
+        return;
+        }
+        if (!window.escolaridadActivaId) {
+        alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
+        return;
+        }
+        try {
+            const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
+            const resNomina = await db_real.query({
+                statement: sqlNomina,
+                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+            });
+            tablaCuerpo.innerHTML = "";
+            if (!resNomina.values || resNomina.values.length === 0) {
+                tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
+                document.getElementById('stat_m_val').innerText = "0";
+                document.getElementById('stat_f_val').innerText = "0";
+                document.getElementById('stat_t_val').innerText = "0";
+                document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+                return;
+            }
+            let contM = 0;
+            let contF = 0;
+            let contT = resNomina.values.length;
+            for (let alumno of resNomina.values) {
+                if (alumno.genero === 'M') contM++;
+                if (alumno.genero === 'F') contF++;
+                const sqlNotas = "SELECT calificacion FROM registros WHERE participantes_id = ? AND calificacion IS NOT NULL;";
+                const resNotas = await db_real.query({
+                    statement: sqlNotas,
+                    values: [alumno.nomina_id]
+                });
+                let promedioAcumulado = 1.0;
+                if (resNotas.values && resNotas.values.length > 0) {
+                    let suma = 0;
+                    resNotas.values.forEach(n => suma += parseFloat(n.calificacion));
+                    promedioAcumulado = suma / resNotas.values.length;
+                }
+                const claseGenero = alumno.genero === 'M' ? 'badge-genero-m' : 'badge-genero-f';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${alumno.apellido}, ${alumno.nombre}</td>
+                    <td>${alumno.genero}</td>
+                    <td>${promedioAcumulado.toFixed(1)}</td>
+                    `;
+                tablaCuerpo.appendChild(tr);
+            }
+            document.getElementById('stat_m_val').innerText = contM;
+            document.getElementById('stat_f_val').innerText = contF;
+            document.getElementById('stat_t_val').innerText = contT;
+            document.getElementById('modalConsolidadoAdmin').style.display = 'flex';
+        } catch (error) {
+            console.error("Error crítico compilando el consolidado de administración:", error);
+            alert("Fallo del motor SQLite al procesar el reporte de la sección.");
+            }
+    },
+    cerrarReporteConsolidadoAdmin: function() {
+        document.getElementById('modalConsolidadoAdmin').style.display = 'none';
 }
 };
 

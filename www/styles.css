@@ -1,35 +1,4 @@
-/* ==========================================================================
-   VARIABLES GLOBALES Y CONFIGURACIÓN DE TEMA (SAAD - NeuroAula)
-   ========================================================================== */
-/*
-:root {
-    Paleta de Colores Principal 
-    --color-primario: #0288d1;       /* Azul NeuroAula 
-    --color-primario-light: #e1f5fe; /* Azul Fondo 
-    --color-secundario: #26a69a;     /* Verde Techo (Éxito) 
-    --color-background: #f5f7fa;     /* Fondo de la App 
-    --color-superficie: #ffffff;     /* Tarjetas y Contenedores 
-    
-    Colores de Estado Operacional 
-    --color-texto-base: #37474f;
-    --color-exito: #2e7d32;
-    --color-alerta: #e65100;
-    --color-peligro: #c62828;
-    --color-borde: #cfd8dc;
-
-    Escala de Estimación (4 Niveles) 
-    --escala-i: #e0e0e0;
-    --escala-ep: #ffb74d;
-    --escala-c: #81c784;
-    --escala-a: #4fc3f7;
-
-    Fuentes y Bordes 
-    --fuente-app: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif;
-    --borde-radio: 8px;
-    --sombra-suave: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-*/
-
+/* VARIABLES GLOBALES Y CONFIGURACIÓN DE TEMA (SAAD - NeuroAula) */
 :root {
     /* Paleta de Colores Principal */
     --color-primario: #eaa824;       /* Azul NeuroAula */
@@ -43,7 +12,7 @@
     --color-exito: #2e7d32;
     --color-alerta: #e65100;
     --color-peligro: #c62828;
-    --color-borde: #cfd8dc;
+    --color-borde: #6e9a85;
 
     /* Escala de Estimación (4 Niveles) */
     --escala-i: #e0e0e0;
@@ -73,12 +42,10 @@ body {
 }
 
 .instruccion-texto {
-     color: #d0d0d0;
+     color: #c0c0c0;
 }
 
-/* ==========================================================================
-   ESTRUCTURA DE NAVEGACIÓN (Tabs de la Barra Inferior / Superior)
-   ========================================================================== */
+/* ESTRUCTURA DE NAVEGACIÓN (Tabs de la Barra Inferior / Superior) */
 .barra-navegacion {
     position: fixed;
     bottom: 0;
@@ -116,10 +83,39 @@ body {
 .contenedor-pantallas {
     overflow-y: auto;
 }
+
+.app-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background-color: #1d6c3a;
+    border-bottom: 5px solid #eaa824;
+    border-radius: 9px;
+    color: #eaa824dd;
+}
+
+
+h1 {
+    font-size: 30px;
+    margin-left: 8px;
+}
+
+
+.badge{
+    color: #eaa824dd;
+    background-color: #1d8f3a;
+    border: 2px solid #ea8824;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+    padding: 3px;
+}
 /*
-app-header
 estado-barra
-badge
+
 pantalla-vista
 panel-docente
 */
@@ -128,9 +124,30 @@ panel-docente
     flex-direction: row;
 }
 
-. into-secc {
-    display: inline-block;
-    width: 200px;
+input::placeholder {
+    color: #757575;
+    opacity: 1;
+    font-size: 0.95rem;
+    font-style: italic;
+}
+.into-secc {
+    min-width: 0;
+    width: 140px;
+    padding: 0 4px;
+    border: 2.5px solid var(--color-borde);
+    border-radius: var(--borde-radio);
+    font-size: 1rem;
+    background-color: #ffffff;
+    color: 2b2b2b;
+    transition: border-color 0.2s;
+    margin: 0 5px 0 5px;
+}
+
+#modalTitulo {
+    color: #b0b0b0;
+}
+.alerta-texto {
+    color: var(--color-alerta);
 }
 /*
 .pantalla-modulo {
@@ -172,12 +189,7 @@ panel-docente
     color: #546e7a;
 }
 */
-
-input[type="text"],
-input[type="number"],
-input[type="date"],
-select,
-textarea {
+.into-data {
     width: 100%;
     padding: 12px;
     border: 1.5px solid var(--color-borde);
@@ -187,6 +199,13 @@ textarea {
     color: var(--color-texto-base);
     transition: border-color 0.2s;
 }
+/*
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea
+*/
 
 input:focus, select:focus, textarea:focus {
     outline: none;
@@ -197,10 +216,15 @@ input:focus, select:focus, textarea:focus {
 /* ==========================================================================
    BOTONES Y ACCIONES TÁCTILES (Mínimo 44px de alto para usabilidad)
    ========================================================================== */
-.btn-base {
-    padding: 12px 18px;
+.dos-columnas-botones {
+    display: flex;
+    align-items: inline;
+}
+
+.btn-base, .btn-secc, .btn-accion btn-manual  {
+    padding: 0 10px;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 300;
     border-radius: var(--borde-radio);
     border: none;
     cursor: pointer;
@@ -208,7 +232,7 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 46px;
+    min-height: 23px;
     transition: opacity 0.2s, transform 0.1s;
 }
 
@@ -380,9 +404,8 @@ input:checked + .slider-control:before {
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* ==========================================================================
-   LISTAS SIMPLES (Cursos y Listados)
-   ========================================================================== */
+/*LISTAS SIMPLES (Cursos y Listados)*/
+
 .lista-activos {
     list-style: none;
     margin-top: 10px;
@@ -408,10 +431,12 @@ input:checked + .slider-control:before {
 }
 
 .lista-vacia {
-    text-align: center;
-    color: #90a4ae;
-    padding: 20px 0;
+    text-align: left;
+    color: #70948e;
+    padding: 5px 0;
     font-style: italic;
+    margin: 0 0 0 15px;
+    
 }
 
 /* ==========================================================================
@@ -429,6 +454,7 @@ input:checked + .slider-control:before {
     z-index: 200;
     padding: 16px;
     box-sizing: border-box;
+    flex-direction: column;
 }
 
 .modal-contenedor {
