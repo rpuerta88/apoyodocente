@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AppNominas.inicializar();
         await AppLapsos.cargarLapsoVigenteInicial();
         await AppPlanificacion.cargarTemarioVigenteInicial();
+        await AppPlanificacion.cargarTemariosEnDOM();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -207,8 +208,6 @@ const AppNavegacion = {
         }
     }
 };
-
-/* GESTION DE ESCOLARIDAD, PLANES DE CATEDRA, NOMINAS Y CURSOS */
 
 const AppEscolaridad = {
     
@@ -609,7 +608,6 @@ const AppPlanificacion = {
         }
     }
 };
-
 
 const AppEstudiantes = {
     // OPCIÓN 1: PROCESAMIENTO MASIVO DESDE CSV
@@ -1125,12 +1123,12 @@ abrirSesionHoy: async function() {
     }
 },
 
-
     // Modifica los componentes visuales para reflejar el estado operativo
     actualizarPantallaSesionActiva: function(nombreClase) {
         const contenedorEstado = document.getElementById('estadoSesionDiaria');
         const botonApertura = document.getElementById('btnAbrirSesion');
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
+        const criteriosDisponibles = document.getElementById('panelAdmin');
 
         if (contenedorEstado) {
             contenedorEstado.className = "alerta-operacional estado-activa";
@@ -1145,6 +1143,7 @@ abrirSesionHoy: async function() {
 
         if (zonaTrabajo) {
             zonaTrabajo.style.display = "block";
+            criteriosDisponibles.style.display = "block";
             AppAulaOperaciones.inicializarSelectoresAula();
             AppAulaOperaciones.cargarHistorialSesionesCombo(); // <-- INYECTAR ESTA LÍNEA AQUÍ
         }

@@ -157,16 +157,17 @@
                         </div>
                     <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
                 </div>
-                    <div class="panel-administrativo">
-                        <h4 style="color: #009688; margin-top: 0;">🧠 Enfoque Atencional del Día</h4>
-                        <p class="instruccion-texto">Marque los rasgos específicos que va a observar y evaluar en esta sesión de clases. La nota de 12 puntos se distribuirá equitativamente entre ellos de forma automática.</p>
-                        <div id="contenedorCheckboxesCriterios" class="grid-criterios-seleccion">
-                            <!-- Se puebla dinámicamente desde la tabla 'criterios_evaluacion' con checkboxes -->
-                        </div>
-                    </div>
             </div>
+            <div id="panelAdmin" style="display: none;">
+                <div class="modal-cabecera">
+                    <h4 style="color: #009688; margin-top: 0;">🧠 Enfoque Atencional del Día</h4>
+                    <p class="instruccion-texto">Marque los rasgos específicos que va a observar y evaluar en esta sesión de clases. La nota de 12 puntos se distribuirá equitativamente entre ellos de forma automática.</p>
+                    <div id="contenedorCheckboxesCriterios" class="grid-criterios-seleccion">
+                        <!-- Se puebla dinámicamente desde la tabla 'criterios_evaluacion' con checkboxes -->
+                    </div>
+                </div>
                 <!-- Grilla de Evaluación de Alumnos -->
-            <div class="panel-tabla-aula">
+                <div class="panel-tabla-aula">
                     <!-- Grilla de Evaluación de Alumnos -->
                 <div class="panel-tabla-aula">
                     <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
@@ -213,19 +214,9 @@
                     </div>
                 </div>
             </div>
+            </div>
         </section>
     </main>
-
-
-
-<!--
-<div id="modalEscolaridad" class="modal-capa">
-    <div class="modal-contenedor">
-        <div class="modal-cabecera" id="modalTitulo">Configuración</div>
-        <div class="modal-cuerpo"> ... inputs ... </div>
-    </div>
-</div>
- -->
 <!-- FORMULARIOS MODALES -->
 <!-- Modal Emergente para Configuración Administrativa de Escolaridad -->
 <div id="modalEscolaridad" class="modal-capa" style="display: none;">
