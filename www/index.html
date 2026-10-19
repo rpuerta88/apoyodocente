@@ -109,7 +109,7 @@
             </div>
         </section>
         <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) PANEL OPERACIONAL DIARIO (En Caliente) -->
-        <section id="pantalla-docente" class="modal-cabecera" style="display: flex;">
+        <section id="pantalla-docente" class="modal-cabecera" style="display: none;">
             <div class="panel-docente">
                 <h3>📝 Control de Sesión Diaria</h3>
                 <p class="instruccion-texto">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
@@ -129,6 +129,13 @@
                 <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
                     🎯 Configurar Criterio de Evaluación para Hoy
                 </button>
+            </div>
+            <!-- Selector de temas inyectado en el DOM -->
+            <div class="form-group">
+                <label for="selectorTemarios"><b>Seleccione el Tema para la Clase de Hoy:</b></label>
+                <select id="selectorTemarios" class="form-control">
+                    <option value="">-- Cargando temas disponibles... --</option>
+                </select>
             </div>
                 <!-- Botón de apertura rápida -->
             <div class="contenedor-acciones-aula">
@@ -189,9 +196,9 @@
                                 <table class="tabla-aula">
                                     <thead>
                                         <tr>
-                                            <th>Estudiante</th>
+                                            <th class="tabla-aula">Estudiante</th>
                                             <th class="text-center">Asistencia (Base 8pts)</th>
-                                            <th>Rasgos y Criterios Observados en Caliente (Máx 12pts)</th>
+                                            <th class= "text-center">Criterios Observados para 12pts</th>
                                             <th class="text-center">Nota Generada</th>
                                         </tr>
                                     </thead>

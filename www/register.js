@@ -498,7 +498,7 @@ const AppPlanificacion = {
 
         try {
             const resultado = await db_real.query({
-                statement: "SELECT * FROM catedra ORDER BY id ASC;"
+                statement: "SELECT id, tema_central FROM catedra ORDER BY id ASC;"
             });
 
             // Limpiar opciones viejas manteniendo las dos iniciales básicas
@@ -537,8 +537,8 @@ const AppPlanificacion = {
                     values: [nuevoTemaCentral]
                 });
 
-                // Recuperar el ID asignado
-                const resID = await db_real.query({ statement: "SELECT id FROM catedra ORDER BY id DESC LIMIT 1;" });
+                // CORRECCIÓN 1: Captura segura del ID recién generado por SQLite
+                const resID = await db_real.query({ statement: "SELECT last_insert_rowid() AS id;" });
                 catedraID = resID.values[0].id;
             } else {
                 // Si seleccionó uno existente, tomamos su ID directamente del select
@@ -551,11 +551,14 @@ const AppPlanificacion = {
                 values: [temaGenerador, catedraID]
             });
 
-            // Dejar el ID del temario disponible para la sesión de clases
-            const resTemarioID = await db_real.query({ statement: "SELECT id FROM temario ORDER BY id DESC LIMIT 1;" });
+            // CORRECCIÓN 2: Captura segura del temario asignado usando la sesión de conexión
+            const resTemarioID = await db_real.query({ statement: "SELECT last_insert_rowid() AS id;" });
             window.temarioActivoId = resTemarioID.values[0].id;
 
             mostrarNotificacion("Contenido enlazado correctamente");
+            
+            // Recargar de inmediato el selector del DOM para que refleje el nuevo tema
+            await this.cargarTemariosEnDOM();
             this.cerrarModal();
 
         } catch (error) {
@@ -563,16 +566,14 @@ const AppPlanificacion = {
             alert("Error al procesar la planificación.");
         }
     },
+
     cargarTemarioVigenteInicial: async function() {
         try {
-            // Consultar el último temario enlazado a la base de datos
             const res = await db_real.query({ 
                 statement: "SELECT id FROM temario ORDER BY id DESC LIMIT 1;" 
             });
         
-            // Verificamos que el arreglo exista y que contenga al menos un registro
             if (res.values && res.values.length > 0) {
-                // CORRECCIÓN CRÍTICA: Acceder al índice [0] del arreglo de filas
                 window.temarioActivoId = res.values[0].id; 
                 console.log("Planificación pedagógica recuperada localmente. ID:", window.temarioActivoId);
             } else {
@@ -582,8 +583,33 @@ const AppPlanificacion = {
         } catch (e) {
             console.error("Error al recuperar el temario inicial:", e);
         }
+    },
+    
+    // Muestra todos los temarios en el DOM vinculando su tema generador
+    cargarTemariosEnDOM: async function() {
+        try {
+            // CORRECCIÓN CRÍTICA 3: La tabla 'temario' usa 'tema_generador', no 'nombre'
+            const sqlTemas = "SELECT id, tema_generador FROM temario ORDER BY id DESC;";
+            const resultado = await db_real.query({ statement: sqlTemas });
+            
+            const selector = document.getElementById('selectorTemarios');
+            if (!selector) return; // Validación por si el elemento no está en la vista actual
+            
+            if (resultado.values && resultado.values.length > 0) {
+                selector.innerHTML = '<option value="">-- Seleccione un Tema --</option>';
+                resultado.values.forEach(tema => {
+                    // Usamos tema.tema_generador que es la columna real de tu tabla
+                    selector.innerHTML += `<option value="${tema.id}">${tema.tema_generador}</option>`;
+                });
+            } else {
+                selector.innerHTML = '<option value="">⚠️ No hay temas registrados</option>';
+            }
+        } catch (error) {
+            console.error("Error al cargar temarios en el DOM:", error);
+        }
     }
 };
+
 
 const AppEstudiantes = {
     // OPCIÓN 1: PROCESAMIENTO MASIVO DESDE CSV
@@ -696,7 +722,6 @@ const AppEstudiantes = {
         }
     }
 };
-
 
 const AppLapsos = {
 
@@ -1033,58 +1058,73 @@ alternarSeleccionMatriz: function(estado) {
 const AppClasesDiarias = {
 
     // APERTURA RÁPIDA DE LA CLASE DEL DÍA Consumiendo FKs en segundo plano
-    abrirSesionHoy: async function() {
-        // 1. CONTROL DE INTEGRIDAD: Validar que existan las planificaciones administrativas previas
-        if (!window.lapsoActivoId) {
-            alert("⚠️ Operación Rechazada: No se ha detectado ningún Lapso Académico activo.\n\nPor favor, diríjase al Panel de Administración y configure el Lapso vigente antes de abrir una clase.");
-            return;
-        }
+abrirSesionHoy: async function() {
+    // 1. CONTROL DE INTEGRIDAD: Validar Lapso Académico
+    if (!window.lapsoActivoId) {
+        alert("⚠️ Operación... No se ha detectado ningún Lapso Académico activo.");
+        return;
+    }
 
-        if (!window.temarioActivoId) {
-            alert("⚠️ Operación Rechazada: Falta la Planificación Pedagógica.\n\nPor favor, registre el Tema Central y el Tema Generador en el Panel de Administración antes de iniciar la clase.");
-            return;
-        }
+    // 2. CAPTURAR EL TEMARIO SELECCIONADO DESDE EL DOM
+    const selector = document.getElementById('selectorTemarios');
+    const temarioSeleccionadoId = selector ? selector.value : null;
 
-        // 2. OBTENER FECHA NATIVA DEL SISTEMA (Formato Inteligente)
-        const fechaHoy = new Date();
-        const opciones = { year: 'numeric', month: '2-digit', day: '2-digit' };
-        // Formato limpio legible para el docente: DD/MM/YYYY o según el locale
-        const fechaTextoLocal = fechaHoy.toLocaleDateString('es-VE', opciones); 
+    if (!temarioSeleccionadoId || temarioSeleccionadoId === "") {
+        alert("⚠️ Operación Rechazada: No ha seleccionado un tema.\n\nPor favor, elija el Tema a tratar en la lista desplegable antes de iniciar la clase.");
+        return;
+    }
+
+    // Asignamos la variable global con la certeza de lo que el usuario eligió en pantalla
+    window.temarioActivoId = temarioSeleccionadoId;
+
+    // 3. OBTENER FECHA NATIVA DEL SISTEMA (Formato Inteligente)
+    const fechaHoy = new Date();
+    const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false};
+    const fechaTextoLocal = fechaHoy.toLocaleString('es-VE', opciones); 
+    const nombreSesionPorDefecto = `CLASE ASISTIDA - ${fechaTextoLocal}`;
+
+    try {
+        // 4. INSERCIÓN RELACIONAL PURA EN LA TABLA 'SESIONES'
+        const sqlInsert = `
+            INSERT INTO sesiones (nombre, temario_id, lapso_id)
+            VALUES (?, ?, ?);
+        `;
         
-        // Formato estándar para el nombre de la sesión por defecto
-        const nombreSesionPorDefecto = `CLASE ASISTIDA - ${fechaTextoLocal}`;
+        await db_real.execute({
+            statement: sqlInsert,
+            values: [nombreSesionPorDefecto, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
+        });
 
-        try {
-            // 3. INSERCIÓN RELACIONAL PURA EN LA TABLA 'SESIONES'
-            const sqlInsert = `
-                INSERT INTO sesiones (nombre, temario_id, lapso_id)
-                VALUES (?, ?, ?);
-            `;
+        // 5. CAPTURAR EL ID GENERADO USANDO LA FUNCIÓN NATIVA DE SQLITE (MÁXIMA SEGURIDAD)
+        const queryID = `
+            SELECT id, nombre, fecha 
+            FROM sesiones 
+            WHERE id = last_insert_rowid() AND temario_id = ?;
+        `;
+        
+        const resultado = await db_real.query({ 
+            statement: queryID,
+            values: [parseInt(window.temarioActivoId)] 
+        });
+
+        if (resultado.values && resultado.values.length > 0) {
+            const sesionCreada = resultado.values[0]; 
+            window.sesionActivaId = sesionCreada.id;
+            console.log(`Sesión de Aula iniciada con éxito. ID FK Disponible: ${window.sesionActivaId}`);
             
-            await db_real.execute({
-                statement: sqlInsert,
-                values: [nombreSesionPorDefecto, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
-            });
-
-            // 4. CAPTURAR EL ID AUTOINCREMENTAL GENERADO POR SQLITE
-            const queryID = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 1;";
-            const resultado = await db_real.query({ statement: queryID });
-
-            if (resultado.values && resultado.values.length > 0) {
-                const sesionCreada = resultado.values[0]; 
-                window.sesionActivaId = sesionCreada.id;
-                console.log(`Sesión de Aula iniciada con éxito. ID FK Disponible: ${window.sesionActivaId}`);
-                
-                // 5. ACTUALIZAR INTERFAZ EN TIEMPO REAL
-                this.actualizarPantallaSesionActiva(sesionCreada.nombre);
-                mostrarNotificacion("Clase inicializada correctamente");
-            }
-
-        } catch (error) {
-            console.error("Error crítico al aperturar la sesión en SQLite:", error);
-            alert("Fallo del sistema al intentar abrir la sesión de clases.");
+            // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
+            this.actualizarPantallaSesionActiva(sesionCreada.nombre);
+            mostrarNotificacion("Clase inicializada correctamente");
+        } else {
+            throw new Error("No se pudo recuperar la sesión recién creada.");
         }
-    },
+
+    } catch (error) {
+        console.error("Error crítico al aperturar la sesión en SQLite:", error);
+        alert("Fallo del sistema al intentar abrir la sesión de clases.");
+    }
+},
+
 
     // Modifica los componentes visuales para reflejar el estado operativo
     actualizarPantallaSesionActiva: function(nombreClase) {
@@ -1165,10 +1205,7 @@ const AppCriterios = {
 
 const AppAulaOperaciones = {
     criteriosSeleccionadosIds: [],
-    
-    // 1. NUEVA ESCALA DE 4 NIVELES ACTUALIZADA
-    // Se redistribuyeron los multiplicadores de forma proporcional (0.0 -> 0.33 -> 0.66 -> 1.0)
-    // Se añadió el nivel 'A' (Avanzado) con color azul celeste.
+
     escalaEstimacion: {
         'I':  { texto: 'I',  multiplicador: 0.0,  color: '#e0e0e0', textoColor: '#424242', clase: 'escala-iniciado' },
         'EP': { texto: 'EP', multiplicador: 0.33, color: '#ffb74d', textoColor: '#e65100', clase: 'escala-proceso' },
@@ -1346,7 +1383,6 @@ const AppAulaOperaciones = {
     },
 
     // 2. LOGICA DE ROTACIÓN PARA 4 NIVELES ACTUALIZADA
-    // Ahora el ciclo cerrado avanza: I -> EP -> C -> A -> y vuelve a empezar en I.
     conmutarEstadoEscalaTacto: function(boton, nominaId) {
         const estadoActual = boton.dataset.estadoActual;
         let siguienteEstado = 'I';

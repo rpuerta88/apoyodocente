@@ -85,6 +85,10 @@ body {
 }
 
 .app-header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 1000;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -93,6 +97,7 @@ body {
     background-color: #1d6c3a;
     border-bottom: 5px solid #eaa824;
     border-radius: 9px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     color: #eaa824dd;
 }
 
@@ -215,7 +220,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Listas renderizadas */
 
-.text-center {
+.text-center, .tabla-aula {
     font-size: 11px;
 }
 /* ==========================================================================
@@ -245,7 +250,7 @@ input:focus, select:focus, textarea:focus {
     font-weight: bold;
 
 }
-.btn-base, .btn-secc, .btn-accion btn-manual  {
+.btn-base, .btn-secc, .btn-accion, .btn-manual, {
     padding: 0 10px;
     font-size: 1rem;
     font-weight: 300;
