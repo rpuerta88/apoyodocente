@@ -1294,21 +1294,37 @@ const AppAulaOperaciones = {
         'C':  { texto: 'C',  multiplicador: 0.66, color: '#81c784', textoColor: '#1b5e20', clase: 'escala-consolidado' },
         'A':  { texto: 'A',  multiplicador: 1.0,  color: '#4fc3f7', textoColor: '#01579b', clase: 'escala-avanzado' }
     },
-
+    
     inicializarSelectoresAula: async function() {
         const select = document.getElementById('aulaSelectCurso');
+        const selectBuscador = document.getElementById('buscadorSelectCurso'); // Inyectar esta línea
         if (!select) return;
         try {
             const resultado = await db_real.query({
                 statement: "SELECT * FROM cursos ORDER BY cursoseccion ASC;"
             });
+            
+            // Resetear ambos selectores
             select.innerHTML = '<option value="" disabled selected>Seleccione el curso a trabajar...</option>';
+            if (selectBuscador) {
+                selectBuscador.innerHTML = '<option value="" disabled selected>Primero seleccione el curso a consultar...</option>';
+            }
+
             if (resultado.values && resultado.values.length > 0) {
                 resultado.values.forEach(curso => {
+                    // Opción para la grilla diaria
                     const opt = document.createElement('option');
                     opt.value = curso.id;
                     opt.textContent = curso.cursoseccion;
                     select.appendChild(opt);
+
+                    // Quirúrgico: Opción para el buscador liberado
+                    if (selectBuscador) {
+                        const optBuscador = document.createElement('option');
+                        optBuscador.value = curso.id;
+                        optBuscador.textContent = curso.cursoseccion;
+                        selectBuscador.appendChild(optBuscador);
+                    }
                 });
             }
             await this.cargarCriteriosDisponiblesASeleccion();
@@ -1316,6 +1332,7 @@ const AppAulaOperaciones = {
             console.error("Error al arrancar el panel de aula:", e);
         }
     },
+
 
     cargarCriteriosDisponiblesASeleccion: async function() {
         const contenedor = document.getElementById('contenedorCheckboxesCriterios');
@@ -1959,7 +1976,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
         let totalAsistencias = 0;
         let totalSesiones = res.values.length;
 
-// Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno -> res.values.forEach(reg => { ... })
+        // Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno -> res.values.forEach(reg => { ... })
         res.values.forEach(reg => {
             const tr = document.createElement('tr');
             const esAsistente = reg.asistencia === 'true';
@@ -2181,19 +2198,16 @@ const AppHistorialSesiones = {
 // === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICA DE ESTUDIANTES ===
 const AppBuscadorEstudiantes = {
     
-    // 1. Escucha el teclado y filtra los alumnos en caliente
-    filtrarEstudiantesDinamico: async function(textoBusqueda) {
-        const cursoID = document.getElementById('aulaSelectCurso').value;
+        filtrarEstudiantesDinamico: async function(textoBusqueda) {
+        // CORRECCIÓN QUIRÚRGICA: Leer el selector exclusivo del buscador liberado
+        const cursoID = document.getElementById('buscadorSelectCurso').value;
         const contenedorLista = document.getElementById('listaResultadoAlumnosAula');
-        
         if (!contenedorLista) return;
-
-        // Si no hay un curso seleccionado en la pantalla del docente, detenemos la búsqueda
         if (!cursoID) {
-            contenedorLista.innerHTML = `<li class="lista-vacia">⚠️ Seleccione primero un curso arriba para buscar alumnos.</li>`;
+            contenedorLista.innerHTML = `<li class="lista-vacia">⚠️ Seleccione primero un curso en el menú del buscador.</li>`;
             return;
         }
-
+        // Si no hay un curso seleccionado en la pantalla del docente, detenemos la búsqueda
         try {
             let sql = `
                 SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido

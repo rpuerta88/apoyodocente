@@ -134,6 +134,32 @@
                         <li class="lista-vacia">Escribe en el cuadro de arriba para buscar sesiones...</li>
                     </ul>
                 </div>
+                <!-- Ubicación Quirúrgica: Dentro de tu sección o div con la clase "panel-docente" -->
+<!-- (Colócalo justo debajo del bloque de 'Control de Sesión Diaria' y el banner 'estadoSesionDiaria') -->
+
+                <div class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 15px; border-radius: var(--borde-radio); margin-bottom: 15px; border: 1px solid var(--color-borde);">
+                    <label style="font-size: 0.9rem; font-weight: bold; color: var(--color-texto-base); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                        🔍 Auditoría Rápida de Progreso Escolar (Por Alumno)
+                    </label>
+    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Selector duplicado/espejo exclusivo para el buscador, para que funcione antes de abrir la clase -->
+                        <select id="buscadorSelectCurso" class="into-data" style="background-color: #ffffff; padding: 10px;" onchange="AppBuscadorEstudiantes.limpiarBuscador()">
+                            <option value="" disabled selected>Primero seleccione el curso a consultar...</option>
+                        </select>
+        
+                        <input type="text" id="inputBuscarAlumnoAula" placeholder="Escribe apellido, nombre o cédula del estudiante..." class="into-secc" style="width: 100%; margin: 0; padding: 10px;"
+                               oninput="AppBuscadorEstudiantes.filtrarEstudiantesDinamico(this.value)">
+                    </div>
+    
+                    <!-- Lista dinámica de resultados de alumnos -->
+                    <ul id="listaResultadoAlumnosAula" class="lista-activos" style="padding: 0; margin-top: 8px; list-style: none;">
+                        <!-- El motor inyectará aquí las tarjetas de alumnos en caliente -->
+                    </ul>
+                </div>
+
+<!-- INMEDIATAMENTE ABAJO CONTINÚA TU DIV ORIGINAL DE LA ZONA OPERATIVA: <div id="zonaOperacionesAula" style="display: none;"> -->
+
                 <!-- Ubicación: Dentro de <div id="zonaOperacionesAula" style="display: none;"> -->
 
 <!-- INMEDIATAMENTE ABAJO CONTINÚA TU TABLA ORIGINAL: <table class="tabla-general"...> -->
@@ -180,21 +206,7 @@
                             </select>
                         </div>
                     <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
-                    <div class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 12px; border-radius: var(--borde-radio); margin-bottom: 15px; border: 1px solid var(--color-borde);">
-                        <label style="font-size: 0.85rem; font-weight: bold; color: #37474f; display: block; margin-bottom: 6px;">
-                            🔍 Auditoría Rápida de Progreso (Por Alumno)
-                        </label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="inputBuscarAlumnoAula" placeholder="Escribe apellido, nombre o cédula del estudiante..." class="into-secc" style="flex: 1; width: 100%; margin: 0; padding: 8px;"
-                       oninput="AppBuscadorEstudiantes.filtrarEstudiantesDinamico(this.value)">
-                    </div>
-    
-    <!-- Contenedor dinámico de resultados flotantes -->
-    <ul id="listaResultadoAlumnosAula" class="lista-activos" style="padding: 0; margin-top: 8px; list-style: none;">
-        <!-- El motor inyectará aquí los resultados en caliente -->
-    </ul>
-</div>
-
+                    
                 </div>
             </div>
             <div id="panelAdmin" style="display: none;">
