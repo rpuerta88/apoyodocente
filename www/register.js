@@ -1194,6 +1194,9 @@ abrirSesionHoy: async function() {
         
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (tablaBody) tablaBody.innerHTML = "";
+        
+        const criteriosDisponibles = document.getElementById('panelAdmin');
+        criteriosDisponibles.style.display = "block";
 
         mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
     }
@@ -1593,28 +1596,27 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
     },
 
     guardarAsistenciaYNotasLote: async function() {
-        
         if (!window.sesionActivaId) {
             alert("Operación rechazada: No hay ninguna sesión seleccionada.");
             return;
         }
         const filas = document.querySelectorAll('.fila-estudiante-aula');
         if (filas.length === 0) return;
+        
         try {
             mostrarNotificacion("Sincronizando correcciones en SQLite...");
             
-            
-            // === FLUJO CORREGIDO EN CASCADA PARA GUARDAR NOTAS ===
+            // === FLUJO ÚNICO EN CASCADA PARA GUARDAR NOTAS ===
             for (let fila of filas) {
                 const participantes_id = parseInt(fila.dataset.nominaId);
                 const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
                 const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
                 
-                // 1. OBTENER LOS RASGOS DESDE LA GRILLA VISUAL
+                // 1. OBTENER LOS RASGOS PEDAGÓGICOS DESDE LA GRILLA VISUAL
                 const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
                 let notaFinalCalculada = 8.00; // Base basal del sistema pedagógico
 
-                if (!fila.querySelector('.chk-asistencia').checked) {
+                if (asistencia === 'false') {
                     notaFinalCalculada = 1.00; // Penalización por inasistencia
                 } else if (botonesEscala && botonesEscala.length > 0) {
                     const totalCriteriosActivos = botonesEscala.length;
@@ -1622,7 +1624,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                     
                     botonesEscala.forEach(btn => {
                         const estado = btn.dataset.estadoActual;
-                        const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                        const multiplicador = this.escalaEstimacion[estado] ? this.escalaEstimacion[estado].multiplicador : 0.0;
                         notaFinalCalculada += (pesoCadaUno * multiplicador);
                     });
                 }
@@ -1632,15 +1634,16 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
 
                 let registroID = null;
 
-                // 2. VERIFICAR SI YA EXISTE EL REGISTRO DE ASISTENCIA Y NOTA
+                // 2. VERIFICAR SI YA EXISTE EL REGISTRO DE ASISTENCIA Y NOTA EN LA SESIÓN
                 const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
                 const resCheck = await db_real.query({
+                    statement: queryCheck,
                     values: [participantes_id, parseInt(window.sesionActivaId)]
                 });
 
                 if (resCheck.values && resCheck.values.length > 0) {
                     registroID = resCheck.values[0].id;
-                    // Sincroniza la nota final calculada directamente en el campo calificacion
+                    // Sincroniza la nota final calculada directamente en el campo calificacion de registros
                     const sqlUpdateReg = `UPDATE registros SET asistencia = ?, calificacion = ?, tipo_evaluacion = ? WHERE id = ?;`;
                     await db_real.execute({
                         statement: sqlUpdateReg,
@@ -1657,7 +1660,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                     registroID = resNewID.values[0].id;
                 }
 
-                // 3. PERSISTIR EL DESGLOSE DE CRITERIOS EN LA TABLA CALIFICACION
+                // 3. PERSISTIR EL DESGLOSE DE CRITERIOS INDIVIDUALES EN LA TABLA CALIFICACION
                 if (asistencia === 'true' && botonesEscala && botonesEscala.length > 0) {
                     const totalCriteriosActivos = botonesEscala.length;
                     const pesoCadaUno = 12.00 / totalCriteriosActivos;
@@ -1665,7 +1668,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                     for (let btn of botonesEscala) {
                         const criterioId = parseInt(btn.dataset.critId);
                         const estado = btn.dataset.estadoActual;
-                        const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                        const multiplicador = this.escalaEstimacion[estado] ? this.escalaEstimacion[estado].multiplicador : 0.0;
                         
                         const valoracionCalculada = parseFloat((pesoCadaUno * multiplicador).toFixed(2));
                         
@@ -1676,53 +1679,27 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                         });
                     }
                 }
-            }
-            // Ciclo de guardado
-            if (this.criteriosSeleccionadosIds.length > 0) {
-                const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
-                const pesoCadaUno = 12.0 / totalCriteriosActivos;
-                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-                if (botonesEscala && botonesEscala.length > 0) {
-                    const totalCriteriosActivos = botonesEscala.length;
-                    const pesoCadaUno = 12.0 / totalCriteriosActivos;
-                    for (let btn of botonesEscala) {
-                        const criterioId = parseInt(btn.dataset.critId);
-                        const estado = btn.dataset.estadoActual;
-                    
-                        // Validación preventiva para asegurar que la escala existe
-                        const configEscala = this.escalaEstimacion[estado];
-                        const multiplicador = configEscala ? configEscala.multiplicador : 0.0;
-                    
-                        const valoracionCalculada = (asistencia === 'true') ?
-                            parseFloat((pesoCadaUno * multiplicador).toFixed(2)) : 0.00;
-                        
-                        const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
-                    
-                        await db_real.execute({
-                            statement: sqlCalificacion,
-                            values: [registroID, criterioId, valoracionCalculada]
-                        });
-                    }
-                }
-            }
-alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
-this.cargarHistorialSesionesCombo();
-this.cargarEstudiantesAsistencia();
+            } // === FIN DEL BUCLE DE FILAS ===
+
+            alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
+            this.cargarHistorialSesionesCombo();
+            this.cargarEstudiantesAsistencia();
         } catch (error) {
-console.error("Fallo crítico en la transacción de corrección:", error);
-alert("Error interno de SQLite al sobreescribir las evaluaciones.");
-}
-},
-verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
-document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
-const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
-if (!tablaCuerpo) return;
-try {
-const sql = `SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion FROM registros r INNER JOIN sesiones s ON r.sesion_id = s.id WHERE r.participantes_id = ? ORDER BY s.id DESC;`;
-const res = await db_real.query({
-statement: sql,
-values: [parseInt(nominaId)]
-});
+            console.error("Fallo crítico en la transacción de corrección:", error);
+            alert("Error interno de SQLite al sobreescribir las evaluaciones.");
+        }
+    },
+
+    verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
+        document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
+        const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
+        if (!tablaCuerpo) return;
+        try {
+        const sql = `SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion FROM registros r INNER JOIN sesiones s ON r.sesion_id = s.id WHERE r.participantes_id = ? ORDER BY s.id DESC;`;
+        const res = await db_real.query({
+            statement: sql,
+            values: [parseInt(nominaId)]
+        });
 tablaCuerpo.innerHTML = "";
 if (!res.values || res.values.length === 0) {
 tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
