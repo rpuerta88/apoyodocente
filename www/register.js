@@ -1979,64 +1979,67 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
         document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
         const tablaCuerpo = document.getElementById('rep_tabla_cuerpo');
         if (!tablaCuerpo) return;
+        
         try {
-        const sql = `SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion FROM registros r INNER JOIN sesiones s ON r.sesion_id = s.id WHERE r.participantes_id = ? ORDER BY s.id DESC;`;
-        const res = await db_real.query({
-            statement: sql,
-            values: [parseInt(nominaId)]
-        });
-        tablaCuerpo.innerHTML = "";
-        if (!res.values || res.values.length === 0) {
-             tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
-             document.getElementById('rep_promedio_val').innerText = "1.0";
-             document.getElementById('rep_promedio_val').style.color = "#c62828";
-             document.getElementById('rep_asistencia_val').innerText = "0 / 0";
-             document.getElementById('modalReporteEstudiante').style.display = 'flex';
-             return;
-        }
-        let sumaNotas = 0;
-        let totalAsistencias = 0;
-        let totalSesiones = res.values.length;
+            const sql = `SELECT s.nombre AS clase_nombre, s.fecha, r.asistencia, r.calificacion FROM registros r INNER JOIN sesiones s ON r.sesion_id = s.id WHERE r.participantes_id = ? ORDER BY s.id DESC;`;
+            const res = await db_real.query({
+                statement: sql,
+                values: [parseInt(nominaId)]
+            });
+            
+            tablaCuerpo.innerHTML = "";
+            
+            if (!res.values || res.values.length === 0) {
+                 tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
+                 document.getElementById('rep_promedio_val').innerText = "1.0";
+                 document.getElementById('rep_promedio_val').style.color = "#c62828";
+                 document.getElementById('rep_asistencia_val').innerText = "0 / 0";
+                 document.getElementById('modalReporteEstudiante').style.display = 'flex';
+                 return;
+            }
+            
+            let sumaNotas = 0;
+            let totalAsistencias = 0;
+            let totalSesiones = res.values.length;
 
-        // Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno -> res.values.forEach(reg => { ... })
-        res.values.forEach(reg => {
-            const tr = document.createElement('tr');
-            const esAsistente = reg.asistencia === 'true';
-            if (esAsistente) totalAsistencias++;
-            const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
-            sumaNotas += notaVal;
-            const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
-    
-            // === RECONSTRUCCIÓN QUIRÚRGICA: Añadir nombre de sesión al reporte visual ===
-            tr.innerHTML = `
-                <td><b>${reg.clase_nombre}</b> <br><small style="color:#78909c;">[${fechaLimpia}]</small></td>
-                <td class="text-center">${esAsistente ? '🟢 SÍ' : '🔴 NO'}</td>
-                <td class="text-center font-weight-bold" style="color:${notaVal >= 9.5 ? '#2e7d32' : '#c62828'}">${notaVal.toFixed(2)}</td>
+            res.values.forEach(reg => {
+                const tr = document.createElement('tr');
+                const esAsistente = reg.asistencia === 'true';
+                if (esAsistente) totalAsistencias++;
+                const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
+                sumaNotas += notaVal;
+                const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
+        
+                // === RECONSTRUCCIÓN QUIRÚRGICA: Añadir nombre de sesión al reporte visual ===
+                tr.innerHTML = `
+                    <td><b>${reg.clase_nombre}</b> <br><small style="color:#78909c;">[${fechaLimpia}]</small></td>
+                    <td class="text-center">${esAsistente ? '🟢 SÍ' : '🔴 NO'}</td>
+                    <td class="text-center font-weight-bold" style="color:${notaVal >= 9.5 ? '#2e7d32' : '#c62828'}">${notaVal.toFixed(2)}</td>
                 `;
 
-            tablaBody.appendChild(tr);
-        });
+                // CORRECCIÓN: Usar la variable correcta 'tablaCuerpo'
+                tablaCuerpo.appendChild(tr);
+            });
 
-// ... (Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno, justo después de cerrar el res.values.forEach)
-        const promedioFinal = totalSesiones > 0 ? (sumaNotas / totalSesiones) : 1.0;
-        const cellPromedio = document.getElementById('rep_promedio_val');
-        if (cellPromedio) {
-            cellPromedio.innerText = promedioFinal.toFixed(2);
-            cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+            const promedioFinal = totalSesiones > 0 ? (sumaNotas / totalSesiones) : 1.0;
+            const cellPromedio = document.getElementById('rep_promedio_val');
+            if (cellPromedio) {
+                cellPromedio.innerText = promedioFinal.toFixed(2);
+                cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+            }
+            
+            const cellAsistencia = document.getElementById('rep_asistencia_val');
+            if (cellAsistencia) {
+                cellAsistencia.innerText = `${totalAsistencias} / ${totalSesiones}`;
+            }
+            
+            document.getElementById('modalReporteEstudiante').style.display = 'flex';
+        } catch (error) {
+            console.error("Error crítico al procesar la auditoría acumulada:", error);
+            alert("No se pudo proceder a estructurar el reporte de calificaciones local.");
         }
-        
-        const cellAsistencia = document.getElementById('rep_asistencia_val');
-        if (cellAsistencia) {
-            cellAsistencia.innerText = `${totalAsistencias} / ${totalSesiones}`;
-        }
-        
-        document.getElementById('modalReporteEstudiante').style.display = 'flex';
-    } catch (error) {
-        console.error("Error crítico al procesar la auditoría acumulada:", error);
-        alert("No se pudo estructurar el reporte de calificaciones local.");
-    }
-
     },
+
     
 cerrarModalReporte: function() {
 document.getElementById('modalReporteEstudiante').style.display = 'none';
@@ -2326,4 +2329,189 @@ const AppBuscadorEstudiantes = {
     }
 };
 
+// === MÓDULO QUIRÚRGICO FINAL: GENERADOR DE REPORTES CON DATOS INTEGRADOS ===
+const AppReporteLapsos = {
+    
+    generarReporteImprimible: async function() {
+        const cursoID = document.getElementById('nom_select_curso').value; 
+        if (!cursoID) {
+            alert("⚠️ Selección requerida: Por favor, escoja una Sección en Administración antes de generar el reporte.");
+            return;
+        }
+        if (!window.lapsoActivoId) {
+            alert("⚠️ Operación rechazada: No se ha detectado ningún Lapso Académico activo.");
+            return;
+        }
+
+        // === CAPTURA DE DATOS INSTITUIONALES EN CALIENTE ===
+        const nombrePlantel = prompt("🏢 Ingrese el Nombre Oficial de la Institución / Plantel:", "U.E. NUESTRA SEÑORA DE LA PAZ");
+        if (nombrePlantel === null) return; // Si el docente cancela, abortamos de forma segura
+        
+        const codigoPlantel = prompt("🔑 Ingrese el Código Estadístico o DEA del Plantel (Opcional):", "OD12345678");
+
+        try {
+            // 1. CONSULTA MASIVA DE NOTAS CON CONVERSIÓN EN ENTEROS
+            const sqlConsolidado = `
+                SELECT e.id_cedula, e.apellido, e.nombre,
+                       COUNT(r.id) AS total_clases,
+                       SUM(CASE WHEN r.asistencia = 'true' THEN 1 ELSE 0 END) AS asistencias,
+                       ROUND(AVG(r.calificacion)) AS nota_definitiva_entera
+                FROM nomina n
+                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
+                LEFT JOIN registros r ON r.participantes_id = n.id
+                LEFT JOIN sesiones s ON s.id = r.sesion_id
+                WHERE n.cursoseccion_id = ? 
+                  AND n.escolaridades_id = ? 
+                  AND s.lapso_id = ?
+                  AND r.calificacion IS NOT NULL
+                GROUP BY e.id_cedula
+                ORDER BY e.apellido ASC, e.nombre ASC;
+            `;
+
+            const res = await db_real.query({
+                statement: sqlConsolidado,
+                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId), parseInt(window.lapsoActivoId)]
+            });
+
+            // 2. CONSULTA DE METADATOS DE ESCOLARIDADES Y LAPSOS (ASIGNATURA, DOCENTE, PA)
+            const sqlMeta = `
+                SELECT l.momento AS lapso_nombre, l.proyecto_aprendizaje, 
+                       esc.escolaridad, esc.profesor, esc.area AS asignatura, 
+                       c.cursoseccion 
+                FROM lapso l 
+                INNER JOIN escolaridades esc ON esc.id = l.lapsoescolar_id
+                INNER JOIN cursos c ON c.id = ?
+                WHERE l.id = ? LIMIT 1;
+            `;
+            
+            const resMeta = await db_real.query({
+                statement: sqlMeta,
+                values: [parseInt(cursoID), parseInt(window.lapsoActivoId)]
+            });
+
+            if (!res.values || res.values.length === 0) {
+                alert("ℹ️ No existen calificaciones computadas en este lapso para generar promedios.");
+                return;
+            }
+
+            const meta = resMeta.values[0] || { lapso_nombre: "N/A", proyecto_aprendizaje: "N/A", escolaridad: "N/A", profesor: "N/A", asignatura: "N/A", cursoseccion: "N/A" };
+            
+            // Inyectamos las entradas manuales dentro del objeto de metadatos
+            meta.nombrePlantel = nombrePlantel.toUpperCase();
+            meta.codigoPlantel = codigoPlantel ? codigoPlantel.toUpperCase() : "N/A";
+
+            // 3. ENVIAR AL BUFFER RENDERIZADOR
+            this.enviarAImpresoraNativa(meta, res.values);
+
+        } catch (error) {
+            console.error("Error compilando el boletín integrado:", error);
+            alert("Fallo del motor SQLite al cruzar los datos de escolaridad.");
+        }
+    },
+
+    enviarAImpresoraNativa: function(meta, alumnos) {
+        let iframe = document.getElementById('iframeImpresionOculto');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'iframeImpresionOculto';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+
+        let htmlContenido = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Reporte Oficial de Fin de Lapso</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; padding: 15px; font-size: 11px; line-height: 1.4; }
+                .encabezado { border-bottom: 4px double #111; padding-bottom: 8px; margin-bottom: 15px; text-align: center; }
+                .institucion-titulo { font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
+                .titulo-reporte { font-size: 12px; font-weight: bold; text-transform: uppercase; margin-top: 4px; color: #444; }
+                .meta-container { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 15px; border: 1px solid #aaa; padding: 8px; border-radius: 4px; background-color: #fafafa; }
+                .meta-item { margin-bottom: 2px; }
+                .tabla-notas { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+                .tabla-notas th { background-color: #222; color: #fff; padding: 6px 8px; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+                .tabla-notas td { padding: 7px 8px; border-bottom: 1px solid #bbb; }
+                .tabla-notas tr:nth-child(even) { background-color: #f7f7f7; }
+                .text-center { text-align: center; }
+                .font-bold { font-weight: bold; }
+                .firmas { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+                .linea-firma { border-top: 1.5px solid #222; width: 220px; text-align: center; padding-top: 4px; font-size: 10px; font-weight: 600; }
+                @media print {
+                    body { padding: 0; margin: 0; }
+                    tr { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="encabezado">
+                <div class="institucion-titulo">${meta.nombrePlantel}</div>
+                <div style="font-size: 10px; color:#555;">Código Estadístico/DEA: ${meta.codigoPlantel}</div>
+                <div class="titulo-reporte">CONSOLIDADO RENDIMIENTO ESCOLAR - NOTAS FINALES DE LAPSO</div>
+            </div>
+            
+            <div class="meta-container">
+                <div class="meta-item"><b>Año Escolar / Período:</b> ${meta.escolaridad}</div>
+                <div class="meta-item"><b>Asignatura / Área:</b> ${meta.asignatura}</div>
+                <div class="meta-item"><b>Docente Evaluador:</b> ${meta.profesor}</div>
+                <div class="meta-item"><b>Curso y Sección:</b> ${meta.cursoseccion}</div>
+                <div class="meta-item" style="grid-column: span 2;"><b>Lapso / Momento:</b> ${meta.lapso_nombre}</div>
+                <div class="meta-item" style="grid-column: span 2;"><b>Proyecto de Aprendizaje (P.A):</b> ${meta.proyecto_aprendizaje}</div>
+            </div>
+
+            <table class="tabla-notas">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">CÉDULA</th>
+                        <th style="width: 50%;">APELLIDOS Y NOMBRES EL ESTUDIANTE</th>
+                        <th class="text-center" style="width: 15%;">ASISTENCIA</th>
+                        <th class="text-center" style="width: 20%;">CUALIFICACIÓN (ENTERA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        alumnos.forEach((al, index) => {
+            const porcAsist = al.total_clases > 0 ? Math.round((al.asistencias / al.total_clases) * 100) : 0;
+            const aprobado = al.nota_definitiva_entera >= 10;
+            const notaFormateada = String(al.nota_definitiva_entera).padStart(2, '0');
+            const estatusText = aprobado ? 'APROBADO' : 'REPROBADO';
+            
+            htmlContenido += `
+                <tr>
+                    <td class="font-bold">V-${al.id_cedula}</td>
+                    <td>${index + 1}. ${al.apellido}, ${al.nombre}</td>
+                    <td class="text-center">${porcAsist}% <small style="color:#555;">(${al.asistencias}/${al.total_clases})</small></td>
+                    <td class="text-center font-bold" style="color: ${aprobado ? '#1b5e20' : '#c62828'}; font-size:12px;">
+                        ${notaFormateada} &nbsp;<span style="font-size:9px; font-weight:normal;">[${estatusText}]</span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        htmlContenido += `
+                </tbody>
+            </table>
+
+            <div class="firmas">
+                <div class="linea-firma">Prof. ${meta.profesor}<br><small style="font-weight:normal; color:#444;">Docente de la Asignatura</small></div>
+                <div class="linea-firma"><br><small style="font-weight:normal; color:#444;">Dirección / Sello del Plantel</small></div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        doc.write(htmlContenido);
+        doc.close();
+
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }, 350);
+    }
+};
 
