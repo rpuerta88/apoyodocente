@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AppPlanificacion.cargarTemarioVigenteInicial();
         await AppPlanificacion.cargarTemariosEnDOM();
         await AppAulaOperaciones.cargarSesionPasadaParaEdicion();
+        await AppAulaOperaciones.inicializarSelectoresAula();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -559,7 +560,14 @@ const AppPlanificacion = {
             
             // Recargar de inmediato el selector del DOM para que refleje el nuevo tema
             await this.cargarTemariosEnDOM();
-            this.cerrarModal();
+            const continuar = confirm("🎯 ¡Contenido enlazado correctamente!\n\n¿Desea registrar otro tema o contenido pedagógico en este momento?");
+            if (continuar) {
+                document.getElementById('formPlanificacion').reset();
+                this.evaluarSeleccionCatedra(); // Restablece visibilidad de campos de texto
+                document.getElementById('plan_tema_generador').focus(); // Foco rápido para el APK
+            } else {
+                this.cerrarModal();
+            }
 
         } catch (error) {
             console.error("Fallo en la transacción de planificación:", error);
@@ -813,7 +821,12 @@ const AppLapsos = {
             }
 
             mostrarNotificacion(`${momento} activado exitosamente`);
-            this.cerrarModal();
+            const continuar = confirm("📅 Período académico registrado con éxito.\n\n¿Desea aperturar otro Lapso o Momento Escolar de inmediato?");
+            if (continuar) {
+                document.getElementById('formLapso').reset();
+            } else {
+                this.cerrarModal();
+            }
 
         } catch (error) {
             console.error("Error al registrar el lapso en SQLite:", error);
@@ -1275,8 +1288,17 @@ const AppCriterios = {
                 console.log(`Criterio de evaluación indexado. ID FK Listo: ${window.criterioActivoId}`);
                 mostrarNotificacion(`Criterio "${resultado.values.nombre_criterio}" registrado`);
             }
-
-            this.cerrarModal();
+            const continuar = confirm("💡 ¡Criterio didáctico almacenado con éxito!\n\n¿Desea continuar agregando más enfoques o criterios de evaluación?");
+            if (continuar) {
+                document.getElementById('formCriterio').reset();
+                document.getElementById('crit_nombre').focus(); // Ideal para teclados táctiles de Android
+            } else {
+                this.cerrarModal();
+                // Si la sesión de aula está activa, refrescamos los checkboxes para que aparezca el nuevo criterio de inmediato
+                if (typeof AppAulaOperaciones !== 'undefined') {
+                    await AppAulaOperaciones.cargarCriteriosDisponiblesASeleccion();
+                }
+            }
 
         } catch (error) {
             console.error("Error crítico al almacenar el criterio de evaluación:", error);
@@ -1995,16 +2017,25 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             tablaBody.appendChild(tr);
         });
 
-        const promedioFinal = sumaNotas / totalSesiones;
+// ... (Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno, justo después de cerrar el res.values.forEach)
+        const promedioFinal = totalSesiones > 0 ? (sumaNotas / totalSesiones) : 1.0;
         const cellPromedio = document.getElementById('rep_promedio_val');
-        cellPromedio.innerText = promedioFinal.toFixed(1);
-        cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
-        document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
+        if (cellPromedio) {
+            cellPromedio.innerText = promedioFinal.toFixed(2);
+            cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+        }
+        
+        const cellAsistencia = document.getElementById('rep_asistencia_val');
+        if (cellAsistencia) {
+            cellAsistencia.innerText = `${totalAsistencias} / ${totalSesiones}`;
+        }
+        
         document.getElementById('modalReporteEstudiante').style.display = 'flex';
     } catch (error) {
-        console.error("Error al procesar la auditoría acumulada:", error);
+        console.error("Error crítico al procesar la auditoría acumulada:", error);
         alert("No se pudo estructurar el reporte de calificaciones local.");
-        }
+    }
+
     },
     
 cerrarModalReporte: function() {
@@ -2155,44 +2186,68 @@ const AppHistorialSesiones = {
     },
 
     // 4. Conecta el buscador con tu motor de edición existente
-    seleccionarSesionParaCorregir: async function(sesionId) {
-        // Simulamos el comportamiento del viejo combo pero de forma directa y limpia
+        seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true;
 
-        // Cambiamos visualmente a la pestaña del docente donde está la zona de trabajo
-        if (typeof AppNavegacion !== 'undefined') {
-            AppNavegacion.cambiarPantalla('docente');
+        try {
+            // A) Consultar a SQLite para averiguar qué sección exacta fue la que se evaluó en esta sesión
+            const sqlSeccionRef = `
+                SELECT DISTINCT n.cursoseccion_id 
+                FROM registros r
+                INNER JOIN nomina n ON n.id = r.participantes_id
+                WHERE r.sesion_id = ? LIMIT 1;
+            `;
+            const resSeccion = await db_real.query({
+                statement: sqlSeccionRef,
+                values: [window.sesionActivaId]
+            });
+
+            // B) Forzar el cambio de pantalla visual
+            if (typeof AppNavegacion !== 'undefined') {
+                AppNavegacion.cambiarPantalla('docente');
+            }
+
+            // C) Sincronizar el selector operativo con el ID histórico recuperado
+            const selectCursoGrilla = document.getElementById('aulaSelectCurso');
+            if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
+                selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
+            }
+
+            // D) Ahora sí, ejecutamos la reconstrucción histórica con la certeza de que el selector tiene un valor válido
+            await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+
+            // E) Renderizar estados visuales del modo corrección (Banner de control)
+            const contenedorEstado = document.getElementById('estadoSesionDiaria');
+            if (contenedorEstado) {
+                contenedorEstado.className = "alerta-operacional";
+                contenedorEstado.style.backgroundColor = "#fff3e0";
+                contenedorEstado.style.color = "#e65100";
+                contenedorEstado.style.border = "1.5px solid #ffb74d";
+                contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros desde el buscador.<br>
+                <small>Los cambios reemplazarán los datos guardados en esta sesión pasada.</small>`;
+            }
+
+            const btnApertura = document.getElementById('btnAbrirSesion');
+            if (btnApertura) {
+                btnApertura.disabled = true;
+                btnApertura.style.opacity = "0.5";
+                btnApertura.innerText = "🔒 Bloqueado por co-edición";
+            }
+
+            const btnCerrar = document.getElementById('btnCerrarSesion');
+            if (btnCerrar) btnCerrar.style.display = "inline-flex";
+
+            document.getElementById('zonaOperacionesAula').style.display = "block";
+            
+            mostrarNotificacion("Sesión cargada en la grilla de evaluación");
+
+        } catch (err) {
+            console.error("Error crítico en el enrutamiento de la sesión histórica:", err);
+            alert("No se pudo mapear la sección correspondiente al historial.");
         }
-
-        // Ejecutamos tu potente motor de reconstrucción histórica
-        await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
-
-        // Forzamos el comportamiento visual del modo corrección directamente
-        const contenedorEstado = document.getElementById('estadoSesionDiaria');
-        if (contenedorEstado) {
-            contenedorEstado.className = "alerta-operacional";
-            contenedorEstado.style.backgroundColor = "#fff3e0";
-            contenedorEstado.style.color = "#e65100";
-            contenedorEstado.style.border = "1.5px solid #ffb74d";
-            contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros desde el buscador.<br>
-            <small>Los cambios reemplazarán los datos guardados en esta sesión.</small>`;
-        }
-
-        const btnApertura = document.getElementById('btnAbrirSesion');
-        if (btnApertura) {
-            btnApertura.disabled = true;
-            btnApertura.style.opacity = "0.5";
-            btnApertura.innerText = "🔒 Bloqueado por co-edición";
-        }
-
-        const btnCerrar = document.getElementById('btnCerrarSesion');
-        if (btnCerrar) btnCerrar.style.display = "inline-flex";
-
-        document.getElementById('zonaOperacionesAula').style.display = "block";
-        
-        mostrarNotificacion("Sesión cargada en la grilla de evaluación");
     }
+
 };
 
 // === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICA DE ESTUDIANTES ===
