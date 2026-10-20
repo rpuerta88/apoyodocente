@@ -1057,72 +1057,97 @@ alternarSeleccionMatriz: function(estado) {
 const AppClasesDiarias = {
 
     // APERTURA RÁPIDA DE LA CLASE DEL DÍA Consumiendo FKs en segundo plano
-abrirSesionHoy: async function() {
-    // 1. CONTROL DE INTEGRIDAD: Validar Lapso Académico
-    if (!window.lapsoActivoId) {
-        alert("⚠️ Operación... No se ha detectado ningún Lapso Académico activo.");
-        return;
-    }
-
-    // 2. CAPTURAR EL TEMARIO SELECCIONADO DESDE EL DOM
-    const selector = document.getElementById('selectorTemarios');
-    const temarioSeleccionadoId = selector ? selector.value : null;
-
-    if (!temarioSeleccionadoId || temarioSeleccionadoId === "") {
-        alert("⚠️ Operación Rechazada: No ha seleccionado un tema.\n\nPor favor, elija el Tema a tratar en la lista desplegable antes de iniciar la clase.");
-        return;
-    }
-
-    // Asignamos la variable global con la certeza de lo que el usuario eligió en pantalla
-    window.temarioActivoId = temarioSeleccionadoId;
-
-    // 3. OBTENER FECHA NATIVA DEL SISTEMA (Formato Inteligente)
-    const fechaHoy = new Date();
-    const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false};
-    const fechaTextoLocal = fechaHoy.toLocaleString('es-VE', opciones); 
-    const nombreSesionPorDefecto = `CLASE ASISTIDA - ${fechaTextoLocal}`;
-
-    try {
-        // 4. INSERCIÓN RELACIONAL PURA EN LA TABLA 'SESIONES'
-        const sqlInsert = `
-            INSERT INTO sesiones (nombre, temario_id, lapso_id)
-            VALUES (?, ?, ?);
-        `;
-        
-        await db_real.execute({
-            statement: sqlInsert,
-            values: [nombreSesionPorDefecto, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
-        });
-
-        // 5. CAPTURAR EL ID GENERADO USANDO LA FUNCIÓN NATIVA DE SQLITE (MÁXIMA SEGURIDAD)
-        const queryID = `
-            SELECT id, nombre, fecha 
-            FROM sesiones 
-            WHERE id = last_insert_rowid() AND temario_id = ?;
-        `;
-        
-        const resultado = await db_real.query({ 
-            statement: queryID,
-            values: [parseInt(window.temarioActivoId)] 
-        });
-
-        if (resultado.values && resultado.values.length > 0) {
-            const sesionCreada = resultado.values[0]; 
-            window.sesionActivaId = sesionCreada.id;
-            console.log(`Sesión de Aula iniciada con éxito. ID FK Disponible: ${window.sesionActivaId}`);
-            
-            // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
-            this.actualizarPantallaSesionActiva(sesionCreada.nombre);
-            mostrarNotificacion("Clase inicializada correctamente");
-        } else {
-            throw new Error("No se pudo recuperar la sesión recién creada.");
+    abrirSesionHoy: async function() {
+        // 1. CONTROL DE INTEGRIDAD PREVENTIVO: Validar existencia de Lapso Académico activo
+        if (!window.lapsoActivoId) {
+            alert("⚠️ Operación Rechazada: No se ha detectado ningún Lapso Académico activo en el sistema.\n\nPor favor, configure o aperture un Lapso en el Panel Administrativo primero.");
+            return;
         }
 
-    } catch (error) {
-        console.error("Error crítico al aperturar la sesión en SQLite:", error);
-        alert("Fallo del sistema al intentar abrir la sesión de clases.");
-    }
-},
+        // 2. CAPTURAR EL TEMARIO SELECCIONADO DESDE EL DOM
+        const selector = document.getElementById('selectorTemarios');
+        const temarioSeleccionadoId = selector ? selector.value : null;
+
+        if (!temarioSeleccionadoId || temarioSeleccionadoId === "") {
+            alert("⚠️ Operación Rechazada: No ha seleccionado un tema.\n\nPor favor, elija el Tema a tratar en la lista desplegable antes de iniciar la clase.");
+            return;
+        }
+
+        window.temarioActivoId = temarioSeleccionadoId;
+
+        // 3. CAPTURAR FECHA LOCAL EXACTA (Formato YYYY-MM-DD para SQLite)
+        const ahora = new Date();
+        const hoyISO = ahora.toISOString().split('T')[0]; // Formato base de comparación: "YYYY-MM-DD"
+        
+        // Formato amigable para el nombre por defecto de la sesión
+        const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false};
+        const fechaTextoLocal = ahora.toLocaleString('es-VE', opciones); 
+        const nombreSesionPorDefecto = `CLASE ASISTIDA - ${fechaTextoLocal}`;
+
+        try {
+            // === CONTROL QUIRÚRGICO DE INTEGRIDAD CRONOLÓGICA ===
+            // Validamos que la fecha actual del dispositivo no viole los límites del lapso activo en memoria
+            const sqlValidarFecha = `
+                SELECT momento, fecha_inicio, fecha_cierre 
+                FROM lapso 
+                WHERE id = ? LIMIT 1;
+            `;
+            const resLapso = await db_real.query({
+                statement: sqlValidarFecha,
+                values: [parseInt(window.lapsoActivoId)]
+            });
+
+            if (resLapso.values && resLapso.values.length > 0) {
+                const lapso = resLapso.values[0];
+                
+                // Verificación estricta de rangos de texto ISO
+                if (hoyISO < lapso.fecha_inicio || hoyISO > lapso.fecha_cierre) {
+                    const cambiar = confirm(`⚠️ DISCORDANCIA DE CALENDARIO\n\nLa fecha de hoy (${hoyISO}) se encuentra fuera del rango oficial del lapso activo "${lapso.momento}" (${lapso.fecha_inicio} al ${lapso.fecha_cierre}).\n\n¿Desea forzar la apertura de la sesión bajo este lapso de igual manera?`);
+                    if (!cambiar) return; // El docente cancela la operación para corregir el lapso administrativo
+                }
+            }
+
+            // 4. INSERCIÓN RELACIONAL EXPLÍCITA (Guardamos la fecha local calculada en lugar de usar CURRENT_TIMESTAMP en UTC)
+            const sqlInsert = `
+                INSERT INTO sesiones (nombre, fecha, temario_id, lapso_id)
+                VALUES (?, ?, ?, ?);
+            `;
+            
+            await db_real.execute({
+                statement: sqlInsert,
+                values: [nombreSesionPorDefecto, hoyISO, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
+            });
+
+            // 5. RECOVERY SEGURO DEL ID GENERADO
+            const queryID = `
+                SELECT id, nombre, fecha 
+                FROM sesiones 
+                WHERE id = last_insert_rowid() AND temario_id = ?;
+            `;
+            
+            const resultado = await db_real.query({ 
+                statement: queryID,
+                values: [parseInt(window.temarioActivoId)] 
+            });
+
+            if (resultado.values && resultado.values.length > 0) {
+                const sesionCreada = resultado.values[0]; 
+                window.sesionActivaId = sesionCreada.id;
+                console.log(`Sesión de Aula iniciada con éxito y sincronizada cronológicamente. ID: ${window.sesionActivaId}`);
+                
+                // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
+                this.actualizarPantallaSesionActiva(sesionCreada.nombre);
+                mostrarNotificacion("Clase inicializada correctamente");
+            } else {
+                throw new Error("No se pudo recuperar la sesión recién creada.");
+            }
+
+        } catch (error) {
+            console.error("Error crítico al aperturar e integrar la sesión en SQLite:", error);
+            alert("Fallo del sistema al intentar abrir la sesión de clases con sincronización de lapso.");
+        }
+    },
+
 
     // Modifica los componentes visuales para reflejar el estado operativo
     actualizarPantallaSesionActiva: function(nombreClase) {
@@ -1194,6 +1219,12 @@ abrirSesionHoy: async function() {
         
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (tablaBody) tablaBody.innerHTML = "";
+
+        // Inyectar quirúrgicamente aquí:
+        if (typeof AppBuscadorEstudiantes !== 'undefined') {
+            AppBuscadorEstudiantes.limpiarBuscador();
+        }
+
         
         const criteriosDisponibles = document.getElementById('panelAdmin');
         criteriosDisponibles.style.display = "block";
@@ -1882,7 +1913,14 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             } // === FIN DEL BUCLE DE FILAS ===
 
             alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
-            this.cargarHistorialSesionesCombo();
+            //~ this.cargarHistorialSesionesCombo();
+                        // Cambiar esta línea al final del try de guardarAsistenciaYNotasLote:
+            // error viejo: this.cargarHistorialSesionesCombo();
+            
+            // Corrección quirúrgica:
+            const inputBuscar = document.getElementById('inputBuscarSesion');
+            await AppHistorialSesiones.filtrarSesionesDinamico(inputBuscar ? inputBuscar.value : "");
+
             this.cargarEstudiantesAsistencia();
         } catch (error) {
             console.error("Fallo crítico en la transacción de corrección:", error);
@@ -2013,6 +2051,202 @@ document.getElementById('modalReporteEstudiante').style.display = 'none';
 }
 };
 
+// === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICO DE SESIONES ===
+const AppHistorialSesiones = {
+    
+    // 1. Inicializa el módulo limpiando el buscador
+    abrirPanelBusqueda: async function() {
+        const inputBuscar = document.getElementById('inputBuscarSesion');
+        if (inputBuscar) inputBuscar.value = "";
+        
+        // Carga inicial de las últimas sesiones al abrir el panel
+        await this.filtrarSesionesDinamico("");
+    },
 
+    // 2. Consulta a SQLite filtrando por el texto ingresado
+    filtrarSesionesDinamico: async function(textoBusqueda) {
+        const contenedorLista = document.getElementById('listaResultadoSesiones');
+        if (!contenedorLista) return;
+
+        try {
+            // Modificar las primeras líneas dentro del try de filtrarSesionesDinamico:
+            let sql = `
+                SELECT s.id, s.nombre, s.fecha, c.cursoseccion, l.momento AS lapso_momento
+                FROM sesiones s
+                LEFT JOIN lapso l ON l.id = s.lapso_id
+                LEFT JOIN registros r ON r.sesion_id = s.id
+                LEFT JOIN nomina n ON n.id = r.participantes_id
+                LEFT JOIN cursos c ON c.id = n.cursoseccion_id
+                `;
+            
+            let parametros = [];
+            
+            // Si el usuario escribe algo, aplicamos filtros dinámicos combinados
+            if (textoBusqueda && textoBusqueda.trim() !== "") {
+                const queryLimpio = `%${textoBusqueda.trim()}%`;
+                sql += ` WHERE s.nombre LIKE ? OR s.fecha LIKE ? OR c.cursoseccion LIKE ?`;
+                parametros = [queryLimpio, queryLimpio, queryLimpio];
+            }
+
+            // Agrupamos para evitar duplicados por los JOINs de los alumnos y ordenamos por la más reciente
+            sql += ` GROUP BY s.id ORDER BY s.id DESC LIMIT 10;`;
+
+            const res = await db_real.query({ statement: sql, values: parametros });
+            contenedorLista.innerHTML = "";
+
+            if (!res.values || res.values.length === 0) {
+                contenedorLista.innerHTML = `<li class="lista-vacia">🔍 No se encontraron sesiones que coincidan.</li>`;
+                return;
+            }
+
+            // 3. Renderizar las tarjetas de resultados táctiles
+            res.values.forEach(ses => {
+                const li = document.createElement('li');
+                li.className = 'item-curso'; // Reutilizamos tu estilo visual limpio de cajas
+                li.style.padding = "10px 12px";
+                li.style.marginBottom = "10px";
+                
+                const fechaLimpia = ses.fecha ? ses.fecha.split(' ')[0] : 'N/A';
+                const seccionTexto = ses.cursoseccion ? ` | Sección: <b>${ses.cursoseccion}</b>` : '';
+
+                li.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;">
+                        <span style="font-weight: bold; color: var(--color-texto-base); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                            ${ses.nombre}
+                        </span>
+                        <small style="color: #78909c;">📅 ${fechaLimpia} ${seccionTexto} | 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b></small>
+                    </div>
+                    <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 6px 12px;" 
+                            onclick="AppHistorialSesiones.seleccionarSesionParaCorregir(${ses.id})">
+                        ✏️ Editar
+                    </button>
+                `;
+                contenedorLista.appendChild(li);
+            });
+
+        } catch (error) {
+            console.error("Error en el motor dinámico de búsqueda:", error);
+        }
+    },
+
+    // 4. Conecta el buscador con tu motor de edición existente
+    seleccionarSesionParaCorregir: async function(sesionId) {
+        // Simulamos el comportamiento del viejo combo pero de forma directa y limpia
+        window.sesionActivaId = parseInt(sesionId);
+        window.editandoSesionPasada = true;
+
+        // Cambiamos visualmente a la pestaña del docente donde está la zona de trabajo
+        if (typeof AppNavegacion !== 'undefined') {
+            AppNavegacion.cambiarPantalla('docente');
+        }
+
+        // Ejecutamos tu potente motor de reconstrucción histórica
+        await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+
+        // Forzamos el comportamiento visual del modo corrección directamente
+        const contenedorEstado = document.getElementById('estadoSesionDiaria');
+        if (contenedorEstado) {
+            contenedorEstado.className = "alerta-operacional";
+            contenedorEstado.style.backgroundColor = "#fff3e0";
+            contenedorEstado.style.color = "#e65100";
+            contenedorEstado.style.border = "1.5px solid #ffb74d";
+            contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros desde el buscador.<br>
+            <small>Los cambios reemplazarán los datos guardados en esta sesión.</small>`;
+        }
+
+        const btnApertura = document.getElementById('btnAbrirSesion');
+        if (btnApertura) {
+            btnApertura.disabled = true;
+            btnApertura.style.opacity = "0.5";
+            btnApertura.innerText = "🔒 Bloqueado por co-edición";
+        }
+
+        const btnCerrar = document.getElementById('btnCerrarSesion');
+        if (btnCerrar) btnCerrar.style.display = "inline-flex";
+
+        document.getElementById('zonaOperacionesAula').style.display = "block";
+        
+        mostrarNotificacion("Sesión cargada en la grilla de evaluación");
+    }
+};
+
+// === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICA DE ESTUDIANTES ===
+const AppBuscadorEstudiantes = {
+    
+    // 1. Escucha el teclado y filtra los alumnos en caliente
+    filtrarEstudiantesDinamico: async function(textoBusqueda) {
+        const cursoID = document.getElementById('aulaSelectCurso').value;
+        const contenedorLista = document.getElementById('listaResultadoAlumnosAula');
+        
+        if (!contenedorLista) return;
+
+        // Si no hay un curso seleccionado en la pantalla del docente, detenemos la búsqueda
+        if (!cursoID) {
+            contenedorLista.innerHTML = `<li class="lista-vacia">⚠️ Seleccione primero un curso arriba para buscar alumnos.</li>`;
+            return;
+        }
+
+        try {
+            let sql = `
+                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido
+                FROM nomina n
+                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
+                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
+            `;
+            
+            let parametros = [parseInt(cursoID), parseInt(window.escolaridadActivaId)];
+
+            // Si el docente escribe, aplicamos filtros de coincidencia parcial
+            if (textoBusqueda && textoBusqueda.trim() !== "") {
+                const queryLimpio = `%${textoBusqueda.trim()}%`;
+                sql += ` AND (e.nombre LIKE ? OR e.apellido LIKE ? OR cast(e.id_cedula as text) LIKE ?)`;
+                parametros.push(queryLimpio, queryLimpio, queryLimpio);
+            }
+
+            sql += ` ORDER BY e.apellido ASC, e.nombre ASC LIMIT 5;`;
+
+            const res = await db_real.query({ statement: sql, values: parametros });
+            contenedorLista.innerHTML = "";
+
+            if (!res.values || res.values.length === 0) {
+                contenedorLista.innerHTML = `<li class="lista-vacia">🔍 Alumno no encontrado en esta sección.</li>`;
+                return;
+            }
+
+            // 2. Renderizar los resultados rápidos como ítems interactivos
+            res.values.forEach(alumno => {
+                const li = document.createElement('li');
+                li.className = 'item-curso'; // Reutilizamos tu estilo de cajas
+                li.style.padding = "8px 12px";
+                li.style.marginBottom = "6px";
+                li.style.backgroundColor = "#e8f5e9"; // Tono verde sutil pedagógico
+                li.style.border = "1px solid #c8e6c9";
+
+                li.innerHTML = `
+                    <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
+                        <span style="font-weight: 600; color: var(--color-texto-base);">${alumno.apellido}, ${alumno.nombre}</span>
+                        <small style="color: #546e7a;">💳 C.I: ${alumno.id_cedula}</small>
+                    </div>
+                    <button type="button" class="btn-guardar" style="background-color: var(--color-primario); padding: 4px 10px; font-size: 0.85rem;" 
+                            onclick="AppAulaOperaciones.verReporteAcumuladoAlumno(${alumno.nomina_id}, '${alumno.apellido}, ${alumno.nombre}'); AppBuscadorEstudiantes.limpiarBuscador();">
+                        📊 Ver Progreso
+                    </button>
+                `;
+                contenedorLista.appendChild(li);
+            });
+
+        } catch (error) {
+            console.error("Error en el motor dinámico de alumnos:", error);
+        }
+    },
+
+    // 3. Función auxiliar para limpiar la grilla flotante tras abrir un reporte
+    limpiarBuscador: function() {
+        const input = document.getElementById('inputBuscarAlumnoAula');
+        const contenedorLista = document.getElementById('listaResultadoAlumnosAula');
+        if (input) input.value = "";
+        if (contenedorLista) contenedorLista.innerHTML = "";
+    }
+};
 
 
