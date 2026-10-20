@@ -117,10 +117,14 @@
                 <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
                     ⚪ No hay ninguna sesión activa para el día de hoy.
                 </div>
+                <!-- Agregar este botón justo debajo o al lado del botón de abrir sesión -->
+                <button type="button" id="btnCerrarSesion" class="btn-guardar btn-peligro" style="display: none;" onclick="AppClasesDiarias.cerrarSesionActiva()">
+                    🔒 Finalizar y Cerrar Sesión
+                </button>
                 <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
             <div class="modal-cabecera" style="margin-bottom: 14px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
-                <label for="historial_sesiones_combo">📂 Corregir / Ver Sesión Pasada:</label>
-                <select id="historial_sesiones_combo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
+                <label for="historialSesionesCombo">📂 Corregir / Ver Sesión Pasada:</label>
+                <select id="historialSesionesCombo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
                     <option value="" selected>-- Seleccione una sesión para editar --</option>
                 </select>
             </div>
@@ -150,8 +154,8 @@
                     </div>
                     <!-- Selector de Curso Activo -->
                         <div class="modal-cabecera">
-                            <label for="aula_select_curso">Seleccione Curso/Sección a Evaluar Hoy:</label>
-                            <select id="aula_select_curso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
+                            <label for="aulaSelectCurso">Seleccione Curso/Sección a Evaluar Hoy:</label>
+                            <select id="aulaSelectCurso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
                                 <!-- Se puebla dinámicamente -->
                             </select>
                         </div>
@@ -476,13 +480,13 @@
         </div>
     </div>
 </div>
-<!-- Modal Emergente para el Reporte Neurocognitivo del Estudiante -->
+<!-- Modal Emergente para el Reporte Neurocognitivo del Estudiante
 <div id="modalReporteEstudiante" class="modal-capa" style="display: none;">
     <div class="modal-contenedor" style="max-width: 550px;">
         <h2 id="rep_alumno_nombre">Reporte de Desempeño</h2>
         <p class="instruccion-texto" style="margin-bottom: 10px;">Análisis acumulado de asistencia y rasgos pedagógicos en el lapso activo.</p>
         
-        <!-- Tarjeta de Estadísticas Rápidas -->
+        <!-- Tarjeta de Estadísticas Rápidas
         <div class="contenedor-metricas-rapidas">
             <div class="tarjeta-metrica">
                 <span class="metrica-titulo">Promedio General</span>
@@ -494,7 +498,7 @@
             </div>
         </div>
 
-        <!-- Tabla de Historial Detallado -->
+        <!-- Tabla de Historial Detallado
         <h4 style="margin: 14px 0 6px 0; color: #37474f;">Desglose de Sesiones</h4>
         <div class="tabla-responsiva" style="max-height: 250px; overflow-y: auto;">
             <table class="tabla-aula" style="font-size: 0.9rem;">
@@ -506,10 +510,10 @@
                     </tr>
                 </thead>
                 <tbody id="rep_tabla_cuerpo">
-                    <!-- Se puebla dinámicamente -->
+                    <!-- Se puebla dinámicamente
                 </tbody>
             </table>
-        </div>
+        </div> -->
 
         <div class="modal-botones" style="margin-top: 16px;">
             <button type="button" class="btn-cancelar" style="flex: 1;" onclick="AppAulaOperaciones.cerrarModalReporte()">Cerrar Reporte</button>

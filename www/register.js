@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AppLapsos.cargarLapsoVigenteInicial();
         await AppPlanificacion.cargarTemarioVigenteInicial();
         await AppPlanificacion.cargarTemariosEnDOM();
+        await AppAulaOperaciones.cargarSesionPasadaParaEdicion();
     } catch (e) {
         alert(`Fallo en la carga inicial: ${e.message}`);
         console.error("Fallo secuencial de arranque:", e);
@@ -1129,6 +1130,8 @@ abrirSesionHoy: async function() {
         const botonApertura = document.getElementById('btnAbrirSesion');
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
         const criteriosDisponibles = document.getElementById('panelAdmin');
+        const btnCerrar = document.getElementById('btnCerrarSesion');
+        if (btnCerrar) btnCerrar.style.display = "inline-flex"; 
 
         if (contenedorEstado) {
             contenedorEstado.className = "alerta-operacional estado-activa";
@@ -1147,6 +1150,52 @@ abrirSesionHoy: async function() {
             AppAulaOperaciones.inicializarSelectoresAula();
             AppAulaOperaciones.cargarHistorialSesionesCombo(); // <-- INYECTAR ESTA LÍNEA AQUÍ
         }
+    },
+        // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
+    cerrarSesionActiva: function() {
+        const confirmar = confirm("¿Está seguro de que desea cerrar la sesión actual?\n⚠️ Para abrir una nueva clase, primero debe finalizar la sesión en curso.");
+        if (!confirmar) return;
+
+        // 1. Limpieza estricta de las variables de estado global
+        window.sesionActivaId = null;
+        window.temarioActivoId = null;
+        if (window.hasOwnProperty('editandoSesionPasada')) {
+            window.editandoSesionPasada = false;
+        }
+
+        // 2. Restablecer el banner operacional a su estado de espera
+        const contenedorEstado = document.getElementById('estadoSesionDiaria');
+        if (contenedorEstado) {
+            contenedorEstado.className = "alerta-operacional estado-espera";
+            contenedorEstado.style.backgroundColor = ""; // Limpiar remanentes del modo corrección
+            contenedorEstado.style.color = "";
+            contenedorEstado.style.border = "";
+            contenedorEstado.innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
+        }
+
+        // 3. Reactivar el botón de apertura para permitir nuevas clases
+        const botonApertura = document.getElementById('btnAbrirSesion');
+        if (botonApertura) {
+            botonApertura.disabled = false;
+            botonApertura.style.opacity = "1";
+            botonApertura.innerText = "Abrir Sesión de Hoy";
+        }
+
+        // 4. Ocultar el propio botón de cierre y la zona de operaciones del aula
+        const btnCerrar = document.getElementById('btnCerrarSesion');
+        if (btnCerrar) btnCerrar.style.display = "none";
+
+        const zonaTrabajo = document.getElementById('zonaOperacionesAula');
+        if (zonaTrabajo) zonaTrabajo.style.display = "none";
+
+        // 5. Resetear selectores de la interfaz para evitar datos fantasmas
+        const selectCurso = document.getElementById('aulaSelectCurso');
+        if (selectCurso) selectCurso.value = "";
+        
+        const tablaBody = document.getElementById('listaEstudiantesAula');
+        if (tablaBody) tablaBody.innerHTML = "";
+
+        mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
     }
 };
 
@@ -1213,7 +1262,7 @@ const AppAulaOperaciones = {
     },
 
     inicializarSelectoresAula: async function() {
-        const select = document.getElementById('aula_select_curso');
+        const select = document.getElementById('aulaSelectCurso');
         if (!select) return;
         try {
             const resultado = await db_real.query({
@@ -1267,7 +1316,7 @@ const AppAulaOperaciones = {
     },
 
     cargarEstudiantesAsistencia: async function() {
-        const cursoID = document.getElementById('aula_select_curso').value;
+        const cursoID = document.getElementById('aulaSelectCurso').value;
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (!tablaBody || !cursoID) return;
 
@@ -1464,139 +1513,202 @@ this.calcularNotaEstudiante(fila.dataset.nominaId);
 });
 mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
 },
-reiniciarMatrizFila: function() {
-const filas = document.querySelectorAll('.fila-estudiante-aula');
-if (filas.length === 0) return;
-const confirmar = confirm("¿Desea limpiar todas las marcas de evaluación de la grilla actual?");
-if (!confirmar) return;
-filas.forEach(fila => {
-const chkAsistencia = fila.querySelector('.chk-asistencia');
-if (chkAsistencia) chkAsistencia.checked = true;
-const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-botonesEscala.forEach(btn => {
-btn.dataset.estadoActual = 'I';
-btn.style.backgroundColor = this.escalaEstimacion['I'].color;
-btn.style.color = this.escalaEstimacion['I'].textoColor;
-btn.innerText = this.escalaEstimacion['I'].texto;
-});
-this.calcularNotaEstudiante(fila.dataset.nominaId);
-});
-this.recalcularNotasEnPantalla();
-mostrarNotificacion("Grilla restablecida a Iniciado (0%)");
-},
-cargarHistorialSesionesCombo: async function() {
-const select = document.getElementById('historial_sesiones_combo');
-if (!select) return;
-try {
-const sql = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 15;";
-const res = await db_real.query({ statement: sql });
-select.innerHTML = '-- Seleccione una sesión para editar --';
-if (res.values && res.values.length > 0) {
-res.values.forEach(ses => {
-const opt = document.createElement('option');
-opt.value = ses.id;
-const fechaFormat = ses.fecha ? ses.fecha.split(' ')[0] : '';
-opt.textContent = `${ses.nombre} [${fechaFormat}]`;
-select.appendChild(opt);
-});
-}
-} catch (e) {
-console.error("Error cargando historial de sesiones:", e);
-}
-},
-cargarSesionPasadaParaEdicion: async function() {
-const sesionId = document.getElementById('historial_sesiones_combo').value;
-if (!sesionId) {
-window.editandoSesionPasada = false;
-document.getElementById('btnAbrirSesion').disabled = false;
-document.getElementById('btnAbrirSesion').style.opacity = "1";
-document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
-document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
-document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
-document.getElementById('zonaOperacionesAula').style.display = "none";
-return;
-}
-window.sesionActivaId = parseInt(sesionId);
-window.editandoSesionPasada = false;
-const contenedorEstado = document.getElementById('estadoSesionDiaria');
-contenedorEstado.className = "alerta-operacional";
-contenedorEstado.style.backgroundColor = "#fff3e0";
-contenedorEstado.style.color = "#e65100";
-contenedorEstado.style.border = "1.5px solid #ffb74d";
-contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
-const btnApertura = document.getElementById('btnAbrirSesion');
-if (btnApertura) {
-btnApertura.disabled = true;
-btnApertura.style.opacity = "0.5";
-btnApertura.innerText = " Bloqueado por co-edición";
-}
-document.getElementById('zonaOperacionesAula').style.display = "block";
-const selectCurso = document.getElementById('aula_select_curso');
-if (selectCurso && selectCurso.value) {
-this.cargarEstudiantesAsistencia();
-}
-},
-guardarAsistenciaYNotasLote: async function() {
-if (!window.sesionActivaId) {
-alert("Operación rechazada: No hay ninguna sesión seleccionada.");
-return;
-}
-const filas = document.querySelectorAll('.fila-estudiante-aula');
-if (filas.length === 0) return;
-try {
-mostrarNotificacion("Sincronizando correcciones en SQLite...");
-for (let fila of filas) {
-const participantes_id = parseInt(fila.dataset.nominaId);
-const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
-const notaFinal = parseFloat(fila.querySelector('.cell-nota-final').innerText);
-const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
-let registroID = null;
-const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
-const resCheck = await db_real.query({
-statement: queryCheck,
-values: [participantes_id, parseInt(window.sesionActivaId)]
-});
-if (resCheck.values && resCheck.values.length > 0) {
-registroID = resCheck.values[0].id;
-const sqlUpdateReg = `UPDATE registros  SET asistencia = ?, calificacion = ?, tipo_evaluacion = ? WHERE id = ?;`;
-await db_real.execute({
-statement: sqlUpdateReg,
-values: [asistencia, notaFinal, tipo_evaluacion, registroID]
-});
-} else {
-const sqlInsertReg = `INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento) VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');`;
-await db_real.execute({
-statement: sqlInsertReg,
-values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinal, tipo_evaluacion]
-});
-const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
-registroID = resNewID.values[0].id;
-}
-// 4. CORRECCIÓN EN EL CICLO DE GUARDADO
-// Nota: Tu código original tenía un error aquí ("pesoBaseCriterio" y "multiplicador" no estaban definidos).
-// He corregido la lectura para que tome dinámicamente el estado actual del botón interactivo.
-if (this.criteriosSeleccionadosIds.length > 0) {
-const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
-const pesoCadaUno = 12.0 / totalCriteriosActivos;
-const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-for (let btn of botonesEscala) {
-const criterioId = parseInt(btn.dataset.critId);
-const estado = btn.dataset.estadoActual;
-const multiplicador = this.escalaEstimacion[estado].multiplicador;
-const valoracionCalculada = (asistencia === 'true') ?
-parseFloat((pesoCadaUno * multiplicador).toFixed(2)) : 0.00;
-const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
-await db_real.execute({
-statement: sqlCalificacion,
-values: [registroID, criterioId, valoracionCalculada]
-});
-}
-}
-}
+
+    reiniciarMatrizFila: function() {
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+        const confirmar = confirm("¿Desea limpiar todas las marcas de evaluación de la grilla actual?");
+        if (!confirmar) return;
+            filas.forEach(fila => {
+                const chkAsistencia = fila.querySelector('.chk-asistencia');
+                if (chkAsistencia) chkAsistencia.checked = true;
+                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+                botonesEscala.forEach(btn => {
+                    btn.dataset.estadoActual = 'I';
+                    btn.style.backgroundColor = this.escalaEstimacion['I'].color;
+                    btn.style.color = this.escalaEstimacion['I'].textoColor;
+                    btn.innerText = this.escalaEstimacion['I'].texto;
+                });
+            this.calcularNotaEstudiante(fila.dataset.nominaId);
+            });
+        this.recalcularNotasEnPantalla();
+        mostrarNotificacion("Grilla restablecida a Iniciado (0%)");
+    },
+
+    cargarHistorialSesionesCombo: async function() {
+        const select = document.getElementById('historialSesionesCombo');
+        if (!select) return;
+    try {
+        const sql = "SELECT id, nombre, fecha FROM sesiones ORDER BY id DESC LIMIT 15;";
+        const res = await db_real.query({ statement: sql });
+        select.innerHTML = '-- Seleccione una sesión para editar --';
+        if (res.values && res.values.length > 0) {
+            res.values.forEach(ses => {
+                const opt = document.createElement('option');
+                opt.value = ses.id;
+                const fechaFormat = ses.fecha ? ses.fecha.split(' ')[0] : '';
+                opt.textContent = `${ses.nombre} [${fechaFormat}]`;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Error cargando historial de sesiones:", e);
+        }
+    },
+
+    cargarSesionPasadaParaEdicion: async function() {
+        const sesionId = document.getElementById('historialSesionesCombo').value;
+        if (!sesionId) {
+            window.editandoSesionPasada = false;
+            document.getElementById('btnAbrirSesion').disabled = false;
+            document.getElementById('btnAbrirSesion').style.opacity = "1";
+            document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
+            document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
+            document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
+            document.getElementById('zonaOperacionesAula').style.display = "none";
+            return;
+        }
+        //revisarLineaSiguiente
+        window.sesionActivaId = parseInt(sesionId);
+        window.editandoSesionPasada = false;
+        const contenedorEstado = document.getElementById('estadoSesionDiaria');
+        contenedorEstado.className = "alerta-operacional";
+        contenedorEstado.style.backgroundColor = "#fff3e0";
+        contenedorEstado.style.color = "#e65100";
+        contenedorEstado.style.border = "1.5px solid #ffb74d";
+        contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
+        const btnApertura = document.getElementById('btnAbrirSesion');
+        const btnCerrar = document.getElementById('btnCerrarSesion');
+        if (btnCerrar) btnCerrar.style.display = "inline-flex";
+        if (btnApertura) {
+            btnApertura.disabled = true;
+            btnApertura.style.opacity = "0.5";
+            btnApertura.innerText = " Bloqueado por co-edición";
+        }
+        document.getElementById('zonaOperacionesAula').style.display = "block";
+        const selectCurso = document.getElementById('aulaSelectCurso');
+        if (selectCurso && selectCurso.value) {
+            this.cargarEstudiantesAsistencia();
+        }
+    },
+
+    guardarAsistenciaYNotasLote: async function() {
+        
+        if (!window.sesionActivaId) {
+            alert("Operación rechazada: No hay ninguna sesión seleccionada.");
+            return;
+        }
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+        try {
+            mostrarNotificacion("Sincronizando correcciones en SQLite...");
+            
+            
+            // === FLUJO CORREGIDO EN CASCADA PARA GUARDAR NOTAS ===
+            for (let fila of filas) {
+                const participantes_id = parseInt(fila.dataset.nominaId);
+                const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
+                const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
+                
+                // 1. OBTENER LOS RASGOS DESDE LA GRILLA VISUAL
+                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+                let notaFinalCalculada = 8.00; // Base basal del sistema pedagógico
+
+                if (!fila.querySelector('.chk-asistencia').checked) {
+                    notaFinalCalculada = 1.00; // Penalización por inasistencia
+                } else if (botonesEscala && botonesEscala.length > 0) {
+                    const totalCriteriosActivos = botonesEscala.length;
+                    const pesoCadaUno = 12.00 / totalCriteriosActivos;
+                    
+                    botonesEscala.forEach(btn => {
+                        const estado = btn.dataset.estadoActual;
+                        const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                        notaFinalCalculada += (pesoCadaUno * multiplicador);
+                    });
+                }
+                
+                // Forzar redondeo matemático exacto de dos decimales
+                notaFinalCalculada = parseFloat(notaFinalCalculada.toFixed(2));
+
+                let registroID = null;
+
+                // 2. VERIFICAR SI YA EXISTE EL REGISTRO DE ASISTENCIA Y NOTA
+                const queryCheck = "SELECT id FROM registros WHERE participantes_id = ? AND sesion_id = ? LIMIT 1;";
+                const resCheck = await db_real.query({
+                    values: [participantes_id, parseInt(window.sesionActivaId)]
+                });
+
+                if (resCheck.values && resCheck.values.length > 0) {
+                    registroID = resCheck.values[0].id;
+                    // Sincroniza la nota final calculada directamente en el campo calificacion
+                    const sqlUpdateReg = `UPDATE registros SET asistencia = ?, calificacion = ?, tipo_evaluacion = ? WHERE id = ?;`;
+                    await db_real.execute({
+                        statement: sqlUpdateReg,
+                        values: [asistencia, notaFinalCalculada, tipo_evaluacion, registroID]
+                    });
+                } else {
+                    // Inserta el nuevo registro asegurando que la nota calculada se indexe en el primer golpe
+                    const sqlInsertReg = `INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento) VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');`;
+                    await db_real.execute({
+                        statement: sqlInsertReg,
+                        values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinalCalculada, tipo_evaluacion]
+                    });
+                    const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
+                    registroID = resNewID.values[0].id;
+                }
+
+                // 3. PERSISTIR EL DESGLOSE DE CRITERIOS EN LA TABLA CALIFICACION
+                if (asistencia === 'true' && botonesEscala && botonesEscala.length > 0) {
+                    const totalCriteriosActivos = botonesEscala.length;
+                    const pesoCadaUno = 12.00 / totalCriteriosActivos;
+                    
+                    for (let btn of botonesEscala) {
+                        const criterioId = parseInt(btn.dataset.critId);
+                        const estado = btn.dataset.estadoActual;
+                        const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                        
+                        const valoracionCalculada = parseFloat((pesoCadaUno * multiplicador).toFixed(2));
+                        
+                        const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
+                        await db_real.execute({
+                            statement: sqlCalificacion,
+                            values: [registroID, criterioId, valoracionCalculada]
+                        });
+                    }
+                }
+            }
+            // Ciclo de guardado
+            if (this.criteriosSeleccionadosIds.length > 0) {
+                const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+                const pesoCadaUno = 12.0 / totalCriteriosActivos;
+                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+                if (botonesEscala && botonesEscala.length > 0) {
+                    const totalCriteriosActivos = botonesEscala.length;
+                    const pesoCadaUno = 12.0 / totalCriteriosActivos;
+                    for (let btn of botonesEscala) {
+                        const criterioId = parseInt(btn.dataset.critId);
+                        const estado = btn.dataset.estadoActual;
+                    
+                        // Validación preventiva para asegurar que la escala existe
+                        const configEscala = this.escalaEstimacion[estado];
+                        const multiplicador = configEscala ? configEscala.multiplicador : 0.0;
+                    
+                        const valoracionCalculada = (asistencia === 'true') ?
+                            parseFloat((pesoCadaUno * multiplicador).toFixed(2)) : 0.00;
+                        
+                        const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
+                    
+                        await db_real.execute({
+                            statement: sqlCalificacion,
+                            values: [registroID, criterioId, valoracionCalculada]
+                        });
+                    }
+                }
+            }
 alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
 this.cargarHistorialSesionesCombo();
 this.cargarEstudiantesAsistencia();
-} catch (error) {
+        } catch (error) {
 console.error("Fallo crítico en la transacción de corrección:", error);
 alert("Error interno de SQLite al sobreescribir las evaluaciones.");
 }
