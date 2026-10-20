@@ -1379,6 +1379,121 @@ const AppAulaOperaciones = {
         }
     },
 
+    cargarEstudiantesAsistenciaConHistorico: async function() {
+        const cursoID = document.getElementById('aulaSelectCurso').value;
+        const tablaBody = document.getElementById('listaEstudiantesAula');
+        if (!tablaBody || !cursoID) return;
+
+        try {
+            // Buscamos los estudiantes matriculados en la sección junto con su estatus guardado en registros para esa sesión
+            const sqlLoteHistorico = `
+                SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido,
+                       r.id AS registro_id, r.asistencia, r.calificacion AS nota_final_historica
+                FROM nomina n
+                INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula
+                LEFT JOIN registros r ON r.participantes_id = n.id AND r.sesion_id = ?
+                WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ?
+                ORDER BY e.apellido ASC, e.nombre ASC;
+            `;
+            
+            const resultado = await db_real.query({
+                statement: sqlLoteHistorico,
+                values: [window.sesionActivaId, parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+            });
+
+            tablaBody.innerHTML = "";
+            if (!resultado.values || resultado.values.length === 0) {
+                tablaBody.innerHTML = `<tr><td colspan="4" class="lista-vacia">Sin registros en esta sección.</td></tr>`;
+                return;
+            }
+
+            for (let alumno of resultado.values) {
+                const tr = document.createElement('tr');
+                tr.className = 'fila-estudiante-aula';
+                tr.id = `fila-alumno-${alumno.nomina_id}`;
+                tr.dataset.nominaId = alumno.nomina_id;
+
+                const estuvoPresente = alumno.asistencia === 'true' || alumno.asistencia === null; // Basal activo
+                const notaFinalMostrada = alumno.nota_final_historica !== null ? parseFloat(alumno.nota_final_historica).toFixed(2) : "8.00";
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="alumno-info-celda">
+                            <span class="alumno-nombre-completo">${alumno.apellido}, ${alumno.nombre}</span>
+                            <small class="alumno-cedula-sub">C.I: ${alumno.id_cedula}</small>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <label class="switch-asistencia">
+                            <input type="checkbox" class="chk-asistencia" ${estuvoPresente ? 'checked' : ''} onchange="AppAulaOperaciones.alternarAsistenciaFila(this)">
+                            <span class="slider-control"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <!-- Escalas recuperadas inyectadas abajo -->
+                        </div>
+                    </td>
+                    <td class="text-center font-weight-bold cell-nota-final" id="nota-final-est-${alumno.nomina_id}" style="font-size:1.2rem; color:${parseFloat(notaFinalMostrada) >= 9.50 ? '#1b5e20' : '#c62828'};">
+                        ${notaFinalMostrada}
+                    </td>
+                `;
+                tablaBody.appendChild(tr);
+
+                // Reconstruir botones de tarjetas leyendo desde 'calificacion'
+                const zonaRasgos = tr.querySelector(`#rasgos-est-${alumno.nomina_id}`);
+                if (!estuvoPresente) {
+                    zonaRasgos.innerHTML = `<span style="color:#c62828; font-style:italic;">Inasistente - Bloqueado</span>`;
+                } else if (this.criteriosSeleccionadosIds.length > 0) {
+                    for (let critId of this.criteriosSeleccionadosIds) {
+                        // Determinar en qué nivel quedó la tarjeta buscando en SQLite
+                        let estadoGuardado = 'I'; // Fallback por defecto si no hay registro
+                        if (alumno.registro_id) {
+                            const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
+                            const resValor = await db_real.query({
+                                statement: sqlCriterioValor,
+                                values: [alumno.registro_id, critId]
+                            });
+                            
+                            if (resValor.values && resValor.values.length > 0) {
+                                // Mapear el peso numérico de vuelta a la etiqueta (I, EP, C, A)
+                                const totalCriterios = this.criteriosSeleccionadosIds.length;
+                                const pesoBase = 12.00 / totalCriterios;
+                                const valorNum = resValor.values[0].valoracion;
+
+                                if (valorNum >= pesoBase * 0.99) estadoGuardado = 'A';
+                                else if (valorNum >= pesoBase * 0.65) estadoGuardado = 'C';
+                                else if (valorNum >= pesoBase * 0.32) estadoGuardado = 'EP';
+                                else estadoGuardado = 'I';
+                            }
+                        }
+
+                        const configEscala = this.escalaEstimacion[estadoGuardado];
+                        const div = document.createElement('div');
+                        div.className = 'subitem-rasgo-escala';
+                        div.innerHTML = `
+                            <button type="button" 
+                                    class="btn-escala-ciclo" 
+                                    data-crit-id="${critId}" 
+                                    data-estado-actual="${estadoGuardado}"
+                                    style="background-color: ${configEscala.color}; color: ${configEscala.textoColor}; border: 1px solid rgba(0,0,0,0.1); padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer;"
+                                    onclick="AppAulaOperaciones.conmutarEstadoEscalaTacto(this, ${alumno.nomina_id})">
+                                ${configEscala.texto}
+                            </button>
+                        `;
+                        zonaRasgos.appendChild(div);
+                    }
+                } else {
+                    zonaRasgos.innerHTML = `<small style="color:#757575;">No se seleccionaron rasgos.</small>`;
+                }
+            }
+
+        } catch (err) {
+            console.error("Fallo recuperando registros del lote histórico:", err);
+        }
+    },
+
+
     recalcularNotasEnPantalla: function() {
         const filas = document.querySelectorAll('.fila-estudiante-aula');
         const numCriterios = this.criteriosSeleccionadosIds.length;
@@ -1569,31 +1684,116 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             document.getElementById('estadoSesionDiaria').className = "alerta-operacional estado-espera";
             document.getElementById('estadoSesionDiaria').innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
             document.getElementById('zonaOperacionesAula').style.display = "none";
+            
+            // Desbloquear selectores al salir del modo corrección
+            const selectorTemas = document.getElementById('selectorTemarios');
+            if (selectorTemas) selectorTemas.disabled = false;
             return;
         }
-        //revisarLineaSiguiente
-        window.sesionActivaId = parseInt(sesionId);
-        window.editandoSesionPasada = false;
-        const contenedorEstado = document.getElementById('estadoSesionDiaria');
-        contenedorEstado.className = "alerta-operacional";
-        contenedorEstado.style.backgroundColor = "#fff3e0";
-        contenedorEstado.style.color = "#e65100";
-        contenedorEstado.style.border = "1.5px solid #ffb74d";
-        contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros de una sesión pasada.<br><small>Los cambios reemplazarán los datos guardados anteriormente.</small>`;
-        const btnApertura = document.getElementById('btnAbrirSesion');
-        const btnCerrar = document.getElementById('btnCerrarSesion');
-        if (btnCerrar) btnCerrar.style.display = "inline-flex";
-        if (btnApertura) {
-            btnApertura.disabled = true;
-            btnApertura.style.opacity = "0.5";
-            btnApertura.innerText = " Bloqueado por co-edición";
-        }
-        document.getElementById('zonaOperacionesAula').style.display = "block";
-        const selectCurso = document.getElementById('aulaSelectCurso');
-        if (selectCurso && selectCurso.value) {
-            this.cargarEstudiantesAsistencia();
+
+        try {
+            window.sesionActivaId = parseInt(sesionId);
+            window.editandoSesionPasada = true; // Flag activado correctamente
+
+            // 1. CONSULTA EN CASCADA: Obtener el Temario y deducir Curso a partir de los registros guardados
+            const sqlSesionInfo = `
+                SELECT s.temario_id, s.nombre, s.fecha, r.participantes_id, n.cursoseccion_id
+                FROM sesiones s
+                LEFT JOIN registros r ON r.sesion_id = s.id
+                LEFT JOIN nomina n ON n.id = r.participantes_id
+                WHERE s.id = ? LIMIT 1;
+            `;
+            
+            const resInfo = await db_real.query({
+                statement: sqlSesionInfo,
+                values: [window.sesionActivaId]
+            });
+
+            if (!resInfo.values || resInfo.values.length === 0) {
+                alert("No se pudo recuperar la información estructural de esta sesión.");
+                return;
+            }
+
+            const info = resInfo.values[0];
+            window.temarioActivoId = info.temario_id;
+
+            // 2. ACTUALIZAR PANEL VISUAL (Banner de Alerta Naranja)
+            const contenedorEstado = document.getElementById('estadoSesionDiaria');
+            if (contenedorEstado) {
+                contenedorEstado.className = "alerta-operacional";
+                contenedorEstado.style.backgroundColor = "#fff3e0";
+                contenedorEstado.style.color = "#e65100";
+                contenedorEstado.style.border = "1.5px solid #ffb74d";
+                contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Reconstruyendo la clase histórica.<br>
+                <small><b>Tema:</b> Seleccionado en lista (Bloqueado) | Las modificaciones sobreescribirán las notas previas.</small>`;
+            }
+
+            // 3. RECONSTRUIR ESCENARIO PEDAGÓGICO EN EL DOM
+            // Fijar y bloquear el selector de Temas
+            const selectorTemas = document.getElementById('selectorTemarios');
+            if (selectorTemas) {
+                selectorTemas.value = window.temarioActivoId;
+                selectorTemas.disabled = true; // Evita alterar la planificación original
+            }
+
+            // Fijar el selector de Cursos si hubo alumnos registrados
+            const selectCurso = document.getElementById('aulaSelectCurso');
+            if (selectCurso && info.cursoseccion_id) {
+                selectCurso.value = info.cursoseccion_id;
+            }
+
+            // Bloquear botón de apertura diaria por seguridad
+            const btnApertura = document.getElementById('btnAbrirSesion');
+            if (btnApertura) {
+                btnApertura.disabled = true;
+                btnApertura.style.opacity = "0.5";
+                btnApertura.innerText = "🔒 Bloqueado por co-edición";
+            }
+
+            // Mostrar el botón de cierre/salida para poder abandonar el modo edición de forma limpia
+            const btnCerrar = document.getElementById('btnCerrarSesion');
+            if (btnCerrar) btnCerrar.style.display = "inline-flex";
+
+            document.getElementById('zonaOperacionesAula').style.display = "block";
+
+            // 4. RECONSTRUIR LOS CRITERIOS ESPECÍFICOS EVALUADOS EN ESA CLASE
+            const sqlCriteriosHistoricos = `
+                SELECT DISTINCT c.criterio_id 
+                FROM registros r
+                INNER JOIN calificacion c ON c.registro_id = r.id
+                WHERE r.sesion_id = ?;
+            `;
+            const resCriterios = await db_real.query({
+                statement: sqlCriteriosHistoricos,
+                values: [window.sesionActivaId]
+            });
+
+            // Sincronizar el arreglo interno de la App con lo recuperado de SQLite
+            if (resCriterios.values && resCriterios.values.length > 0) {
+                this.criteriosSeleccionadosIds = resCriterios.values.map(c => parseInt(c.criterio_id));
+            } else {
+                this.criteriosSeleccionadosIds = [];
+            }
+
+            // Re-marcar checkboxes en la interfaz y bloquearlos para cumplir tu requerimiento
+            const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
+            checkboxes.forEach(chk => {
+                const idCrit = parseInt(chk.value);
+                chk.checked = this.criteriosSeleccionadosIds.includes(idCrit);
+                chk.disabled = true; // Bloqueados quirúrgicamente: No se pueden añadir criterios nuevos en una clase pasada
+            });
+
+            // 5. RENDERIZAR LA GRILLA HISTÓRICA DE ESTUDIANTES Y EXTRAER SUS VALORACIONES
+            if (selectCurso && selectCurso.value) {
+                await this.cargarEstudiantesAsistenciaConHistorico();
+            }
+
+        } catch (e) {
+            console.error("Error crítico al reconstruir el escenario histórico de la sesión:", e);
+            alert("El motor falló al intentar mapear los componentes del aula.");
         }
     },
+
 
     guardarAsistenciaYNotasLote: async function() {
         if (!window.sesionActivaId) {
@@ -1700,43 +1900,50 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             statement: sql,
             values: [parseInt(nominaId)]
         });
-tablaCuerpo.innerHTML = "";
-if (!res.values || res.values.length === 0) {
-tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
-document.getElementById('rep_promedio_val').innerText = "1.0";
-document.getElementById('rep_promedio_val').style.color = "#c62828";
-document.getElementById('rep_asistencia_val').innerText = "0 / 0";
-document.getElementById('modalReporteEstudiante').style.display = 'flex';
-return;
-}
-let sumaNotas = 0;
-let totalAsistencias = 0;
-let totalSesiones = res.values.length;
-res.values.forEach(reg => {
-const tr = document.createElement('tr');
-const esAsistente = reg.asistencia === 'true';
-if (esAsistente) totalAsistencias++;
-const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
-sumaNotas += notaVal;
-const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
-tr.innerHTML = `
-    <td>${esAsistente ? 'SÍ' : 'NO'}</td>
-    <td>${notaVal.toFixed(1)}</td>
-`;
+        tablaCuerpo.innerHTML = "";
+        if (!res.values || res.values.length === 0) {
+             tablaCuerpo.innerHTML = `<tr><td colspan="3" class="lista-vacia">Sin evaluaciones computadas para este alumno.</td></tr>`;
+             document.getElementById('rep_promedio_val').innerText = "1.0";
+             document.getElementById('rep_promedio_val').style.color = "#c62828";
+             document.getElementById('rep_asistencia_val').innerText = "0 / 0";
+             document.getElementById('modalReporteEstudiante').style.display = 'flex';
+             return;
+        }
+        let sumaNotas = 0;
+        let totalAsistencias = 0;
+        let totalSesiones = res.values.length;
 
-tablaCuerpo.appendChild(tr);
-});
-const promedioFinal = sumaNotas / totalSesiones;
-const cellPromedio = document.getElementById('rep_promedio_val');
-cellPromedio.innerText = promedioFinal.toFixed(1);
-cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
-document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
-document.getElementById('modalReporteEstudiante').style.display = 'flex';
-} catch (error) {
-console.error("Error al procesar la auditoría acumulada:", error);
-alert("No se pudo estructurar el reporte de calificaciones local.");
-}
-},
+// Dentro de AppAulaOperaciones.verReporteAcumuladoAlumno -> res.values.forEach(reg => { ... })
+        res.values.forEach(reg => {
+            const tr = document.createElement('tr');
+            const esAsistente = reg.asistencia === 'true';
+            if (esAsistente) totalAsistencias++;
+            const notaVal = reg.calificacion ? parseFloat(reg.calificacion) : 1.0;
+            sumaNotas += notaVal;
+            const fechaLimpia = reg.fecha ? reg.fecha.split(' ')[0] : 'N/A';
+    
+            // === RECONSTRUCCIÓN QUIRÚRGICA: Añadir nombre de sesión al reporte visual ===
+            tr.innerHTML = `
+                <td><b>${reg.clase_nombre}</b> <br><small style="color:#78909c;">[${fechaLimpia}]</small></td>
+                <td class="text-center">${esAsistente ? '🟢 SÍ' : '🔴 NO'}</td>
+                <td class="text-center font-weight-bold" style="color:${notaVal >= 9.5 ? '#2e7d32' : '#c62828'}">${notaVal.toFixed(2)}</td>
+                `;
+
+            tablaBody.appendChild(tr);
+        });
+
+        const promedioFinal = sumaNotas / totalSesiones;
+        const cellPromedio = document.getElementById('rep_promedio_val');
+        cellPromedio.innerText = promedioFinal.toFixed(1);
+        cellPromedio.style.color = promedioFinal >= 9.5 ? "#2e7d32" : "#c62828";
+        document.getElementById('rep_asistencia_val').innerText = `${totalAsistencias} / ${totalSesiones}`;
+        document.getElementById('modalReporteEstudiante').style.display = 'flex';
+    } catch (error) {
+        console.error("Error al procesar la auditoría acumulada:", error);
+        alert("No se pudo estructurar el reporte de calificaciones local.");
+        }
+    },
+    
 cerrarModalReporte: function() {
 document.getElementById('modalReporteEstudiante').style.display = 'none';
 },
