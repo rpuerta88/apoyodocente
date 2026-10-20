@@ -1706,9 +1706,17 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
     },
 
     cargarSesionPasadaParaEdicion: async function() {
-        const sesionId = document.getElementById('historialSesionesCombo').value;
+        // === CORRECCIÓN QUIRÚRGICA: Validación preventiva anti-caídas de arranque ===
+        const comboViejo = document.getElementById('historialSesionesCombo');
+        if (!comboViejo) {
+            console.log("El selector antiguo 'historialSesionesCombo' fue removido con éxito. Omitiendo precarga secuencial.");
+            return;
+        }
+
+        const sesionId = comboViejo.value;
         if (!sesionId) {
             window.editandoSesionPasada = false;
+            // ... (el resto de tu código de limpieza original continúa exactamente igual)
             document.getElementById('btnAbrirSesion').disabled = false;
             document.getElementById('btnAbrirSesion').style.opacity = "1";
             document.getElementById('btnAbrirSesion').innerText = "Abrir Sesión de Hoy";
