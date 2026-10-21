@@ -1149,7 +1149,7 @@ const AppClasesDiarias = {
 
 
     // Modifica los componentes visuales para reflejar el estado operativo
-    actualizarPantallaSesionActiva: function(nombreClase) {
+        actualizarPantallaSesionActiva: function(nombreClase) {
         const contenedorEstado = document.getElementById('estadoSesionDiaria');
         const botonApertura = document.getElementById('btnAbrirSesion');
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
@@ -1172,13 +1172,12 @@ const AppClasesDiarias = {
             zonaTrabajo.style.display = "block";
             criteriosDisponibles.style.display = "block";
             AppAulaOperaciones.inicializarSelectoresAula();
-            AppAulaOperaciones.cargarHistorialSesionesCombo(); // <-- INYECTAR ESTA LÍNEA AQUÍ
+            AppAulaOperaciones.cargarHistorialSesionesCombo(); 
         }
-        const tarjetasSeccion = document.querySelectorAll('.tarjeta-seccion');
-        tarjetasSeccion.forEach(tarjeta => {
-            tarjeta.style.display = 'none';
-        });
+        
+        // 🚀 SE ELIMINÓ EL BUCLE DE LAS TARJETAS FANTASMA QUE CAUSABA EL COLAPSO
     },
+
 
         // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
     cerrarSesionActiva: function() {
@@ -1512,24 +1511,27 @@ const AppAulaOperaciones = {
                         
                         // Cambia este fragmento dentro de cargarEstudiantesAsistenciaConHistorico:
                 if (alumno.registro_id) {
-                        const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
-                        const resValor = await db_real.query({
-                            statement: sqlCriterioValor,
-                            values: [alumno.registro_id, critId]
-                        });
-    
-                        if (resValor.values && resValor.values.length > 0) {
-                            const totalCriterios = this.criteriosSeleccionadosIds.length;
-                            const pesoBase = 12.00 / totalCriterios;
-                            const valorNum = resValor.values[0].valoracion;
+                    const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
+                    const resValor = await db_real.query({
+                        statement: sqlCriterioValor,
+                        values: [alumno.registro_id, critId]
+                    });
+                    
+                    if (resValor.values && resValor.values.length > 0) {
+                        const totalCriterios = this.criteriosSeleccionadosIds.length;
+                        const pesoBase = 12.00 / totalCriterios;
+                        
+                        // 🚀 CORRECCIÓN AQUÍ: Acceder de forma segura a la fila [0]
+                        const valorNum = resValor.values[0].valoracion;
 
-                            // Tolerancia de redondeo estricta para recuperar el nivel exacto
-                            if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
-                            else if (valorNum >= pesoBase * 0.50) estadoGuardado = 'C';
-                            else if (valorNum >= pesoBase * 0.20) estadoGuardado = 'EP';
-                            else estadoGuardado = 'I';
-                        }
+                        // Tolerancia de redondeo estricta para recuperar el nivel exacto
+                        if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
+                        else if (valorNum >= pesoBase * 0.50) estadoGuardado = 'C';
+                        else if (valorNum >= pesoBase * 0.20) estadoGuardado = 'EP';
+                        else estadoGuardado = 'I';
+                    }
                 }
+
                         const configEscala = this.escalaEstimacion[estadoGuardado];
                         const div = document.createElement('div');
                         div.className = 'subitem-rasgo-escala';
@@ -2231,12 +2233,14 @@ const AppHistorialSesiones = {
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
             }
 
+            
             // D) Reflejar visualmente en los checkboxes superiores qué rasgos estamos editando
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
                 // Si el criterio se usó en esa clase, se marca automáticamente
                 chk.checked = AppAulaOperaciones.criteriosSeleccionadosIds.includes(idCrit);
+                chk.disabled = false; // Asegura que permanezcan interactivos para la edición táctil
             });
 
             // E) Renderizar la grilla histórica (ahora sí leerá los criterios correctos)
