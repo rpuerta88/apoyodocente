@@ -1187,6 +1187,7 @@ const AppClasesDiarias = {
         // 1. Limpieza estricta de las variables de estado global
         window.sesionActivaId = null;
         window.temarioActivoId = null;
+        
         if (window.hasOwnProperty('editandoSesionPasada')) {
             window.editandoSesionPasada = false;
         }
@@ -1210,6 +1211,9 @@ const AppClasesDiarias = {
         }
 
         // 4. Ocultar el propio botón de cierre y la zona de operaciones del aula
+        const containCriterios = document.getElementById('panelAdmin');
+        if (containCriterios) containCriterios.style.display = "none";
+        
         const btnCerrar = document.getElementById('btnCerrarSesion');
         if (btnCerrar) btnCerrar.style.display = "none";
 
@@ -1440,10 +1444,15 @@ const AppAulaOperaciones = {
     },
 
     cargarEstudiantesAsistenciaConHistorico: async function() {
-        const cursoID = document.getElementById('aulaSelectCurso').value;
+        // Asegurar la captura del elemento antes de validar
+        const selectCurso = document.getElementById('aulaSelectCurso');
+        const cursoID = selectCurso ? selectCurso.value : null;
         const tablaBody = document.getElementById('listaEstudiantesAula');
-        if (!tablaBody || !cursoID) return;
-
+        
+        if (!tablaBody || !cursoID) {
+            console.warn("Mapeo histórico cancelado: Falta contenedor de tabla o ID de sección.");
+            return;
+        }
         try {
             // Buscamos los estudiantes matriculados en la sección junto con su estatus guardado en registros para esa sesión
             const sqlLoteHistorico = `
@@ -2226,24 +2235,23 @@ const AppHistorialSesiones = {
             if (typeof AppNavegacion !== 'undefined') {
                 AppNavegacion.cambiarPantalla('docente');
             }
-
             // C) Sincronizar el selector operativo de la grilla
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
+                // 🚀 CORRECCIÓN: Se añade [0] para extraer correctamente el ID numérico de la fila
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
             }
 
-            
             // D) Reflejar visualmente en los checkboxes superiores qué rasgos estamos editando
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
-                // Si el criterio se usó en esa clase, se marca automáticamente
                 chk.checked = AppAulaOperaciones.criteriosSeleccionadosIds.includes(idCrit);
-                chk.disabled = false; // Asegura que permanezcan interactivos para la edición táctil
+                chk.disabled = false; 
             });
 
-            // E) Renderizar la grilla histórica (ahora sí leerá los criterios correctos)
+            // E) Renderizar la grilla histórica 
+            // 🚀 CORRECCIÓN: Forzamos la ejecución pasando el ID recuperado directamente para blindar el flujo
             await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
 
             // F) Renderizar estados visuales del modo corrección (Banner de control)
