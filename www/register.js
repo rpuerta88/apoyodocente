@@ -1076,29 +1076,21 @@ const AppClasesDiarias = {
             alert("⚠️ Operación Rechazada: No se ha detectado ningún Lapso Académico activo en el sistema.\n\nPor favor, configure o aperture un Lapso en el Panel Administrativo primero.");
             return;
         }
-
         // 2. CAPTURAR EL TEMARIO SELECCIONADO DESDE EL DOM
         const selector = document.getElementById('selectorTemarios');
         const temarioSeleccionadoId = selector ? selector.value : null;
-
         if (!temarioSeleccionadoId || temarioSeleccionadoId === "") {
             alert("⚠️ Operación Rechazada: No ha seleccionado un tema.\n\nPor favor, elija el Tema a tratar en la lista desplegable antes de iniciar la clase.");
             return;
         }
-
         window.temarioActivoId = temarioSeleccionadoId;
-
         // 3. CAPTURAR FECHA LOCAL EXACTA (Formato YYYY-MM-DD para SQLite)
         const ahora = new Date();
         const hoyISO = ahora.toISOString().split('T')[0]; // Formato base de comparación: "YYYY-MM-DD"
-        
-        // Formato amigable para el nombre por defecto de la sesión
         const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false};
         const fechaTextoLocal = ahora.toLocaleString('es-VE', opciones); 
-        const nombreSesionPorDefecto = `CLASE ASISTIDA - ${fechaTextoLocal}`;
-
+        const nombreSesionPorDefecto = `CLASE ASISTIDA-${fechaTextoLocal}`;
         try {
-            // === CONTROL QUIRÚRGICO DE INTEGRIDAD CRONOLÓGICA ===
             // Validamos que la fecha actual del dispositivo no viole los límites del lapso activo en memoria
             const sqlValidarFecha = `
                 SELECT momento, fecha_inicio, fecha_cierre 
@@ -1119,35 +1111,29 @@ const AppClasesDiarias = {
                     if (!cambiar) return; // El docente cancela la operación para corregir el lapso administrativo
                 }
             }
-
             // 4. INSERCIÓN RELACIONAL EXPLÍCITA (Guardamos la fecha local calculada en lugar de usar CURRENT_TIMESTAMP en UTC)
             const sqlInsert = `
-                INSERT INTO sesiones (nombre, fecha, temario_id, lapso_id)
-                VALUES (?, ?, ?, ?);
+                INSERT INTO sesiones (nombre, temario_id, lapso_id)
+                VALUES (?, ?, ?);
             `;
-            
             await db_real.execute({
                 statement: sqlInsert,
-                values: [nombreSesionPorDefecto, hoyISO, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
+                values: [nombreSesionPorDefecto, parseInt(window.temarioActivoId), parseInt(window.lapsoActivoId)]
             });
-
             // 5. RECOVERY SEGURO DEL ID GENERADO
             const queryID = `
                 SELECT id, nombre, fecha 
                 FROM sesiones 
                 WHERE id = last_insert_rowid() AND temario_id = ?;
             `;
-            
             const resultado = await db_real.query({ 
                 statement: queryID,
                 values: [parseInt(window.temarioActivoId)] 
             });
-
             if (resultado.values && resultado.values.length > 0) {
                 const sesionCreada = resultado.values[0]; 
                 window.sesionActivaId = sesionCreada.id;
                 console.log(`Sesión de Aula iniciada con éxito y sincronizada cronológicamente. ID: ${window.sesionActivaId}`);
-                
                 // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
                 this.actualizarPantallaSesionActiva(sesionCreada.nombre);
                 mostrarNotificacion("Clase inicializada correctamente");
@@ -1188,7 +1174,12 @@ const AppClasesDiarias = {
             AppAulaOperaciones.inicializarSelectoresAula();
             AppAulaOperaciones.cargarHistorialSesionesCombo(); // <-- INYECTAR ESTA LÍNEA AQUÍ
         }
+        const tarjetasSeccion = document.querySelectorAll('.tarjeta-seccion');
+        tarjetasSeccion.forEach(tarjeta => {
+            tarjeta.style.display = 'none';
+        });
     },
+
         // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
     cerrarSesionActiva: function() {
         const confirmar = confirm("¿Está seguro de que desea cerrar la sesión actual?\n⚠️ Para abrir una nueva clase, primero debe finalizar la sesión en curso.");
@@ -2189,7 +2180,8 @@ const AppHistorialSesiones = {
     },
 
     // 4. Conecta el buscador con tu motor de edición existente
-        seleccionarSesionParaCorregir: async function(sesionId) {
+        // 4. Conecta el buscador con tu motor de edición existente
+    seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true;
 
@@ -2217,8 +2209,11 @@ const AppHistorialSesiones = {
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
             }
 
-            // D) Ahora sí, ejecutamos la reconstrucción histórica con la certeza de que el selector tiene un valor válido
+            // =========================================================================
+            // 🚀 CORRECCIÓN AQUÍ: Llamar a la grilla histórica en vez de la limpia diario
+            // =========================================================================
             await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+            // =========================================================================
 
             // E) Renderizar estados visuales del modo corrección (Banner de control)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
@@ -2250,6 +2245,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 };
 
