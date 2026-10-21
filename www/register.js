@@ -1509,26 +1509,27 @@ const AppAulaOperaciones = {
                     for (let critId of this.criteriosSeleccionadosIds) {
                         // Determinar en qué nivel quedó la tarjeta buscando en SQLite
                         let estadoGuardado = 'I'; // Fallback por defecto si no hay registro
-                        if (alumno.registro_id) {
-                            const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
-                            const resValor = await db_real.query({
-                                statement: sqlCriterioValor,
-                                values: [alumno.registro_id, critId]
-                            });
-                            
-                            if (resValor.values && resValor.values.length > 0) {
-                                // Mapear el peso numérico de vuelta a la etiqueta (I, EP, C, A)
-                                const totalCriterios = this.criteriosSeleccionadosIds.length;
-                                const pesoBase = 12.00 / totalCriterios;
-                                const valorNum = resValor.values[0].valoracion;
+                        
+                        // Cambia este fragmento dentro de cargarEstudiantesAsistenciaConHistorico:
+                if (alumno.registro_id) {
+                        const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
+                        const resValor = await db_real.query({
+                            statement: sqlCriterioValor,
+                            values: [alumno.registro_id, critId]
+                        });
+    
+                        if (resValor.values && resValor.values.length > 0) {
+                            const totalCriterios = this.criteriosSeleccionadosIds.length;
+                            const pesoBase = 12.00 / totalCriterios;
+                            const valorNum = resValor.values[0].valoracion;
 
-                                if (valorNum >= pesoBase * 0.99) estadoGuardado = 'A';
-                                else if (valorNum >= pesoBase * 0.65) estadoGuardado = 'C';
-                                else if (valorNum >= pesoBase * 0.32) estadoGuardado = 'EP';
-                                else estadoGuardado = 'I';
-                            }
+                            // Tolerancia de redondeo estricta para recuperar el nivel exacto
+                            if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
+                            else if (valorNum >= pesoBase * 0.50) estadoGuardado = 'C';
+                            else if (valorNum >= pesoBase * 0.20) estadoGuardado = 'EP';
+                            else estadoGuardado = 'I';
                         }
-
+                }
                         const configEscala = this.escalaEstimacion[estadoGuardado];
                         const div = document.createElement('div');
                         div.className = 'subitem-rasgo-escala';
@@ -2108,7 +2109,6 @@ const AppHistorialSesiones = {
     abrirPanelBusqueda: async function() {
         const inputBuscar = document.getElementById('inputBuscarSesion');
         if (inputBuscar) inputBuscar.value = "";
-        
         // Carga inicial de las últimas sesiones al abrir el panel
         await this.filtrarSesionesDinamico("");
     },
@@ -2148,28 +2148,28 @@ const AppHistorialSesiones = {
                 contenedorLista.innerHTML = `<li class="lista-vacia">🔍 No se encontraron sesiones que coincidan.</li>`;
                 return;
             }
-
             // 3. Renderizar las tarjetas de resultados táctiles
             res.values.forEach(ses => {
                 const li = document.createElement('li');
                 li.className = 'item-curso'; // Reutilizamos tu estilo visual limpio de cajas
                 li.style.padding = "10px 12px";
                 li.style.marginBottom = "10px";
-                
-                const fechaLimpia = ses.fecha ? ses.fecha.split(' ')[0] : 'N/A';
+                const fechaLimpia = ses.fecha ? ses.fecha.split(' ').slice(0, 2).join(' ') : 'N/A';
                 const seccionTexto = ses.cursoseccion ? ` | Sección: <b>${ses.cursoseccion}</b>` : '';
-
                 li.innerHTML = `
-                    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;">
-                        <span style="font-weight: bold; color: var(--color-texto-base); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                            ${ses.nombre}
-                        </span>
-                        <small style="color: #78909c;">📅 ${fechaLimpia} ${seccionTexto} | 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b></small>
+                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;">
+                    <span style="font-weight: bold; color: var(--color-texto-base); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; display: block;">
+                        ${ses.nombre}
+                    </span>
+                    <small style="color: #78909c; display: block; white-space: normal; word-break: break-word;">
+                        📅 ${fechaLimpia} ${seccionTexto} | 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b>
+                    </small>
                     </div>
-                    <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 6px 12px;" 
-                            onclick="AppHistorialSesiones.seleccionarSesionParaCorregir(${ses.id})">
+                    <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 6px 12px; align-self: center;" 
+                        onclick="AppHistorialSesiones.seleccionarSesionParaCorregir(${ses.id})">
                         ✏️ Editar
                     </button>
+
                 `;
                 contenedorLista.appendChild(li);
             });
@@ -2186,7 +2186,7 @@ const AppHistorialSesiones = {
         window.editandoSesionPasada = true;
 
         try {
-            // A) Consultar a SQLite para averiguar qué sección exacta fue la que se evaluó en esta sesión
+            // A) Averiguar qué sección exacta fue la que se evaluó en esta sesión
             const sqlSeccionRef = `
                 SELECT DISTINCT n.cursoseccion_id 
                 FROM registros r
@@ -2198,24 +2198,51 @@ const AppHistorialSesiones = {
                 values: [window.sesionActivaId]
             });
 
+            // =========================================================================
+            // 🚀 NUEVA CONSULTA CRÍTICA: Extraer los criterios evaluados en esta sesión
+            // =========================================================================
+            const sqlCriteriosClase = `
+                SELECT DISTINCT c.criterio_id 
+                FROM registros r
+                INNER JOIN calificacion c ON c.registro_id = r.id
+                WHERE r.sesion_id = ?;
+            `;
+            const resCriterios = await db_real.query({
+                statement: sqlCriteriosClase,
+                values: [window.sesionActivaId]
+            });
+
+            // Sincronizamos la matriz global de la App con los datos reales de la BD
+            if (resCriterios.values && resCriterios.values.length > 0) {
+                AppAulaOperaciones.criteriosSeleccionadosIds = resCriterios.values.map(c => parseInt(c.criterio_id));
+            } else {
+                AppAulaOperaciones.criteriosSeleccionadosIds = [];
+            }
+            // =========================================================================
+
             // B) Forzar el cambio de pantalla visual
             if (typeof AppNavegacion !== 'undefined') {
                 AppNavegacion.cambiarPantalla('docente');
             }
 
-            // C) Sincronizar el selector operativo con el ID histórico recuperado
+            // C) Sincronizar el selector operativo de la grilla
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
             }
 
-            // =========================================================================
-            // 🚀 CORRECCIÓN AQUÍ: Llamar a la grilla histórica en vez de la limpia diario
-            // =========================================================================
-            await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
-            // =========================================================================
+            // D) Reflejar visualmente en los checkboxes superiores qué rasgos estamos editando
+            const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
+            checkboxes.forEach(chk => {
+                const idCrit = parseInt(chk.value);
+                // Si el criterio se usó en esa clase, se marca automáticamente
+                chk.checked = AppAulaOperaciones.criteriosSeleccionadosIds.includes(idCrit);
+            });
 
-            // E) Renderizar estados visuales del modo corrección (Banner de control)
+            // E) Renderizar la grilla histórica (ahora sí leerá los criterios correctos)
+            await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+
+            // F) Renderizar estados visuales del modo corrección (Banner de control)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
             if (contenedorEstado) {
                 contenedorEstado.className = "alerta-operacional";
@@ -2223,7 +2250,7 @@ const AppHistorialSesiones = {
                 contenedorEstado.style.color = "#e65100";
                 contenedorEstado.style.border = "1.5px solid #ffb74d";
                 contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros desde el buscador.<br>
-                <small>Los cambios reemplazarán los datos guardados en esta sesión pasada.</small>`;
+                <small>Modifique la asistencia o toque las tarjetas de rasgos para alterar las notas de esta sesión pasada.</small>`;
             }
 
             const btnApertura = document.getElementById('btnAbrirSesion');
@@ -2245,6 +2272,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 
 };

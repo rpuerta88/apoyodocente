@@ -22,7 +22,7 @@
 
 <!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
     <main class="contenedor-pantallas">
-            <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
+        <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
         <section id="pantalla-admin" class="modal-cabecera" syle="display: flex;">
             <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
             <div id="seccionCursos">
@@ -165,24 +165,7 @@
                         <!-- El motor inyectará aquí las tarjetas de alumnos en caliente -->
                     </ul>
                 </div>
-
-<!-- INMEDIATAMENTE ABAJO CONTINÚA TU DIV ORIGINAL DE LA ZONA OPERATIVA: <div id="zonaOperacionesAula" style="display: none;"> -->
-
-                <!-- Ubicación: Dentro de <div id="zonaOperacionesAula" style="display: none;"> -->
-
-<!-- INMEDIATAMENTE ABAJO CONTINÚA TU TABLA ORIGINAL: <table class="tabla-general"...> -->
-
-
                 <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
-<!--
-            <div class="modal-cabecera" style="margin-bottom: 14px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
-                <label for="historialSesionesCombo">📂 Corregir / Ver Sesión Pasada:</label>
-                <select id="historialSesionesCombo" onchange="AppAulaOperaciones.cargarSesionPasadaParaEdicion()">
-                    <option value="" selected>-- Seleccione una sesión para editar --</option>
-                </select>
-            </div>
-            -->
-            <!-- BOTÓN DISPARADOR (Agrégalo en tu panel-docente, dentro de la zonaOperacionesAula del index.html) -->
             <div class="bloque-criterio-aula" style="margin-top: 14px;">
                 <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
                     🎯 Configurar Criterio de Evaluación para Hoy
@@ -533,46 +516,6 @@
         <div class="modal-botones" style="margin-top: 16px;">
             <button type="button" class="btn-cancelar" style="flex: 1;" onclick="AppAulaOperaciones.cerrarModalReporte()">Cerrar Reporte</button>
         </div>
-    </div>
-</div>
-<!-- Modal Emergente para el Reporte Neurocognitivo del Estudiante
-<div id="modalReporteEstudiante" class="modal-capa" style="display: none;">
-    <div class="modal-contenedor" style="max-width: 550px;">
-        <h2 id="rep_alumno_nombre">Reporte de Desempeño</h2>
-        <p class="instruccion-texto" style="margin-bottom: 10px;">Análisis acumulado de asistencia y rasgos pedagógicos en el lapso activo.</p>
-        
-        <!-- Tarjeta de Estadísticas Rápidas
-        <div class="contenedor-metricas-rapidas">
-            <div class="tarjeta-metrica">
-                <span class="metrica-titulo">Promedio General</span>
-                <span id="rep_promedio_val" class="metrica-valor">1.0</span>
-            </div>
-            <div class="tarjeta-metrica">
-                <span class="metrica-titulo">Asistencias</span>
-                <span id="rep_asistencia_val" class="metrica-valor">0/0</span>
-            </div>
-        </div>
-
-        <!-- Tabla de Historial Detallado
-        <h4 style="margin: 14px 0 6px 0; color: #37474f;">Desglose de Sesiones</h4>
-        <div class="tabla-responsiva" style="max-height: 250px; overflow-y: auto;">
-            <table class="tabla-aula" style="font-size: 0.9rem;">
-                <thead>
-                    <tr>
-                        <th>Clase / Fecha</th>
-                        <th class="text-center">Asist.</th>
-                        <th class="text-center">Nota</th>
-                    </tr>
-                </thead>
-                <tbody id="rep_tabla_cuerpo">
-                    <!-- Se puebla dinámicamente
-                </tbody>
-            </table>
-        </div>
-
-        <div class="modal-botones" style="margin-top: 16px;">
-            <button type="button" class="btn-cancelar" style="flex: 1;" onclick="AppAulaOperaciones.cerrarModalReporte()">Cerrar Reporte</button>
-        </div> -->
     </div>
 </div>
 <!-- Modal Emergente: Sábana de Notas y Demografía Consolidada (Admin) -->
