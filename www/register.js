@@ -1443,7 +1443,7 @@ const AppAulaOperaciones = {
         }
     },
 
-        cargarEstudiantesAsistenciaConHistorico: async function() {
+    cargarEstudiantesAsistenciaConHistorico: async function() {
         const selectCurso = document.getElementById('aulaSelectCurso');
         const cursoID = selectCurso ? selectCurso.value : null;
         const tablaBody = document.getElementById('listaEstudiantesAula');
@@ -1535,16 +1535,19 @@ const AppAulaOperaciones = {
                     for (let critId of criteriosAEvaluar) {
                         let estadoGuardado = 'I'; 
                         
+                        // Dentro del bucle de estudiantes en cargarEstudiantesAsistenciaConHistorico, modifica el fragmento sqlCriterioValor:
                         if (alumno.registro_id) {
                             const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
                             const resValor = await db_real.query({
                                 statement: sqlCriterioValor,
                                 values: [alumno.registro_id, critId]
                             });
-                            
+    
                             if (resValor.values && resValor.values.length > 0) {
                                 const totalCriterios = criteriosAEvaluar.length;
                                 const pesoBase = 12.00 / totalCriterios;
+        
+                                // CORREGIDO: Acceso seguro al índice [0] del valor numérico
                                 const valorNum = resValor.values[0].valoracion;
 
                                 if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
@@ -1553,6 +1556,7 @@ const AppAulaOperaciones = {
                                 else estadoGuardado = 'I';
                             }
                         }
+
 
                         const configEscala = this.escalaEstimacion[estadoGuardado];
                         const div = document.createElement('div');
@@ -1901,7 +1905,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
         try {
             mostrarNotificacion("Sincronizando correcciones en SQLite...");
             
-            // === PASO PREVENTIVO: Determinar el divisor real del escenario pedagógico ===
+            // Determinar el divisor real del escenario pedagógico acumulado
             const totalCriteriosEstructurales = this.criteriosSeleccionadosIds.length;
             const pesoCadaUnoCalculado = totalCriteriosEstructurales > 0 ? (12.00 / totalCriteriosEstructurales) : 0.0;
 
@@ -1918,7 +1922,6 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                 if (asistencia === 'false') {
                     notaFinalCalculada = 1.00; // Penalización por inasistencia
                 } else if (botonesEscala && botonesEscala.length > 0) {
-                    // REPARACIÓN CRÍTICA: El peso de cada criterio es fijo en base al lote estructural
                     botonesEscala.forEach(btn => {
                         const estado = btn.dataset.estadoActual;
                         const multiplicador = this.escalaEstimacion[estado] ? this.escalaEstimacion[estado].multiplicador : 0.0;
@@ -1938,21 +1941,22 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                     values: [participantes_id, parseInt(window.sesionActivaId)]
                 });
 
+                // CORREGIDO: Acceso seguro mediante la primera fila del arreglo [0]
                 if (resCheck.values && resCheck.values.length > 0) {
                     registroID = resCheck.values[0].id;
-                    // Sincroniza la nota final calculada directamente en el campo calificacion de registros
                     const sqlUpdateReg = `UPDATE registros SET asistencia = ?, calificacion = ?, tipo_evaluacion = ? WHERE id = ?;`;
                     await db_real.execute({
                         statement: sqlUpdateReg,
                         values: [asistencia, notaFinalCalculada, tipo_evaluacion, registroID]
                     });
                 } else {
-                    // Inserta el nuevo registro asegurando que la nota calculada se indexe en el primer golpe
                     const sqlInsertReg = `INSERT INTO registros (participantes_id, sesion_id, asistencia, calificacion, tipo_evaluacion, instrumento) VALUES (?, ?, ?, ?, ?, 'Observación Sistemática Corrección');`;
                     await db_real.execute({
                         statement: sqlInsertReg,
                         values: [participantes_id, parseInt(window.sesionActivaId), asistencia, notaFinalCalculada, tipo_evaluacion]
                     });
+                    
+                    // CORREGIDO: Acceso seguro mediante la primera fila del arreglo [0]
                     const resNewID = await db_real.query({ statement: "SELECT id FROM registros ORDER BY id DESC LIMIT 1;" });
                     registroID = resNewID.values[0].id;
                 }
@@ -1977,11 +1981,10 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
 
             alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
             
-            // Actualizar el listado del panel de búsqueda trasera por si cambió el consolidado
             const inputBuscar = document.getElementById('inputBuscarSesion');
             await AppHistorialSesiones.filtrarSesionesDinamico(inputBuscar ? inputBuscar.value : "");
 
-            // REPARACIÓN CRÍTICA: Bifurcar el refresco de la UI según el modo operativo activo
+            // Refrescar la UI evaluando de forma correcta el flujo activo
             if (window.editandoSesionPasada === true) {
                 await this.cargarEstudiantesAsistenciaConHistorico();
             } else {
@@ -1993,6 +1996,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             alert("Error interno de SQLite al sobreescribir las evaluaciones.");
         }
     },
+
 
 
     verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
@@ -2248,7 +2252,7 @@ const AppHistorialSesiones = {
                 AppNavegacion.cambiarPantalla('docente');
             }
 
-            // D) Sincronizar el selector operativo de la grilla
+            // D) Sincronizar el selector operativo de la grilla (CORREGIDO CON [0])
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
@@ -2259,14 +2263,13 @@ const AppHistorialSesiones = {
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
                 chk.checked = criteriosIdsLocales.includes(idCrit);
-                chk.disabled = false; // Habilitados para permitir edición en el modo corrección
+                chk.disabled = false; 
             });
 
-            // F) REPARACIÓN CRÍTICA: Forzar un desfase mínimo (macro-task) con setTimeout 
-            // para que el DOM asimile el valor del 'select' antes de interrogar a las notas históricas
+            // F) Forzar desfase con setTimeout para que asimile el cambio en el selector de cursos antes de leer alumnos
             setTimeout(async () => {
                 await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
-            }, 60);
+            }, 80);
 
             // G) Renderizar estados visuales del modo corrección (Banner de control)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
@@ -2298,6 +2301,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 };
 
 // === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICA DE ESTUDIANTES ===
