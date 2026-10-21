@@ -1443,8 +1443,7 @@ const AppAulaOperaciones = {
         }
     },
 
-    cargarEstudiantesAsistenciaConHistorico: async function() {
-        // Asegurar la captura del elemento antes de validar
+        cargarEstudiantesAsistenciaConHistorico: async function() {
         const selectCurso = document.getElementById('aulaSelectCurso');
         const cursoID = selectCurso ? selectCurso.value : null;
         const tablaBody = document.getElementById('listaEstudiantesAula');
@@ -1454,7 +1453,28 @@ const AppAulaOperaciones = {
             return;
         }
         try {
-            // Buscamos los estudiantes matriculados en la sección junto con su estatus guardado en registros para esa sesión
+            // === PASO 1: Descubrir qué criterios fueron evaluados REALMENTE en esta sesión ===
+            const sqlCriteriosHistoricos = `
+                SELECT DISTINCT c.criterio_id 
+                FROM registros r
+                INNER JOIN calificacion c ON c.registro_id = r.id
+                WHERE r.sesion_id = ?;
+            `;
+            const resCriterios = await db_real.query({
+                statement: sqlCriteriosHistoricos,
+                values: [window.sesionActivaId]
+            });
+
+            // Forzamos a que use los criterios reales guardados en la BD para esta renderización histórica
+            let criteriosAEvaluar = [];
+            if (resCriterios.values && resCriterios.values.length > 0) {
+                criteriosAEvaluar = resCriterios.values.map(c => parseInt(c.criterio_id));
+            } else {
+                // Fallback: Si la sesión existía pero no guardó rasgos (ej. solo asistencia), usamos los del objeto global
+                criteriosAEvaluar = this.criteriosSeleccionadosIds;
+            }
+
+            // === PASO 2: Cargar el lote de estudiantes ===
             const sqlLoteHistorico = `
                 SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido,
                        r.id AS registro_id, r.asistencia, r.calificacion AS nota_final_historica
@@ -1482,7 +1502,7 @@ const AppAulaOperaciones = {
                 tr.id = `fila-alumno-${alumno.nomina_id}`;
                 tr.dataset.nominaId = alumno.nomina_id;
 
-                const estuvoPresente = alumno.asistencia === 'true' || alumno.asistencia === null; // Basal activo
+                const estuvoPresente = alumno.asistencia === 'true' || alumno.asistencia === null;
                 const notaFinalMostrada = alumno.nota_final_historica !== null ? parseFloat(alumno.nota_final_historica).toFixed(2) : "8.00";
 
                 tr.innerHTML = `
@@ -1499,9 +1519,7 @@ const AppAulaOperaciones = {
                         </label>
                     </td>
                     <td>
-                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <!-- Escalas recuperadas inyectadas abajo -->
-                        </div>
+                        <div class="zona-rasgos-estudiante" id="rasgos-est-${alumno.nomina_id}" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
                     </td>
                     <td class="text-center font-weight-bold cell-nota-final" id="nota-final-est-${alumno.nomina_id}" style="font-size:1.2rem; color:${parseFloat(notaFinalMostrada) >= 9.50 ? '#1b5e20' : '#c62828'};">
                         ${notaFinalMostrada}
@@ -1509,37 +1527,32 @@ const AppAulaOperaciones = {
                 `;
                 tablaBody.appendChild(tr);
 
-                // Reconstruir botones de tarjetas leyendo desde 'calificacion'
                 const zonaRasgos = tr.querySelector(`#rasgos-est-${alumno.nomina_id}`);
+                
                 if (!estuvoPresente) {
                     zonaRasgos.innerHTML = `<span style="color:#c62828; font-style:italic;">Inasistente - Bloqueado</span>`;
-                } else if (this.criteriosSeleccionadosIds.length > 0) {
-                    for (let critId of this.criteriosSeleccionadosIds) {
-                        // Determinar en qué nivel quedó la tarjeta buscando en SQLite
-                        let estadoGuardado = 'I'; // Fallback por defecto si no hay registro
+                } else if (criteriosAEvaluar.length > 0) { // ◄--- AHORA EVALÚA LA VARIABLE LOCAL DE LA BD
+                    for (let critId of criteriosAEvaluar) {
+                        let estadoGuardado = 'I'; 
                         
-                        // Cambia este fragmento dentro de cargarEstudiantesAsistenciaConHistorico:
-                if (alumno.registro_id) {
-                    const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
-                    const resValor = await db_real.query({
-                        statement: sqlCriterioValor,
-                        values: [alumno.registro_id, critId]
-                    });
-                    
-                    if (resValor.values && resValor.values.length > 0) {
-                        const totalCriterios = this.criteriosSeleccionadosIds.length;
-                        const pesoBase = 12.00 / totalCriterios;
-                        
-                        // 🚀 CORRECCIÓN AQUÍ: Acceder de forma segura a la fila [0]
-                        const valorNum = resValor.values[0].valoracion;
+                        if (alumno.registro_id) {
+                            const sqlCriterioValor = `SELECT valoracion FROM calificacion WHERE registro_id = ? AND criterio_id = ? LIMIT 1;`;
+                            const resValor = await db_real.query({
+                                statement: sqlCriterioValor,
+                                values: [alumno.registro_id, critId]
+                            });
+                            
+                            if (resValor.values && resValor.values.length > 0) {
+                                const totalCriterios = criteriosAEvaluar.length;
+                                const pesoBase = 12.00 / totalCriterios;
+                                const valorNum = resValor.values[0].valoracion;
 
-                        // Tolerancia de redondeo estricta para recuperar el nivel exacto
-                        if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
-                        else if (valorNum >= pesoBase * 0.50) estadoGuardado = 'C';
-                        else if (valorNum >= pesoBase * 0.20) estadoGuardado = 'EP';
-                        else estadoGuardado = 'I';
-                    }
-                }
+                                if (valorNum >= pesoBase * 0.90) estadoGuardado = 'A';
+                                else if (valorNum >= pesoBase * 0.50) estadoGuardado = 'C';
+                                else if (valorNum >= pesoBase * 0.20) estadoGuardado = 'EP';
+                                else estadoGuardado = 'I';
+                            }
+                        }
 
                         const configEscala = this.escalaEstimacion[estadoGuardado];
                         const div = document.createElement('div');
@@ -1565,6 +1578,7 @@ const AppAulaOperaciones = {
             console.error("Fallo recuperando registros del lote histórico:", err);
         }
     },
+
 
 
     recalcularNotasEnPantalla: function() {
@@ -1876,7 +1890,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
     },
 
 
-    guardarAsistenciaYNotasLote: async function() {
+        guardarAsistenciaYNotasLote: async function() {
         if (!window.sesionActivaId) {
             alert("Operación rechazada: No hay ninguna sesión seleccionada.");
             return;
@@ -1887,11 +1901,15 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
         try {
             mostrarNotificacion("Sincronizando correcciones en SQLite...");
             
+            // === PASO PREVENTIVO: Determinar el divisor real del escenario pedagógico ===
+            const totalCriteriosEstructurales = this.criteriosSeleccionadosIds.length;
+            const pesoCadaUnoCalculado = totalCriteriosEstructurales > 0 ? (12.00 / totalCriteriosEstructurales) : 0.0;
+
             // === FLUJO ÚNICO EN CASCADA PARA GUARDAR NOTAS ===
             for (let fila of filas) {
                 const participantes_id = parseInt(fila.dataset.nominaId);
                 const asistencia = fila.querySelector('.chk-asistencia').checked ? 'true' : 'false';
-                const tipo_evaluacion = this.criteriosSeleccionadosIds.length > 0 ? 'Sumativa' : 'Formativa';
+                const tipo_evaluacion = totalCriteriosEstructurales > 0 ? 'Sumativa' : 'Formativa';
                 
                 // 1. OBTENER LOS RASGOS PEDAGÓGICOS DESDE LA GRILLA VISUAL
                 const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
@@ -1900,13 +1918,11 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
                 if (asistencia === 'false') {
                     notaFinalCalculada = 1.00; // Penalización por inasistencia
                 } else if (botonesEscala && botonesEscala.length > 0) {
-                    const totalCriteriosActivos = botonesEscala.length;
-                    const pesoCadaUno = 12.00 / totalCriteriosActivos;
-                    
+                    // REPARACIÓN CRÍTICA: El peso de cada criterio es fijo en base al lote estructural
                     botonesEscala.forEach(btn => {
                         const estado = btn.dataset.estadoActual;
                         const multiplicador = this.escalaEstimacion[estado] ? this.escalaEstimacion[estado].multiplicador : 0.0;
-                        notaFinalCalculada += (pesoCadaUno * multiplicador);
+                        notaFinalCalculada += (pesoCadaUnoCalculado * multiplicador);
                     });
                 }
                 
@@ -1943,15 +1959,12 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
 
                 // 3. PERSISTIR EL DESGLOSE DE CRITERIOS INDIVIDUALES EN LA TABLA CALIFICACION
                 if (asistencia === 'true' && botonesEscala && botonesEscala.length > 0) {
-                    const totalCriteriosActivos = botonesEscala.length;
-                    const pesoCadaUno = 12.00 / totalCriteriosActivos;
-                    
                     for (let btn of botonesEscala) {
                         const criterioId = parseInt(btn.dataset.critId);
                         const estado = btn.dataset.estadoActual;
                         const multiplicador = this.escalaEstimacion[estado] ? this.escalaEstimacion[estado].multiplicador : 0.0;
                         
-                        const valoracionCalculada = parseFloat((pesoCadaUno * multiplicador).toFixed(2));
+                        const valoracionCalculada = parseFloat((pesoCadaUnoCalculado * multiplicador).toFixed(2));
                         
                         const sqlCalificacion = `INSERT OR REPLACE INTO calificacion (registro_id, criterio_id, valoracion) VALUES (?, ?, ?);`;
                         await db_real.execute({
@@ -1963,20 +1976,24 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
             } // === FIN DEL BUCLE DE FILAS ===
 
             alert("🎯 ¡Base de Datos Sincronizada!\nLas calificaciones con escala de estimación y redondeo exacto se guardaron con éxito.");
-            //~ this.cargarHistorialSesionesCombo();
-                        // Cambiar esta línea al final del try de guardarAsistenciaYNotasLote:
-            // error viejo: this.cargarHistorialSesionesCombo();
             
-            // Corrección quirúrgica:
+            // Actualizar el listado del panel de búsqueda trasera por si cambió el consolidado
             const inputBuscar = document.getElementById('inputBuscarSesion');
             await AppHistorialSesiones.filtrarSesionesDinamico(inputBuscar ? inputBuscar.value : "");
 
-            this.cargarEstudiantesAsistencia();
+            // REPARACIÓN CRÍTICA: Bifurcar el refresco de la UI según el modo operativo activo
+            if (window.editandoSesionPasada === true) {
+                await this.cargarEstudiantesAsistenciaConHistorico();
+            } else {
+                await this.cargarEstudiantesAsistencia();
+            }
+            
         } catch (error) {
             console.error("Fallo crítico en la transacción de corrección:", error);
             alert("Error interno de SQLite al sobreescribir las evaluaciones.");
         }
     },
+
 
     verReporteAcumuladoAlumno: async function(nominaId, nombreCompleto) {
         document.getElementById('rep_alumno_nombre').innerText = nombreCompleto;
@@ -2139,9 +2156,7 @@ const AppHistorialSesiones = {
                 LEFT JOIN nomina n ON n.id = r.participantes_id
                 LEFT JOIN cursos c ON c.id = n.cursoseccion_id
                 `;
-            
             let parametros = [];
-            
             // Si el usuario escribe algo, aplicamos filtros dinámicos combinados
             if (textoBusqueda && textoBusqueda.trim() !== "") {
                 const queryLimpio = `%${textoBusqueda.trim()}%`;
@@ -2192,7 +2207,7 @@ const AppHistorialSesiones = {
 
     // 4. Conecta el buscador con tu motor de edición existente
         // 4. Conecta el buscador con tu motor de edición existente
-    seleccionarSesionParaCorregir: async function(sesionId) {
+        seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true;
 
@@ -2209,9 +2224,7 @@ const AppHistorialSesiones = {
                 values: [window.sesionActivaId]
             });
 
-            // =========================================================================
-            // 🚀 NUEVA CONSULTA CRÍTICA: Extraer los criterios evaluados en esta sesión
-            // =========================================================================
+            // B) Extraer los criterios evaluados en esta sesión de forma segura
             const sqlCriteriosClase = `
                 SELECT DISTINCT c.criterio_id 
                 FROM registros r
@@ -2223,38 +2236,39 @@ const AppHistorialSesiones = {
                 values: [window.sesionActivaId]
             });
 
-            // Sincronizamos la matriz global de la App con los datos reales de la BD
+            // Creamos un array local y respaldamos en el global de operaciones
+            let criteriosIdsLocales = [];
             if (resCriterios.values && resCriterios.values.length > 0) {
-                AppAulaOperaciones.criteriosSeleccionadosIds = resCriterios.values.map(c => parseInt(c.criterio_id));
-            } else {
-                AppAulaOperaciones.criteriosSeleccionadosIds = [];
+                criteriosIdsLocales = resCriterios.values.map(c => parseInt(c.criterio_id));
             }
-            // =========================================================================
+            AppAulaOperaciones.criteriosSeleccionadosIds = criteriosIdsLocales;
 
-            // B) Forzar el cambio de pantalla visual
+            // C) Forzar el cambio de pantalla visual
             if (typeof AppNavegacion !== 'undefined') {
                 AppNavegacion.cambiarPantalla('docente');
             }
-            // C) Sincronizar el selector operativo de la grilla
+
+            // D) Sincronizar el selector operativo de la grilla
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
-                // 🚀 CORRECCIÓN: Se añade [0] para extraer correctamente el ID numérico de la fila
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
             }
 
-            // D) Reflejar visualmente en los checkboxes superiores qué rasgos estamos editando
+            // E) Reflejar visualmente en los checkboxes superiores usando el array local blindado
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
-                chk.checked = AppAulaOperaciones.criteriosSeleccionadosIds.includes(idCrit);
-                chk.disabled = false; 
+                chk.checked = criteriosIdsLocales.includes(idCrit);
+                chk.disabled = false; // Habilitados para permitir edición en el modo corrección
             });
 
-            // E) Renderizar la grilla histórica 
-            // 🚀 CORRECCIÓN: Forzamos la ejecución pasando el ID recuperado directamente para blindar el flujo
-            await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+            // F) REPARACIÓN CRÍTICA: Forzar un desfase mínimo (macro-task) con setTimeout 
+            // para que el DOM asimile el valor del 'select' antes de interrogar a las notas históricas
+            setTimeout(async () => {
+                await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
+            }, 60);
 
-            // F) Renderizar estados visuales del modo corrección (Banner de control)
+            // G) Renderizar estados visuales del modo corrección (Banner de control)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
             if (contenedorEstado) {
                 contenedorEstado.className = "alerta-operacional";
@@ -2284,9 +2298,6 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
-
-
-
 };
 
 // === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICA DE ESTUDIANTES ===
