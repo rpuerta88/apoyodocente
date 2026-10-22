@@ -522,7 +522,7 @@ const AppPlanificacion = {
     },
 
     // Guarda aplicando la lógica relacional pura (Uno a Muchos)
-    guardarPlanificacion: async function() {
+        guardarPlanificacion: async function() {
         const selectCatedra = document.getElementById('plan_select_catedra').value;
         const temaGenerador = document.getElementById('plan_tema_generador').value.trim();
         let catedraID = null;
@@ -538,7 +538,7 @@ const AppPlanificacion = {
                     values: [nuevoTemaCentral]
                 });
 
-                // CORRECCIÓN 1: Captura segura del ID recién generado por SQLite
+                // Captura segura del ID recién generado por SQLite
                 const resID = await db_real.query({ statement: "SELECT last_insert_rowid() AS id;" });
                 catedraID = resID.values[0].id;
             } else {
@@ -552,18 +552,27 @@ const AppPlanificacion = {
                 values: [temaGenerador, catedraID]
             });
 
-            // CORRECCIÓN 2: Captura segura del temario asignado usando la sesión de conexión
+            // Captura segura del temario asignado usando la sesión de conexión
             const resTemarioID = await db_real.query({ statement: "SELECT last_insert_rowid() AS id;" });
             window.temarioActivoId = resTemarioID.values[0].id;
 
             mostrarNotificacion("Contenido enlazado correctamente");
             
-            // Recargar de inmediato el selector del DOM para que refleje el nuevo tema
+            // 1. Recargar de inmediato el selector del DOM de la pantalla principal
             await this.cargarTemariosEnDOM();
+            
             const continuar = confirm("🎯 ¡Contenido enlazado correctamente!\n\n¿Desea registrar otro tema o contenido pedagógico en este momento?");
+            
             if (continuar) {
+                // 2. CORRECCIÓN CRÍTICA: Resetear formulario
                 document.getElementById('formPlanificacion').reset();
-                this.evaluarSeleccionCatedra(); // Restablece visibilidad de campos de texto
+                
+                // 3. REINYECCIÓN QUIRÚRGICA: Volver a poblar el select interno del modal con el nuevo registro de SQLite
+                await this.cargarSelectorCatedras();
+                
+                // 4. Ocultar el campo de texto "Nuevo" para que el select inicie limpio
+                this.evaluarSeleccionCatedra(); 
+                
                 document.getElementById('plan_tema_generador').focus(); // Foco rápido para el APK
             } else {
                 this.cerrarModal();
@@ -574,6 +583,7 @@ const AppPlanificacion = {
             alert("Error al procesar la planificación.");
         }
     },
+
 
     cargarTemarioVigenteInicial: async function() {
         try {
@@ -1149,15 +1159,21 @@ const AppClasesDiarias = {
 
 
     // Modifica los componentes visuales para reflejar el estado operativo
-        actualizarPantallaSesionActiva: function(nombreClase) {
+    actualizarPantallaSesionActiva: function(nombreClase) {
         const contenedorEstado = document.getElementById('estadoSesionDiaria');
         const botonApertura = document.getElementById('btnAbrirSesion');
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
         const criteriosDisponibles = document.getElementById('panelAdmin');
         const btnCerrar = document.getElementById('btnCerrarSesion');
+        
         if (btnCerrar) btnCerrar.style.display = "inline-flex"; 
 
         if (contenedorEstado) {
+            // Forzar limpieza de estilos inline de modo corrección histórica
+            contenedorEstado.style.backgroundColor = "";
+            contenedorEstado.style.color = "";
+            contenedorEstado.style.border = "";
+            
             contenedorEstado.className = "alerta-operacional estado-activa";
             contenedorEstado.innerHTML = `🟢 <b>Sesión Activa:</b> ${nombreClase}<br><small>Claves de relación inyectadas en segundo plano con éxito.</small>`;
         }
@@ -1171,12 +1187,16 @@ const AppClasesDiarias = {
         if (zonaTrabajo) {
             zonaTrabajo.style.display = "block";
             criteriosDisponibles.style.display = "block";
+            
+            // Habilitar checkboxes por si venían congelados del historial
+            const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
+            checkboxes.forEach(chk => chk.disabled = false);
+            
             AppAulaOperaciones.inicializarSelectoresAula();
             AppAulaOperaciones.cargarHistorialSesionesCombo(); 
         }
-        
-        // 🚀 SE ELIMINÓ EL BUCLE DE LAS TARJETAS FANTASMA QUE CAUSABA EL COLAPSO
     },
+
 
 
         // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
@@ -1184,19 +1204,16 @@ const AppClasesDiarias = {
         const confirmar = confirm("¿Está seguro de que desea cerrar la sesión actual?\n⚠️ Para abrir una nueva clase, primero debe finalizar la sesión en curso.");
         if (!confirmar) return;
 
-        // 1. Limpieza estricta de las variables de estado global
+        // 1. Limpieza estricta de las variables de estado global y banderas de modo
         window.sesionActivaId = null;
         window.temarioActivoId = null;
-        
-        if (window.hasOwnProperty('editandoSesionPasada')) {
-            window.editandoSesionPasada = false;
-        }
+        window.editandoSesionPasada = false; // Reset definitivo del flag de historial
 
-        // 2. Restablecer el banner operacional a su estado de espera
+        // 2. Restablecer el banner operacional QUITANDO estilos residuales del modo naranja
         const contenedorEstado = document.getElementById('estadoSesionDiaria');
         if (contenedorEstado) {
             contenedorEstado.className = "alerta-operacional estado-espera";
-            contenedorEstado.style.backgroundColor = ""; // Limpiar remanentes del modo corrección
+            contenedorEstado.style.backgroundColor = ""; 
             contenedorEstado.style.color = "";
             contenedorEstado.style.border = "";
             contenedorEstado.innerHTML = "• No hay ninguna sesión activa para el día de hoy.";
@@ -1210,7 +1227,7 @@ const AppClasesDiarias = {
             botonApertura.innerText = "Abrir Sesión de Hoy";
         }
 
-        // 4. Ocultar el propio botón de cierre y la zona de operaciones del aula
+        // 4. Ocultar contenedores operativos de la grilla anterior
         const containCriterios = document.getElementById('panelAdmin');
         if (containCriterios) containCriterios.style.display = "none";
         
@@ -1219,25 +1236,30 @@ const AppClasesDiarias = {
 
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
         if (zonaTrabajo) zonaTrabajo.style.display = "none";
-
-        // 5. Resetear selectores de la interfaz para evitar datos fantasmas
+        // 5. Resetear selectores e hilos visuales de la tabla para evitar datos fantasma
         const selectCurso = document.getElementById('aulaSelectCurso');
         if (selectCurso) selectCurso.value = "";
         
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (tablaBody) tablaBody.innerHTML = "";
 
-        // Inyectar quirúrgicamente aquí:
+        // 6. LIBERACIÓN ACCESORIA FINAL: Limpiar, desmarcar y habilitar checkboxes superiores
+        const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
+        checkboxes.forEach(chk => {
+            chk.checked = false;
+            chk.disabled = false; // Vuelven a estar operativos para la clase de hoy
+        });
+        AppAulaOperaciones.criteriosSeleccionadosIds = [];
+
         if (typeof AppBuscadorEstudiantes !== 'undefined') {
             AppBuscadorEstudiantes.limpiarBuscador();
         }
 
-        
-        const criteriosDisponibles = document.getElementById('panelAdmin');
-        criteriosDisponibles.style.display = "block";
-
         mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
-    }
+    } // Fin del método
+
+
+
 };
 
 const AppCriterios = {
@@ -2179,13 +2201,33 @@ const AppHistorialSesiones = {
                 return;
             }
             // 3. Renderizar las tarjetas de resultados táctiles
+                        // 3. Renderizar las tarjetas de resultados táctiles
             res.values.forEach(ses => {
                 const li = document.createElement('li');
-                li.className = 'item-curso'; // Reutilizamos tu estilo visual limpio de cajas
+                li.className = 'item-curso'; 
                 li.style.padding = "10px 12px";
                 li.style.marginBottom = "10px";
-                const fechaLimpia = ses.fecha ? ses.fecha.split(' ').slice(0, 2).join(' ') : 'N/A';
+
+                // REPARACIÓN DE HORA: Convertir el String UTC de SQLite a la hora del teléfono
+                let fechaLimpia = 'N/A';
+                if (ses.fecha) {
+                    // Si la fecha ya se guardó formateada localmente de fondo, la usa directamente
+                    if (ses.fecha.includes('-') && ses.fecha.includes(':') && !ses.fecha.includes('T')) {
+                        fechaLimpia = ses.fecha;
+                    } else {
+                        // Si viene en formato puro UTC de SQLite, la procesa y adapta al reloj del APK
+                        const utcDate = new Date(ses.fecha.replace(' ', 'T') + 'Z');
+                        if (!isNaN(utcDate.getTime())) {
+                            const opcionesVisuales = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
+                            fechaLimpia = utcDate.toLocaleString('es-VE', opcionesVisuales);
+                        } else {
+                            fechaLimpia = ses.fecha.split(' ')[0]; // Fallback preventivo
+                        }
+                    }
+                }
+
                 const seccionTexto = ses.cursoseccion ? ` | Sección: <b>${ses.cursoseccion}</b>` : '';
+                
                 li.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;">
                     <span style="font-weight: bold; color: var(--color-texto-base); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; display: block;">
@@ -2199,10 +2241,10 @@ const AppHistorialSesiones = {
                         onclick="AppHistorialSesiones.seleccionarSesionParaCorregir(${ses.id})">
                         ✏️ Editar
                     </button>
-
                 `;
                 contenedorLista.appendChild(li);
             });
+
 
         } catch (error) {
             console.error("Error en el motor dinámico de búsqueda:", error);
@@ -2210,8 +2252,7 @@ const AppHistorialSesiones = {
     },
 
     // 4. Conecta el buscador con tu motor de edición existente
-        // 4. Conecta el buscador con tu motor de edición existente
-        seleccionarSesionParaCorregir: async function(sesionId) {
+    seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true;
 
@@ -2228,7 +2269,7 @@ const AppHistorialSesiones = {
                 values: [window.sesionActivaId]
             });
 
-            // B) Extraer los criterios evaluados en esta sesión de forma segura
+            // B) Extraer los criterios evaluados en esta sesión
             const sqlCriteriosClase = `
                 SELECT DISTINCT c.criterio_id 
                 FROM registros r
@@ -2240,25 +2281,33 @@ const AppHistorialSesiones = {
                 values: [window.sesionActivaId]
             });
 
-            // Creamos un array local y respaldamos en el global de operaciones
             let criteriosIdsLocales = [];
             if (resCriterios.values && resCriterios.values.length > 0) {
                 criteriosIdsLocales = resCriterios.values.map(c => parseInt(c.criterio_id));
             }
             AppAulaOperaciones.criteriosSeleccionadosIds = criteriosIdsLocales;
 
-            // C) Forzar el cambio de pantalla visual
+            // C) Forzar el cambio de pantalla visual a la vista del docente
             if (typeof AppNavegacion !== 'undefined') {
                 AppNavegacion.cambiarPantalla('docente');
             }
 
-            // D) Sincronizar el selector operativo de la grilla (CORREGIDO CON [0])
+            // D) CONTROL OPERACIONAL: Forzar la muestra de la zona de trabajo inmediatamente
+            const zonaTrabajo = document.getElementById('zonaOperacionesAula');
+            if (zonaTrabajo) {
+                zonaTrabajo.style.display = "block"; // ◄--- Crucial para romper la dependencia de "Abrir Sesión"
+            }
+
+            // E) Sincronizar el selector operativo de la grilla
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
                 selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
+                
+                // INYECCIÓN CRÍTICA: Forzar al navegador a procesar el evento de cambio
+                selectCursoGrilla.dispatchEvent(new Event('change'));
             }
 
-            // E) Reflejar visualmente en los checkboxes superiores usando el array local blindado
+            // F) Reflejar visualmente los checkboxes superiores
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
@@ -2266,12 +2315,12 @@ const AppHistorialSesiones = {
                 chk.disabled = false; 
             });
 
-            // F) Forzar desfase con setTimeout para que asimile el cambio en el selector de cursos antes de leer alumnos
+            // G) Renderizar la grilla histórica de inmediato usando un micro-desfase controlado
             setTimeout(async () => {
                 await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
-            }, 80);
+            }, 100);
 
-            // G) Renderizar estados visuales del modo corrección (Banner de control)
+            // H) Renderizar estados visuales del modo corrección (Banner informativo)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
             if (contenedorEstado) {
                 contenedorEstado.className = "alerta-operacional";
@@ -2291,8 +2340,6 @@ const AppHistorialSesiones = {
 
             const btnCerrar = document.getElementById('btnCerrarSesion');
             if (btnCerrar) btnCerrar.style.display = "inline-flex";
-
-            document.getElementById('zonaOperacionesAula').style.display = "block";
             
             mostrarNotificacion("Sesión cargada en la grilla de evaluación");
 
@@ -2301,6 +2348,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 };
 
