@@ -160,25 +160,23 @@ input::placeholder {
     max-width: 800px;
     margin: 0 auto;
 }
-
+*/
 
 .tarjeta-seccion {
     background-color: var(--color-superficie);
     border-radius: var(--borde-radio);
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: 10px;
+    margin-bottom: 15px;
     box-shadow: var(--sombra-suave);
     border: 1px solid rgba(0, 0, 0, 0.03);
 }
-
-.tarjeta-seccion h3, .tarjeta-seccion h2 {
+.subtitulados-level2 {
     color: var(--color-primario);
-    margin-bottom: 15px;
-    font-size: 1.25rem;
+    margin-bottom: 11px;
+    font-size: 1.2rem;
     border-bottom: 2px solid var(--color-primario-light);
     padding-bottom: 6px;
 }
-*/
 
 /* ELEMENTOS DE FORMULARIO MODERNO
 .grupo-campo {

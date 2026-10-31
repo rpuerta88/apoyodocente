@@ -178,8 +178,8 @@ const AppNavegacion = {
     
     cambiarPantalla: function(pantallaObjetivo) {
         // 1. Obtener las vistas
-        const vistaAdmin = document.getElementById('pantalla-admin');
-        const vistaDocente = document.getElementById('pantalla-docente');
+        const vistaAdmin = document.getElementById('pantallaAdmin');
+        const vistaDocente = document.getElementById('pantallaDocente');
         
         // 2. Obtener los botones de la barra
         const btnAdmin = document.getElementById('tab-admin');
@@ -189,22 +189,17 @@ const AppNavegacion = {
             // Mostrar Administración, ocultar Docente
             vistaAdmin.style.display = 'block';
             vistaDocente.style.display = 'none';
-            
             // Alternar clases de estado visual activo
             btnAdmin.classList.add('activo');
             btnDocente.classList.remove('activo');
-            
-            mostrarNotificacion("Panel Administrativo");
+            //~ mostrarNotificacion("Panel Administrativo");
         } else if (pantallaObjetivo === 'docente') {
             // Mostrar Docente, ocultar Administración
             vistaAdmin.style.display = 'none';
             vistaDocente.style.display = 'block';
-            
             btnAdmin.classList.remove('activo');
             btnDocente.classList.add('activo');
-            
-            mostrarNotificacion("Panel de Práctica Diaria");
-            
+            //~ mostrarNotificacion("Panel de Práctica Diaria");
             // Aquí ejecutaremos en el futuro la recarga de los selectores diarios
             // AppDocente.actualizarSelectores();
         }
@@ -1111,10 +1106,8 @@ const AppClasesDiarias = {
                 statement: sqlValidarFecha,
                 values: [parseInt(window.lapsoActivoId)]
             });
-
             if (resLapso.values && resLapso.values.length > 0) {
                 const lapso = resLapso.values[0];
-                
                 // Verificación estricta de rangos de texto ISO
                 if (hoyISO < lapso.fecha_inicio || hoyISO > lapso.fecha_cierre) {
                     const cambiar = confirm(`⚠️ DISCORDANCIA DE CALENDARIO\n\nLa fecha de hoy (${hoyISO}) se encuentra fuera del rango oficial del lapso activo "${lapso.momento}" (${lapso.fecha_inicio} al ${lapso.fecha_cierre}).\n\n¿Desea forzar la apertura de la sesión bajo este lapso de igual manera?`);
@@ -1157,7 +1150,6 @@ const AppClasesDiarias = {
         }
     },
 
-
     // Modifica los componentes visuales para reflejar el estado operativo
     actualizarPantallaSesionActiva: function(nombreClase) {
         const contenedorEstado = document.getElementById('estadoSesionDiaria');
@@ -1173,7 +1165,6 @@ const AppClasesDiarias = {
             contenedorEstado.style.backgroundColor = "";
             contenedorEstado.style.color = "";
             contenedorEstado.style.border = "";
-            
             contenedorEstado.className = "alerta-operacional estado-activa";
             contenedorEstado.innerHTML = `🟢 <b>Sesión Activa:</b> ${nombreClase}<br><small>Claves de relación inyectadas en segundo plano con éxito.</small>`;
         }
@@ -1181,13 +1172,12 @@ const AppClasesDiarias = {
         if (botonApertura) {
             botonApertura.disabled = true;
             botonApertura.style.opacity = "0.5";
-            botonApertura.innerText = "🔒 Clase de Hoy en Curso";
+            botonApertura.innerText = "🔒 No se pueda abrir otra sesión";
         }
 
         if (zonaTrabajo) {
             zonaTrabajo.style.display = "block";
             criteriosDisponibles.style.display = "block";
-            
             // Habilitar checkboxes por si venían congelados del historial
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => chk.disabled = false);
@@ -2175,19 +2165,21 @@ const AppHistorialSesiones = {
         try {
             // Modificar las primeras líneas dentro del try de filtrarSesionesDinamico:
             let sql = `
-                SELECT s.id, s.nombre, s.fecha, c.cursoseccion, l.momento AS lapso_momento
+                SELECT s.id, s.nombre, s.fecha, c.cursoseccion, t.tema_generador, l.momento AS lapso_momento
                 FROM sesiones s
                 LEFT JOIN lapso l ON l.id = s.lapso_id
                 LEFT JOIN registros r ON r.sesion_id = s.id
                 LEFT JOIN nomina n ON n.id = r.participantes_id
                 LEFT JOIN cursos c ON c.id = n.cursoseccion_id
+                LEFT JOIN temario t ON t.id = s.temario_id
                 `;
+                //~ 2610311645 se introdujo temario en la consulta
             let parametros = [];
             // Si el usuario escribe algo, aplicamos filtros dinámicos combinados
             if (textoBusqueda && textoBusqueda.trim() !== "") {
                 const queryLimpio = `%${textoBusqueda.trim()}%`;
-                sql += ` WHERE s.nombre LIKE ? OR s.fecha LIKE ? OR c.cursoseccion LIKE ?`;
-                parametros = [queryLimpio, queryLimpio, queryLimpio];
+                sql += ` WHERE s.nombre LIKE ? OR s.fecha LIKE ? OR c.cursoseccion LIKE ? OR t.tema_generador LIKE ?`;
+                parametros = [queryLimpio, queryLimpio, queryLimpio, queryLimpio];
             }
 
             // Agrupamos para evitar duplicados por los JOINs de los alumnos y ordenamos por la más reciente
@@ -2237,7 +2229,7 @@ const AppHistorialSesiones = {
                         📅 ${fechaLimpia} ${seccionTexto} | 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b>
                     </small>
                     </div>
-                    <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 6px 12px; align-self: center;" 
+                    <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 2px 10px; align-self: flex-end;" 
                         onclick="AppHistorialSesiones.seleccionarSesionParaCorregir(${ses.id})">
                         ✏️ Editar
                     </button>
@@ -2250,16 +2242,15 @@ const AppHistorialSesiones = {
             console.error("Error en el motor dinámico de búsqueda:", error);
         }
     },
-
-    // 4. Conecta el buscador con tu motor de edición existente
+        // 4. Conecta el buscador con tu motor de edición existente
     seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
-        window.editandoSesionPasada = true;
+        window.editandoSesionPasada = true; 
 
         try {
-            // A) Averiguar qué sección exacta fue la que se evaluó en esta sesión
+            // A) MODIFICADO: Averiguar la sección Y la escolaridad exacta de la sesión pasada
             const sqlSeccionRef = `
-                SELECT DISTINCT n.cursoseccion_id 
+                SELECT DISTINCT n.cursoseccion_id, n.escolaridades_id 
                 FROM registros r
                 INNER JOIN nomina n ON n.id = r.participantes_id
                 WHERE r.sesion_id = ? LIMIT 1;
@@ -2268,6 +2259,11 @@ const AppHistorialSesiones = {
                 statement: sqlSeccionRef,
                 values: [window.sesionActivaId]
             });
+
+            // RESCATE CRÍTICO: Si la sesión histórica tiene una escolaridad, la adoptamos temporalmente
+            if (resSeccion.values && resSeccion.values.length > 0) {
+                window.escolaridadActivaId = resSeccion.values[0].escolaridades_id; // 👈 SOLUCIÓN AQUÍ
+            }
 
             // B) Extraer los criterios evaluados en esta sesión
             const sqlCriteriosClase = `
@@ -2289,13 +2285,13 @@ const AppHistorialSesiones = {
 
             // C) Forzar el cambio de pantalla visual a la vista del docente
             if (typeof AppNavegacion !== 'undefined') {
-                AppNavegacion.cambiarPantalla('docente');
+                AppNavegacion.cambiarPantalla('docente'); 
             }
 
             // D) CONTROL OPERACIONAL: Forzar la muestra de la zona de trabajo inmediatamente
             const zonaTrabajo = document.getElementById('zonaOperacionesAula');
             if (zonaTrabajo) {
-                zonaTrabajo.style.display = "block"; // ◄--- Crucial para romper la dependencia de "Abrir Sesión"
+                zonaTrabajo.style.display = "block"; 
             }
 
             // E) Sincronizar el selector operativo de la grilla
@@ -2348,7 +2344,6 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
-
 
 };
 

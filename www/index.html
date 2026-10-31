@@ -23,10 +23,10 @@
 <!-- CONTENEDOR PRINCIPAL DE PANTALLAS -->
     <main class="contenedor-pantallas">
         <!-- SECCIÓN 1: ADMINISTRATIVA (Activa por defecto) -->
-        <section id="pantalla-admin" class="modal-cabecera" syle="display: flex;">
+        <section id="pantallaAdmin" class="modal-cabecera" syle="display: flex;">
             <!-- SECCIÓN ADMINISTRATIVA: REGISTRO DE CURSOS Y SECCIONES -->
             <div id="seccionCursos">
-                <h3>🏛️ Registro de Cursos y Secciones</h3>
+                <h3 class="subtitulados-level2">🏛️ Registro de Cursos y Secciones</h3>
                 <!-- Formulario de Registro Rápido -->
                 <form id="formCursos" class="formulario-lineal">
                     <div class="container-secc">
@@ -49,7 +49,7 @@
             </div>
             <!-- MÓDULO DE REGISTRO DE ESTUDIANTES -->
             <div>
-                <h3>👥 Registro y Matrícula de Estudiantes</h3>
+                <h3 class="subtitulados-level2">👥 Registro y Matrícula de Estudiantes</h3>
                 <p class="instruccion-texto">Cargue la lista de alumnos masivamente o registre un estudiante de forma individual.</p>
                 <div class="dos-columnas-botones">
                     <!-- Opción 1: Entrada de Archivo CSV oculto con botón estilizado -->
@@ -65,7 +65,7 @@
             </div>
             <!-- MÓDULO DE CONFIGURACIÓN DE NÓMINAS -->
             <div>
-                <h3>📋 Asignación y Elaboración de Nóminas</h3>
+                <h3 class="subtitulados-level2">📋 Asignación y Elaboración de Nóminas</h3>
                 <p class="instruccion-texto">Vincule a los alumnos matriculados con sus respectivas secciones para el año escolar activo.</p>
                 <!-- Selectores base para saber a qué curso se le va a asignar la nómina -->
                 <div class="modal-cabecera">
@@ -103,7 +103,7 @@
 
             <!-- BOTÓN DISPARADOR (Agrégalo dentro de tu pantalla-admin en el index.html) -->
             <div>
-                <h3>📐 Planificación Pedagógica</h3>
+                <h3 class="subtitulados-level2">📐 Planificación Pedagógica</h3>
                 <p class="instruccion-texto">Defina los contenidos programáticos antes de iniciar las clases.</p>
                 <button type="button" class="btn-planificar" onclick="AppPlanificacion.abrirModal()">➕ Planificar Nuevo Tema</button>
             </div>
@@ -111,92 +111,80 @@
             <button type="button" class="btn-editar-adm" onclick="AppEscolaridad.abrirParaEditar()">⚙️ Editar Escolaridad Activa</button>
                 <!-- BOTÓN DISPARADOR (Agrégalo en tu panel administrativo dentro de pantalla-admin) -->
             <div>
-                <h3>📆 Períodos y Lapsos</h3>
+                <h3 class="subtitulados-level2">📆 Períodos y Lapsos</h3>
                 <p class="instruccion-texto">Establezca los lapsos académicos activos para la evaluación continua.</p>
                 <button type="button" class="btn-lapso-disparar" onclick="AppLapsos.abrirModal()">➕ Registrar Lapso Activo</button>
             </div>
         </section>
         <!-- SECCIÓN 2: PRÁCTICA DOCENTE (Oculta al inicio) PANEL OPERACIONAL DIARIO (En Caliente) -->
-        <section id="pantalla-docente" class="modal-cabecera" style="display: none;">
+        <section id="pantallaDocente" class="modal-cabecera" style="display: none;">
             <div class="panel-docente">
-                <h3>📝 Control de Sesión Diaria</h3>
+                <h3 class="subtitulados-level2">📝 Control de Sesión Diaria</h3>
                 <p class="instruccion-texto">Inicie la clase para habilitar el pase de asistencia y las evaluaciones.</p>
                 <!-- Estado de la sesión actual -->
-                <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
+               <div id="estadoSesionDiaria" class="alerta-operacional estado-espera">
                     ⚪ No hay ninguna sesión activa para el día de hoy.
                 </div>
                 <!-- Agregar este botón justo debajo o al lado del botón de abrir sesión -->
                 <button type="button" id="btnCerrarSesion" class="btn-guardar btn-peligro" style="display: none;" onclick="AppClasesDiarias.cerrarSesionActiva()">
                     🔒 Finalizar y Cerrar Sesión
                 </button>
-                <div class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 15px; border-radius: var(--borde-radio); margin-bottom: 20px; border: 1px solid var(--color-borde);">
-                    <h3 style="color: var(--color-primario); margin-bottom: 10px; font-size: 1.1rem;">🔍 Buscador y Corrección de Sesiones Pasadas</h3>
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <input type="text" id="inputBuscarSesion" placeholder="Escribe el tema, fecha o sección..." class="into-secc" style="flex: 1; width: 100%; margin: 0;"
-                       oninput="AppHistorialSesiones.filtrarSesionesDinamico(this.value)">
+                    <div class="tarjeta-seccion">
+                        <h3 class="subtitulados-level2">🔍 Buscador y Corrección de Sesiones Pasadas</h3>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <input type="text" id="inputBuscarSesion" placeholder="Escribe el tema, fecha o sección..." class="into-secc" style="flex: 1; width: 100%; margin: 0;" oninput="AppHistorialSesiones.filtrarSesionesDinamico(this.value)">
+                        </div>
+                        <!-- Lista dinámica donde el motor inyectará los resultados en caliente -->
+                        <ul id="listaResultadoSesiones" class="lista-activos" style="max-height: 250px; overflow-y: auto; padding: 0;">
+                            <li class="lista-vacia">Escribe en el cuadro de arriba para buscar sesiones...</li>
+                        </ul>
                     </div>
-
-                    <!-- Lista dinámica donde el motor inyectará los resultados en caliente -->
-                    <ul id="listaResultadoSesiones" class="lista-activos" style="max-height: 250px; overflow-y: auto; padding: 0;">
-                        <li class="lista-vacia">Escribe en el cuadro de arriba para buscar sesiones...</li>
-                    </ul>
-                </div>
-                <!-- Ubicación Quirúrgica: Dentro de tu sección o div con la clase "panel-docente" -->
-<!-- (Colócalo justo debajo del bloque de 'Control de Sesión Diaria' y el banner 'estadoSesionDiaria') -->
-
                 <div class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 15px; border-radius: var(--borde-radio); margin-bottom: 15px; border: 1px solid var(--color-borde);">
                     <label style="font-size: 0.9rem; font-weight: bold; color: var(--color-texto-base); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
                         🔍 Auditoría Rápida de Progreso Escolar (Por Alumno)
                     </label>
-    
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <!-- Selector duplicado/espejo exclusivo para el buscador, para que funcione antes de abrir la clase -->
                         <select id="buscadorSelectCurso" class="into-data" style="background-color: #ffffff; padding: 10px;" onchange="AppBuscadorEstudiantes.limpiarBuscador()">
                             <option value="" disabled selected>Primero seleccione el curso a consultar...</option>
                         </select>
-        
-                        <input type="text" id="inputBuscarAlumnoAula" placeholder="Escribe apellido, nombre o cédula del estudiante..." class="into-secc" style="width: 100%; margin: 0; padding: 10px;"
-                               oninput="AppBuscadorEstudiantes.filtrarEstudiantesDinamico(this.value)">
+                        <input type="text" id="inputBuscarAlumnoAula" placeholder="Escribe apellido, nombre o cédula del estudiante..." class="into-secc" style="width: 100%; margin: 0; padding: 10px;" oninput="AppBuscadorEstudiantes.filtrarEstudiantesDinamico(this.value)">
                     </div>
-    
                     <!-- Lista dinámica de resultados de alumnos -->
                     <ul id="listaResultadoAlumnosAula" class="lista-activos" style="padding: 0; margin-top: 8px; list-style: none;">
                         <!-- El motor inyectará aquí las tarjetas de alumnos en caliente -->
                     </ul>
                 </div>
                 <!-- NUEVO: SELECTOR DE HISTORIAL CRONOLÓGICO -->
-            <div class="bloque-criterio-aula" style="margin-top: 14px;">
-                <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
-                    🎯 Configurar Criterio de Evaluación para Hoy
-                </button>
-            </div>
-            <!-- Selector de temas inyectado en el DOM -->
-            <div class="form-group">
-                <label for="selectorTemarios"><b>Seleccione el Tema para la Clase de Hoy:</b></label>
-                <select id="selectorTemarios" class="form-control">
-                    <option value="">-- Cargando temas disponibles... --</option>
-                </select>
-            </div>
+                <div class="bloque-criterio-aula" style="margin-top: 14px;">
+                    <button type="button" class="btn-aula btn-criterio-disparar" onclick="AppCriterios.abrirModal()">
+                        🎯 Configurar Criterio de Evaluación para Hoy
+                    </button>
+                </div>
+                <!-- Selector de temas inyectado en el DOM -->
+                <div class="form-group">
+                    <label for="selectorTemarios"><b>Seleccione el Tema para la Clase de Hoy:</b></label>
+                    <select id="selectorTemarios" class="form-control">
+                        <option value="">-- Cargando temas disponibles... --</option>
+                    </select>
+                </div>
                 <!-- Botón de apertura rápida -->
-            <div class="contenedor-acciones-aula">
-                <button type="button" id="btnAbrirSesion" class="btn-aula btn-apertura" onclick="AppClasesDiarias.abrirSesionHoy()">
-                    🚀 Abrir Sesión de Hoy
-                </button>
-            </div>
+                <div class="contenedor-acciones-aula">
+                    <button type="button" id="btnAbrirSesion" class="btn-aula btn-apertura" onclick="AppClasesDiarias.abrirSesionHoy()">
+                        🚀 Abrir Sesión de Hoy
+                    </button>
+                </div>
                 <!-- Contenedor oculto que se activará cuando la sesión esté abierta -->
                 <div id="zonaOperacionesAula" style="display: none; margin-top: 20px;">
-                    <div class="divisor-titulos">
-                        Panel de Trabajo del Aula
-                    </div>
+                    <div class="divisor-titulos">Panel de Trabajo del Aula</div>
                     <!-- Selector de Curso Activo -->
-                        <div class="modal-cabecera">
-                            <label for="aulaSelectCurso">Seleccione Curso/Sección a Evaluar Hoy:</label>
-                            <select id="aulaSelectCurso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
-                                <!-- Se puebla dinámicamente -->
-                            </select>
-                        </div>
+                    <div class="modal-cabecera">
+                        <label for="aulaSelectCurso">Seleccione Curso/Sección a Evaluar Hoy:</label>
+                        <select id="aulaSelectCurso" onchange="AppAulaOperaciones.cargarEstudiantesAsistencia()" required>
+                            <!-- Se puebla dinámicamente -->
+                        </select>
+                    </div>
                     <!-- Módulo Neurocognitivo: Selección de Criterios Visibles para hoy -->
-                    
                 </div>
             </div>
             <div id="panelAdmin" style="display: none;">
@@ -210,51 +198,52 @@
                 <!-- Grilla de Evaluación de Alumnos -->
                 <div class="panel-tabla-aula">
                     <!-- Grilla de Evaluación de Alumnos -->
-                <div class="panel-tabla-aula">
-                    <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h4 style="margin: 0; color: #37474f;">Registro de Observación Directa</h4>
-                            <button type="button" class="btn-guardar-lote" onclick="AppAulaOperaciones.guardarAsistenciaYNotasLote()">
-                                💾 Guardar Bloque Diario
-                            </button>
-                        </div>
-                        <!-- NUEVOS DISPARADORES DE INYECCIÓN EN BLOQUE -->
-                        <div class="controles-bloque-neuro">
-                            <span class="etiqueta-macro">Acciones en Lote:</span>
-                            <button type="button" class="btn-macro-accion btn-macro-verde" onclick="AppAulaOperaciones.inyectarAsistenciaPerfecta()">
-                                ✅ Asistencia Perfecta
-                            </button>
-                            <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppAulaOperaciones.inyectarTodoEvaluado()">
-                                🎯 Marcar Todos los Rasgos
-                            </button>
-                            <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppAulaOperaciones.reiniciarMatrizFila()">
-                                🔄 Resetear Grilla
-                            </button>
-                        </div>
-                    </div>
-                    <div class="por-definir">
-                        <form id="formTablaAsistencia">
-                            <div class="tabla-responsiva">
-                                <table class="tabla-aula">
-                                    <thead>
-                                        <tr>
-                                            <th class="tabla-aula">Estudiante</th>
-                                            <th class="text-center">Asistencia (Base 8pts)</th>
-                                            <th class= "text-center">Criterios Observados para 12pts</th>
-                                            <th class="text-center">Nota Generada</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="listaEstudiantesAula">
-                                        <tr class="lista-vacia">
-                                            <td colspan="4">Seleccione una sección para mapear los estudiantes matriculados.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    <div class="panel-tabla-aula">
+                        <div class="cabecera-tabla-acciones" style="flex-direction: column; gap: 10px; align-items: stretch;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h4 style="margin: 0; color: #37474f;">Registro de Observación Directa</h4>
+                                <button type="button" class="btn-guardar-lote" onclick="AppAulaOperaciones.guardarAsistenciaYNotasLote()">
+                                    💾 Guardar Bloque Diario
+                                </button>
                             </div>
-                        </form>
+                            <!-- NUEVOS DISPARADORES DE INYECCIÓN EN BLOQUE -->
+                            <div class="controles-bloque-neuro">
+                                <span class="etiqueta-macro">Acciones en Lote:</span>
+                                <button type="button" class="btn-macro-accion btn-macro-verde" onclick="AppAulaOperaciones.inyectarAsistenciaPerfecta()">
+                                    ✅ Asistencia Perfecta
+                                </button>
+                                <button type="button" class="btn-macro-accion btn-macro-azul" onclick="AppAulaOperaciones.inyectarTodoEvaluado()">
+                                    🎯 Marcar Todos los Rasgos
+                                </button>
+                                <button type="button" class="btn-macro-accion btn-macro-gris" onclick="AppAulaOperaciones.reiniciarMatrizFila()">
+                                    🔄 Resetear Grilla
+                                </button>
+                            </div>
+                        </div>
+                        <!--REVISAR LOGICA -->
+                        <div class="por-definir">
+                            <form id="formTablaAsistencia">
+                                <div class="tabla-responsiva">
+                                    <table class="tabla-aula">
+                                        <thead>
+                                            <tr>
+                                                <th class="tabla-aula">Estudiante</th>
+                                                <th class="text-center">Asistencia (Base 8pts)</th>
+                                                <th class= "text-center">Criterios Observados para 12pts</th>
+                                                <th class="text-center">Nota Generada</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="listaEstudiantesAula">
+                                            <tr class="lista-vacia">
+                                                <td colspan="4">Seleccione una sección para mapear los estudiantes matriculados.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </section>
     </main>
