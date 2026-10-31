@@ -1190,7 +1190,7 @@ const AppClasesDiarias = {
 
 
         // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
-    cerrarSesionActiva: function() {
+            cerrarSesionActiva: function() {
         const confirmar = confirm("¿Está seguro de que desea cerrar la sesión actual?\n⚠️ Para abrir una nueva clase, primero debe finalizar la sesión en curso.");
         if (!confirmar) return;
 
@@ -1226,6 +1226,7 @@ const AppClasesDiarias = {
 
         const zonaTrabajo = document.getElementById('zonaOperacionesAula');
         if (zonaTrabajo) zonaTrabajo.style.display = "none";
+
         // 5. Resetear selectores e hilos visuales de la tabla para evitar datos fantasma
         const selectCurso = document.getElementById('aulaSelectCurso');
         if (selectCurso) selectCurso.value = "";
@@ -1233,29 +1234,27 @@ const AppClasesDiarias = {
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (tablaBody) tablaBody.innerHTML = "";
 
-        // 6. LIBERACIÓN ACCESORIA FINAL: Limpiar, desmarcar y habilitar checkboxes superiores
+        // 6. LIBERACIÓN ACCESORIA FINAL: Limpiar, desmarcar y desbloquear selectores y checkboxes
+        const selectorTemas = document.getElementById('selectorTemarios');
+        if (selectorTemas) {
+            selectorTemas.value = "";
+            selectorTemas.disabled = false; // 🔓 Desbloqueado para nuevas clases
+        }
+
         const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
         checkboxes.forEach(chk => {
             chk.checked = false;
-            chk.disabled = false; // Vuelven a estar operativos para la clase de hoy
+            chk.disabled = false; // 🔓 Desbloqueado para nuevas clases
         });
         AppAulaOperaciones.criteriosSeleccionadosIds = [];
 
         if (typeof AppBuscadorEstudiantes !== 'undefined') {
             AppBuscadorEstudiantes.limpiarBuscador();
         }
-                // ... (Tu código existente en cerrarSesionActiva)
-
-        // LIBERACIÓN COMPLEMENTARIA: Desbloquear el selector de temarios para nuevas clases
-        const selectorTemas = document.getElementById('selectorTemarios');
-        if (selectorTemas) {
-            selectorTemas.value = "";
-            selectorTemas.disabled = false; // 👈 Volver a habilitar aquí
-        }
-
 
         mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
-    } // Fin del método
+    }
+ // Fin del método
 
 
 
@@ -2251,13 +2250,13 @@ const AppHistorialSesiones = {
             console.error("Error en el motor dinámico de búsqueda:", error);
         }
     },
-        // 4. Conecta el buscador con tu motor de edición existente
+            // 4. Conecta el buscador con tu motor de edición existente
     seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true; 
 
         try {
-            // A) Extraer el temario, el curso y la escolaridad de la sesión seleccionada
+            // A) Extraer el temario, el curso y la escolaridad accediendo de forma segura al índice [0]
             const sqlSesionInfo = `
                 SELECT s.temario_id, n.cursoseccion_id, n.escolaridades_id 
                 FROM sesiones s
@@ -2276,10 +2275,11 @@ const AppHistorialSesiones = {
                 return;
             }
 
-            const info = resInfo.values[0];
+            // CORRECCIÓN QUIRÚRGICA: Acceso explícito a la primera fila encontrada [0]
+            const info = resInfo.values[0]; 
             window.temarioActivoId = info.temario_id;
 
-            // Adoptar temporalmente la escolaridad de la sesión pasada
+            // Adoptar y rescatar la escolaridad de la sesión pasada
             if (info.escolaridades_id) {
                 window.escolaridadActivaId = parseInt(info.escolaridades_id);
             }
@@ -2313,7 +2313,7 @@ const AppHistorialSesiones = {
                 zonaTrabajo.style.display = "block"; 
             }
 
-            // E) CORRECCIÓN CRÍTICA: Asignar el curso SIN disparar el evento 'change'
+            // E) Asignar el curso SIN disparar el evento 'change' (Evita el bucle destructivo)
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
             if (selectCursoGrilla && info.cursoseccion_id) {
                 selectCursoGrilla.value = info.cursoseccion_id;
@@ -2323,18 +2323,18 @@ const AppHistorialSesiones = {
             const selectorTemas = document.getElementById('selectorTemarios');
             if (selectorTemas && window.temarioActivoId) {
                 selectorTemas.value = window.temarioActivoId;
-                selectorTemas.disabled = true; // Bloqueado, no disponible para edición
+                selectorTemas.disabled = true; // 🔒 Bloqueado: No disponible para edición
             }
 
-            // G) Reflejar visualmente los checkboxes de criterios y bloquearlos
+            // G) Reflejar visualmente los checkboxes de criterios y bloquearlos por seguridad
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
                 chk.checked = criteriosIdsLocales.includes(idCrit);
-                chk.disabled = true; // Bloqueado, no disponible para edición
+                chk.disabled = true; // 🔒 Bloqueado: No disponible para edición
             });
 
-            // H) RENDERIZACIÓN DIRECTA DE LA GRILLA HISTÓRICA (Evitamos colisiones asíncronas)
+            // H) RENDERIZACIÓN DIRECTA DE LA GRILLA HISTÓRICA
             await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
 
             // I) Renderizar estados visuales del modo corrección (Banner informativo)
@@ -2365,6 +2365,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 
 };
