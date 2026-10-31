@@ -1244,7 +1244,26 @@ const AppClasesDiarias = {
         if (typeof AppBuscadorEstudiantes !== 'undefined') {
             AppBuscadorEstudiantes.limpiarBuscador();
         }
+                // ... (Tu código existente en cerrarSesionActiva)
 
+        // LIBERACIÓN COMPLEMENTARIA: Desbloquear el selector de temarios para nuevas clases
+        const selectorTemas = document.getElementById('selectorTemarios');
+        if (selectorTemas) {
+            selectorTemas.value = "";
+            selectorTemas.disabled = false; // 👈 Volver a habilitar aquí
+        }
+
+        // Asegurar que los checkboxes superiores vuelvan a estar operativos
+        const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
+        checkboxes.forEach(chk => {
+            chk.checked = false;
+            chk.disabled = false; // 👈 Volver a habilitar aquí
+        });
+        AppAulaOperaciones.criteriosSeleccionadosIds = [];
+
+        if (typeof AppBuscadorEstudiantes !== 'undefined') {
+            AppBuscadorEstudiantes.limpiarBuscador();
+        }
         mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
     } // Fin del método
 
@@ -2248,21 +2267,31 @@ const AppHistorialSesiones = {
         window.editandoSesionPasada = true; 
 
         try {
-            // A) MODIFICADO: Averiguar la sección Y la escolaridad exacta de la sesión pasada
-            const sqlSeccionRef = `
-                SELECT DISTINCT n.cursoseccion_id, n.escolaridades_id 
-                FROM registros r
-                INNER JOIN nomina n ON n.id = r.participantes_id
-                WHERE r.sesion_id = ? LIMIT 1;
+            // A) Extraer el temario, el curso y la escolaridad de la sesión seleccionada
+            const sqlSesionInfo = `
+                SELECT s.temario_id, n.cursoseccion_id, n.escolaridades_id 
+                FROM sesiones s
+                LEFT JOIN registros r ON r.sesion_id = s.id
+                LEFT JOIN nomina n ON n.id = r.participantes_id
+                WHERE s.id = ? LIMIT 1;
             `;
-            const resSeccion = await db_real.query({
-                statement: sqlSeccionRef,
+            
+            const resInfo = await db_real.query({
+                statement: sqlSesionInfo,
                 values: [window.sesionActivaId]
             });
 
-            // RESCATE CRÍTICO: Si la sesión histórica tiene una escolaridad, la adoptamos temporalmente
-            if (resSeccion.values && resSeccion.values.length > 0) {
-                window.escolaridadActivaId = resSeccion.values[0].escolaridades_id; // 👈 SOLUCIÓN AQUÍ
+            if (!resInfo.values || resInfo.values.length === 0) {
+                alert("No se pudo recuperar la información estructural de esta sesión.");
+                return;
+            }
+
+            const info = resInfo.values[0];
+            window.temarioActivoId = info.temario_id;
+
+            // Adoptar temporalmente la escolaridad de la sesión pasada
+            if (info.escolaridades_id) {
+                window.escolaridadActivaId = parseInt(info.escolaridades_id);
             }
 
             // B) Extraer los criterios evaluados en esta sesión
@@ -2288,35 +2317,37 @@ const AppHistorialSesiones = {
                 AppNavegacion.cambiarPantalla('docente'); 
             }
 
-            // D) CONTROL OPERACIONAL: Forzar la muestra de la zona de trabajo inmediatamente
+            // D) CONTROL OPERACIONAL: Mostrar la zona de trabajo inmediatamente
             const zonaTrabajo = document.getElementById('zonaOperacionesAula');
             if (zonaTrabajo) {
                 zonaTrabajo.style.display = "block"; 
             }
 
-            // E) Sincronizar el selector operativo de la grilla
+            // E) CORRECCIÓN CRÍTICA: Asignar el curso SIN disparar el evento 'change'
             const selectCursoGrilla = document.getElementById('aulaSelectCurso');
-            if (selectCursoGrilla && resSeccion.values && resSeccion.values.length > 0) {
-                selectCursoGrilla.value = resSeccion.values[0].cursoseccion_id;
-                
-                // INYECCIÓN CRÍTICA: Forzar al navegador a procesar el evento de cambio
-                selectCursoGrilla.dispatchEvent(new Event('change'));
+            if (selectCursoGrilla && info.cursoseccion_id) {
+                selectCursoGrilla.value = info.cursoseccion_id;
             }
 
-            // F) Reflejar visualmente los checkboxes superiores
+            // F) INYECCIÓN DEL TEMA CENTRAL: Fijar en el selector superior y bloquearlo
+            const selectorTemas = document.getElementById('selectorTemarios');
+            if (selectorTemas && window.temarioActivoId) {
+                selectorTemas.value = window.temarioActivoId;
+                selectorTemas.disabled = true; // Bloqueado, no disponible para edición
+            }
+
+            // G) Reflejar visualmente los checkboxes de criterios y bloquearlos
             const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
             checkboxes.forEach(chk => {
                 const idCrit = parseInt(chk.value);
                 chk.checked = criteriosIdsLocales.includes(idCrit);
-                chk.disabled = false; 
+                chk.disabled = true; // Bloqueado, no disponible para edición
             });
 
-            // G) Renderizar la grilla histórica de inmediato usando un micro-desfase controlado
-            setTimeout(async () => {
-                await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
-            }, 100);
+            // H) RENDERIZACIÓN DIRECTA DE LA GRILLA HISTÓRICA (Evitamos colisiones asíncronas)
+            await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
 
-            // H) Renderizar estados visuales del modo corrección (Banner informativo)
+            // I) Renderizar estados visuales del modo corrección (Banner informativo)
             const contenedorEstado = document.getElementById('estadoSesionDiaria');
             if (contenedorEstado) {
                 contenedorEstado.className = "alerta-operacional";
@@ -2324,7 +2355,7 @@ const AppHistorialSesiones = {
                 contenedorEstado.style.color = "#e65100";
                 contenedorEstado.style.border = "1.5px solid #ffb74d";
                 contenedorEstado.innerHTML = `⚠️ <b>MODO CORRECCIÓN ACTIVO:</b> Editando registros desde el buscador.<br>
-                <small>Modifique la asistencia o toque las tarjetas de rasgos para alterar las notas de esta sesión pasada.</small>`;
+                <small><b>Tema y Criterios:</b> Bloqueados | Modifique la asistencia o toque las escalas de estimación para corregir.</small>`;
             }
 
             const btnApertura = document.getElementById('btnAbrirSesion');
@@ -2337,13 +2368,14 @@ const AppHistorialSesiones = {
             const btnCerrar = document.getElementById('btnCerrarSesion');
             if (btnCerrar) btnCerrar.style.display = "inline-flex";
             
-            mostrarNotificacion("Sesión cargada en la grilla de evaluación");
+            mostrarNotificacion("Sesión histórica cargada con éxito");
 
         } catch (err) {
             console.error("Error crítico en el enrutamiento de la sesión histórica:", err);
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 };
 
