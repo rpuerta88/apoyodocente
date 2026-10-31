@@ -1253,17 +1253,7 @@ const AppClasesDiarias = {
             selectorTemas.disabled = false; // 👈 Volver a habilitar aquí
         }
 
-        // Asegurar que los checkboxes superiores vuelvan a estar operativos
-        const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
-        checkboxes.forEach(chk => {
-            chk.checked = false;
-            chk.disabled = false; // 👈 Volver a habilitar aquí
-        });
-        AppAulaOperaciones.criteriosSeleccionadosIds = [];
 
-        if (typeof AppBuscadorEstudiantes !== 'undefined') {
-            AppBuscadorEstudiantes.limpiarBuscador();
-        }
         mostrarNotificacion("Sesión cerrada con éxito. Listo para una nueva clase.");
     } // Fin del método
 
