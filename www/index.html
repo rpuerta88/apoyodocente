@@ -129,7 +129,7 @@
                 <button type="button" id="btnCerrarSesion" class="btn-guardar btn-peligro" style="display: none;" onclick="AppClasesDiarias.cerrarSesionActiva()">
                     🔒 Finalizar y Cerrar Sesión
                 </button>
-                    <div class="tarjeta-seccion">
+                    <div id="buscadorSesiones" class="tarjeta-seccion">
                         <h3 class="subtitulados-level2">🔍 Buscador y Corrección de Sesiones Pasadas</h3>
                         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                             <input type="text" id="inputBuscarSesion" placeholder="Escribe el tema, fecha o sección..." class="into-secc" style="flex: 1; width: 100%; margin: 0;" oninput="AppHistorialSesiones.filtrarSesionesDinamico(this.value)">
@@ -139,7 +139,7 @@
                             <li class="lista-vacia">Escribe en el cuadro de arriba para buscar sesiones...</li>
                         </ul>
                     </div>
-                <div class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 15px; border-radius: var(--borde-radio); margin-bottom: 15px; border: 1px solid var(--color-borde);">
+                <div id="buscadorRecordEstudiantes" class="tarjeta-seccion" style="background-color: var(--color-superficie); padding: 15px; border-radius: var(--borde-radio); margin-bottom: 15px; border: 1px solid var(--color-borde);">
                     <label style="font-size: 0.9rem; font-weight: bold; color: var(--color-texto-base); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
                         🔍 Auditoría Rápida de Progreso Escolar (Por Alumno)
                     </label>

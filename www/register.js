@@ -1139,7 +1139,16 @@ const AppClasesDiarias = {
                 console.log(`Sesión de Aula iniciada con éxito y sincronizada cronológicamente. ID: ${window.sesionActivaId}`);
                 // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
                 this.actualizarPantallaSesionActiva(sesionCreada.nombre);
-                mostrarNotificacion("Clase inicializada correctamente");
+        //INSERTAR LA LOGICA PARA OCULTAR BUSCADORES DE SESIONES PASADAS Y DE AUDITORIA RAPIDA
+                if (window.sesionActivaId) {
+                    const ocultarBuscadorSesiones = 'buscadorSesiones'
+                    ocultarBuscador.style.display = "none";
+                } else {
+                    const ocultarBuscadorAuditoria = 'buscadorRecordEstudiantes'
+                    ocultarBuscadorAuditoria.style.display = "none";
+                    }
+                    
+                    mostrarNotificacion("Clase inicializada correctamente");
             } else {
                 throw new Error("No se pudo recuperar la sesión recién creada.");
             }
@@ -1190,7 +1199,7 @@ const AppClasesDiarias = {
 
 
         // === INYECCIÓN QUIRÚRGICA: CIERRE LOGICO Y VISUAL DE LA SESIÓN ===
-            cerrarSesionActiva: function() {
+    cerrarSesionActiva: function() {
         const confirmar = confirm("¿Está seguro de que desea cerrar la sesión actual?\n⚠️ Para abrir una nueva clase, primero debe finalizar la sesión en curso.");
         if (!confirmar) return;
 
@@ -1924,7 +1933,6 @@ const AppAulaOperaciones = {
         
         try {
             mostrarNotificacion("Sincronizando correcciones en SQLite...");
-            
             // Determinar el divisor real del escenario pedagógico acumulado
             const totalCriteriosEstructurales = this.criteriosSeleccionadosIds.length;
             const pesoCadaUnoCalculado = totalCriteriosEstructurales > 0 ? (12.00 / totalCriteriosEstructurales) : 0.0;
@@ -1948,7 +1956,6 @@ const AppAulaOperaciones = {
                         notaFinalCalculada += (pesoCadaUnoCalculado * multiplicador);
                     });
                 }
-                
                 // Forzar redondeo matemático exacto de dos decimales
                 notaFinalCalculada = parseFloat(notaFinalCalculada.toFixed(2));
 
@@ -2207,7 +2214,7 @@ const AppHistorialSesiones = {
                 li.className = 'item-curso'; 
                 li.style.padding = "10px 12px";
                 li.style.marginBottom = "10px";
-                li.style.background = "#bbbbbb";
+                li.style.background = "#dddddd";
 
                 // REPARACIÓN DE HORA: Convertir el String UTC de SQLite a la hora del teléfono
                 let fechaLimpia = 'N/A';
@@ -2232,10 +2239,10 @@ const AppHistorialSesiones = {
                 li.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;">
                     <span style="font-weight: bold; color: var(--color-texto-base); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; display: block;">
-                        ${ses.nombre}
+                        ${ses.tema_generador}
                     </span>
                     <small style="color: #78909c; display: block; white-space: normal; word-break: break-word;">
-                        📅 ${fechaLimpia} ${seccionTexto} | 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b>
+                        📅 ${ses.nombre}| 🎯 Período: <b>${ses.lapso_momento || 'N/A'}</b>
                     </small>
                     </div>
                     <button type="button" class="btn-guardar" style="background-color: var(--color-secundario); padding: 2px 10px; align-self: flex-end;" 
@@ -2359,7 +2366,7 @@ const AppHistorialSesiones = {
 
             //~ DESDE FUE MODIFICADO
             const cursoSeleccionado = document.getElementById('aulaSelectCurso');
-            if (cursoSeleccionado) {
+            if (cursoSeleccionado && window.editandoSesionPasada) {
                 aulaSelectCurso.disabled = true;
                 aulaSelectCurso.style.opacity = "0.5";
             }
