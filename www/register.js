@@ -1144,7 +1144,7 @@ const AppClasesDiarias = {
                     const ocultarBuscadorSesiones = document.getElementById('buscadorSesiones');
                     ocultarBuscador.style.display = "none";
                 } else {
-                    const ocultarBuscadorAuditoria = 'document.getElementById(buscadorRecordEstudiantes');
+                    const ocultarBuscadorAuditoria = document.getElementById('buscadorRecordEstudiantes');
                     ocultarBuscadorAuditoria.style.display = "none";
                     }
                     
