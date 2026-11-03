@@ -1139,16 +1139,21 @@ const AppClasesDiarias = {
                 console.log(`Sesión de Aula iniciada con éxito y sincronizada cronológicamente. ID: ${window.sesionActivaId}`);
                 // 6. ACTUALIZAR INTERFAZ EN TIEMPO REAL
                 this.actualizarPantallaSesionActiva(sesionCreada.nombre);
-        //INSERTAR LA LOGICA PARA OCULTAR BUSCADORES DE SESIONES PASADAS Y DE AUDITORIA RAPIDA
+                //INSERTAR LA LOGICA PARA OCULTAR BUSCADORES DE SESIONES PASADAS Y DE AUDITORIA RAPIDA
                 if (window.sesionActivaId) {
-                    const ocultarBuscadorSesiones = document.getElementById('buscadorSesiones');
-                    ocultarBuscador.style.display = "none";
-                } else {
-                    const ocultarBuscadorAuditoria = document.getElementById('buscadorRecordEstudiantes');
-                    ocultarBuscadorAuditoria.style.display = "none";
+                    // 1. Capturar los elementos reales del DOM
+                    const elBuscadorSesiones = document.getElementById('buscadorSesiones');
+                    const elBuscadorAuditoria = document.getElementById('buscadorRecordEstudiantes');
+                    // 2. Ocultar de forma segura (solo si existen en la pantalla actual)
+                    if (elBuscadorSesiones) {
+                        elBuscadorSesiones.style.display = "none";
                     }
+                    if (elBuscadorAuditoria) {
+                        elBuscadorAuditoria.style.display = "none";
+                    }
+                }
                     
-                    mostrarNotificacion("Clase inicializada correctamente");
+                mostrarNotificacion("Clase inicializada correctamente");
             } else {
                 throw new Error("No se pudo recuperar la sesión recién creada.");
             }
@@ -1238,8 +1243,10 @@ const AppClasesDiarias = {
 
         // 5. Resetear selectores e hilos visuales de la tabla para evitar datos fantasma
         const selectCurso = document.getElementById('aulaSelectCurso');
-        if (selectCurso) selectCurso.value = "";
-        
+        if (selectCurso) {
+            selectCurso.value = "";
+            selectCurso.disabled = false;
+        }
         const tablaBody = document.getElementById('listaEstudiantesAula');
         if (tablaBody) tablaBody.innerHTML = "";
 
@@ -1249,7 +1256,6 @@ const AppClasesDiarias = {
             selectorTemas.value = "";
             selectorTemas.disabled = false; // 🔓 Desbloqueado para nuevas clases
         }
-
         const checkboxes = document.querySelectorAll('#contenedorCheckboxesCriterios input[type="checkbox"]');
         checkboxes.forEach(chk => {
             chk.checked = false;
