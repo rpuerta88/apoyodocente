@@ -1183,7 +1183,7 @@ const AppClasesDiarias = {
             checkboxes.forEach(chk => chk.disabled = false);
             
             AppAulaOperaciones.inicializarSelectoresAula();
-            AppAulaOperaciones.cargarHistorialSesionesCombo(); 
+            AppAulaOperaciones.cargarHistorialSesionesCombo();  //ÉSTO ME HACE RUIDO
         }
     },
 
@@ -1684,64 +1684,64 @@ const AppAulaOperaciones = {
     },
 
     calcularNotaEstudiante: function(nominaId) {
-const fila = document.getElementById(`fila-alumno-${nominaId}`);
-if (!fila) return;
-const chkAsistencia = fila.querySelector('.chk-asistencia');
-const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
-if (!chkAsistencia.checked) {
-cellNota.innerText = "1.00";
-cellNota.style.color = "#c62828";
-return;
-}
-let notaAcumulada = 8.00;
-const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
-if (totalCriteriosActivos > 0) {
-const pesoBaseCriterio = 12.00 / totalCriteriosActivos;
-botonesEscala.forEach(btn => {
-const estado = btn.dataset.estadoActual;
-const multiplicador = this.escalaEstimacion[estado].multiplicador;
-notaAcumulada += (pesoBaseCriterio * multiplicador);
-});
-}
-const notaFinalVal = parseFloat(notaAcumulada.toFixed(2));
-cellNota.innerText = notaFinalVal.toFixed(2);
-cellNota.style.color = notaFinalVal >= 9.50 ? "#1b5e20" : "#c62828";
-},
+        const fila = document.getElementById(`fila-alumno-${nominaId}`);
+        if (!fila) return;
+        const chkAsistencia = fila.querySelector('.chk-asistencia');
+        const cellNota = fila.querySelector(`#nota-final-est-${nominaId}`);
+        if (!chkAsistencia.checked) {
+            cellNota.innerText = "1.00";
+            cellNota.style.color = "#c62828";
+        return;
+        }
+        let notaAcumulada = 8.00;
+        const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+        const totalCriteriosActivos = this.criteriosSeleccionadosIds.length;
+        if (totalCriteriosActivos > 0) {
+            const pesoBaseCriterio = 12.00 / totalCriteriosActivos;
+            botonesEscala.forEach(btn => {
+                const estado = btn.dataset.estadoActual;
+                const multiplicador = this.escalaEstimacion[estado].multiplicador;
+                notaAcumulada += (pesoBaseCriterio * multiplicador);
+            });
+        }
+        const notaFinalVal = parseFloat(notaAcumulada.toFixed(2));
+        cellNota.innerText = notaFinalVal.toFixed(2);
+        cellNota.style.color = notaFinalVal >= 9.50 ? "#1b5e20" : "#c62828";
+    },
 
-inyectarAsistenciaPerfecta: function() {
-const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
-if (checkboxesAsistencia.length === 0) return;
-checkboxesAsistencia.forEach(chk => {
-chk.checked = true;
-});
-mostrarNotificacion("Se inyectó asistencia perfecta en la sección");
-this.recalcularNotasEnPantalla();
-},
+    inyectarAsistenciaPerfecta: function() {
+        const checkboxesAsistencia = document.querySelectorAll('.fila-estudiante-aula .chk-asistencia');
+        if (checkboxesAsistencia.length === 0) return;
+        checkboxesAsistencia.forEach(chk => {
+            chk.checked = true;
+        });
+        mostrarNotificacion("Se inyectó asistencia perfecta en la sección");
+        this.recalcularNotasEnPantalla();
+    },
 // 3. ACTUALIZACIÓN DE INYECCIÓN MASIVA ('inyectarTodoEvaluado')
 // Ahora marca a los estudiantes en el nivel más alto disponible: 'A' (Avanzado / 100%)
-inyectarTodoEvaluado: function() {
-const filas = document.querySelectorAll('.fila-estudiante-aula');
-if (filas.length === 0) return;
-if (this.criteriosSeleccionadosIds.length === 0) {
-alert("Operación omitida: Primero debe marcar arriba al menos un 'Enfoque Atencional' para hoy.");
-return;
-}
-filas.forEach(fila => {
-const chkAsistencia = fila.querySelector('.chk-asistencia');
-if (chkAsistencia && chkAsistencia.checked) {
-const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
-botonesEscala.forEach(btn => {
-btn.dataset.estadoActual = 'A';
-btn.style.backgroundColor = this.escalaEstimacion['A'].color;
-btn.style.color = this.escalaEstimacion['A'].textoColor;
-btn.innerText = this.escalaEstimacion['A'].texto;
-});
-this.calcularNotaEstudiante(fila.dataset.nominaId);
-}
-});
-mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
-},
+    inyectarTodoEvaluado: function() {
+        const filas = document.querySelectorAll('.fila-estudiante-aula');
+        if (filas.length === 0) return;
+        if (this.criteriosSeleccionadosIds.length === 0) {
+            alert("Operación omitida: Primero debe marcar arriba al menos un 'Enfoque Atencional' para hoy.");
+        return;
+        }
+        filas.forEach(fila => {
+            const chkAsistencia = fila.querySelector('.chk-asistencia');
+            if (chkAsistencia && chkAsistencia.checked) {
+                const botonesEscala = fila.querySelectorAll('.zona-rasgos-estudiante .btn-escala-ciclo');
+                botonesEscala.forEach(btn => {
+                    btn.dataset.estadoActual = 'A';
+                    btn.style.backgroundColor = this.escalaEstimacion['A'].color;
+                    btn.style.color = this.escalaEstimacion['A'].textoColor;
+                    btn.innerText = this.escalaEstimacion['A'].texto;
+                });
+            this.calcularNotaEstudiante(fila.dataset.nominaId);
+            }
+        });
+        mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
+    },
 
     reiniciarMatrizFila: function() {
         const filas = document.querySelectorAll('.fila-estudiante-aula');
@@ -1914,7 +1914,7 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
     },
 
 
-        guardarAsistenciaYNotasLote: async function() {
+    guardarAsistenciaYNotasLote: async function() {
         if (!window.sesionActivaId) {
             alert("Operación rechazada: No hay ninguna sesión seleccionada.");
             return;
@@ -2085,26 +2085,26 @@ mostrarNotificacion("Se marcaron todos los rasgos como Avanzados (100%)");
     },
 
     
-cerrarModalReporte: function() {
-document.getElementById('modalReporteEstudiante').style.display = 'none';
-},
-    abrirReporteConsolidadoAdmin: async function() {
-        const cursoID = document.getElementById('nom_select_curso').value;
-        const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
-        if (!cursoID) {
-            alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
-        return;
-        }
-        if (!window.escolaridadActivaId) {
-        alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
-        return;
-        }
-        try {
-            const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
-            const resNomina = await db_real.query({
-                statement: sqlNomina,
-                values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
-            });
+        cerrarModalReporte: function() {
+            document.getElementById('modalReporteEstudiante').style.display = 'none';
+        },
+        abrirReporteConsolidadoAdmin: async function() {
+            const cursoID = document.getElementById('nom_select_curso').value;
+            const tablaCuerpo = document.getElementById('con_tabla_cuerpo');
+            if (!cursoID) {
+                alert("Selección requerida: Por favor, escoja un Curso / Sección en el selector de nóminas antes de generar el consolidado.");
+            return;
+            }
+            if (!window.escolaridadActivaId) {
+            alert("Operación rechazada: No se ha detectado ninguna escolaridad vigente activa en el sistema.");
+            return;
+            }
+            try {
+                const sqlNomina = `SELECT n.id AS nomina_id, e.id_cedula, e.nombre, e.apellido, e.genero FROM nomina n INNER JOIN estudiantes e ON n.estudiantes_id = e.id_cedula WHERE n.cursoseccion_id = ? AND n.escolaridades_id = ? ORDER BY e.apellido ASC, e.nombre ASC;`;
+                const resNomina = await db_real.query({
+                    statement: sqlNomina,
+                    values: [parseInt(cursoID), parseInt(window.escolaridadActivaId)]
+                });
             tablaCuerpo.innerHTML = "";
             if (!resNomina.values || resNomina.values.length === 0) {
                 tablaCuerpo.innerHTML = `<tr><td colspan="4" class="lista-vacia">No hay alumnos matriculados en esta sección actualmente.</td></tr>`;
@@ -2151,7 +2151,7 @@ document.getElementById('modalReporteEstudiante').style.display = 'none';
     },
     cerrarReporteConsolidadoAdmin: function() {
         document.getElementById('modalConsolidadoAdmin').style.display = 'none';
-}
+    }
 };
 
 // === MÓDULO QUIRÚRGICO: MOTOR DE BÚSQUEDA DINÁMICO DE SESIONES ===
@@ -2207,6 +2207,7 @@ const AppHistorialSesiones = {
                 li.className = 'item-curso'; 
                 li.style.padding = "10px 12px";
                 li.style.marginBottom = "10px";
+                li.style.background = "#bbbbbb";
 
                 // REPARACIÓN DE HORA: Convertir el String UTC de SQLite a la hora del teléfono
                 let fechaLimpia = 'N/A';
@@ -2251,12 +2252,13 @@ const AppHistorialSesiones = {
         }
     },
             // 4. Conecta el buscador con tu motor de edición existente
+        // 4. Conecta el buscador con tu motor de edición existente
     seleccionarSesionParaCorregir: async function(sesionId) {
         window.sesionActivaId = parseInt(sesionId);
         window.editandoSesionPasada = true; 
 
         try {
-            // A) Extraer el temario, el curso y la escolaridad accediendo de forma segura al índice [0]
+            // A) Extraer el temario, el curso y la escolaridad de la sesión seleccionada
             const sqlSesionInfo = `
                 SELECT s.temario_id, n.cursoseccion_id, n.escolaridades_id 
                 FROM sesiones s
@@ -2275,11 +2277,11 @@ const AppHistorialSesiones = {
                 return;
             }
 
-            // CORRECCIÓN QUIRÚRGICA: Acceso explícito a la primera fila encontrada [0]
+            // CORRECCIÓN PEDAGÓGICA: Acceso explícito a la primera fila encontrada [0]
             const info = resInfo.values[0]; 
             window.temarioActivoId = info.temario_id;
 
-            // Adoptar y rescatar la escolaridad de la sesión pasada
+            // Adoptar temporalmente la escolaridad de la sesión pasada
             if (info.escolaridades_id) {
                 window.escolaridadActivaId = parseInt(info.escolaridades_id);
             }
@@ -2334,7 +2336,7 @@ const AppHistorialSesiones = {
                 chk.disabled = true; // 🔒 Bloqueado: No disponible para edición
             });
 
-            // H) RENDERIZACIÓN DIRECTA DE LA GRILLA HISTÓRICA
+            // H) RENDERIZACIÓN DIRECTA DE LA GRILLA HISTÓRICA (Evitamos colisiones asíncronas)
             await AppAulaOperaciones.cargarEstudiantesAsistenciaConHistorico();
 
             // I) Renderizar estados visuales del modo corrección (Banner informativo)
@@ -2355,9 +2357,19 @@ const AppHistorialSesiones = {
                 btnApertura.innerText = "🔒 Bloqueado por co-edición";
             }
 
+            //~ DESDE FUE MODIFICADO
+            const cursoSeleccionado = document.getElementById('aulaSelectCurso');
+            if (cursoSeleccionado) {
+                aulaSelectCurso.disabled = true;
+                aulaSelectCurso.style.opacity = "0.5";
+            }
+
             const btnCerrar = document.getElementById('btnCerrarSesion');
             if (btnCerrar) btnCerrar.style.display = "inline-flex";
-            
+
+            const mostrarParaEdicion = document.getElementById('panelAdmin');
+            mostrarParaEdicion.style.display = 'block';
+            //~ HASTA AQUI
             mostrarNotificacion("Sesión histórica cargada con éxito");
 
         } catch (err) {
@@ -2365,6 +2377,7 @@ const AppHistorialSesiones = {
             alert("No se pudo mapear la sección correspondiente al historial.");
         }
     }
+
 
 
 
