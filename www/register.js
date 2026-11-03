@@ -1141,10 +1141,10 @@ const AppClasesDiarias = {
                 this.actualizarPantallaSesionActiva(sesionCreada.nombre);
         //INSERTAR LA LOGICA PARA OCULTAR BUSCADORES DE SESIONES PASADAS Y DE AUDITORIA RAPIDA
                 if (window.sesionActivaId) {
-                    const ocultarBuscadorSesiones = 'buscadorSesiones'
+                    const ocultarBuscadorSesiones = document.getElementById('buscadorSesiones');
                     ocultarBuscador.style.display = "none";
                 } else {
-                    const ocultarBuscadorAuditoria = 'buscadorRecordEstudiantes'
+                    const ocultarBuscadorAuditoria = 'document.getElementById(buscadorRecordEstudiantes');
                     ocultarBuscadorAuditoria.style.display = "none";
                     }
                     
